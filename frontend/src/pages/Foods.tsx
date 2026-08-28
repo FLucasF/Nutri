@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
-import { FieldError, useFieldErrors } from "../componentes/FieldError";
-import { useFeedback } from "../componentes/Feedback";
+import { FieldError, useFieldErrors } from "../components/FieldError";
+import { useFeedback } from "../components/Feedback";
 import type { FoodSummary, DataSource, ResultImport } from "../api/types";
 import { count } from "../text";
 

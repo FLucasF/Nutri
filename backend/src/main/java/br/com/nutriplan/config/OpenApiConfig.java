@@ -18,7 +18,10 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("NutriPlan API")
                         .version("0.1.0")
-                        .description("Software de gestao para nutricionistas"))
+                        // The Swagger description is API documentation, read by whoever
+                        // integrates — it is not a nutritionist's or a patient's
+                        // screen.
+                        .description("Practice management software for nutritionists"))
                 .addSecurityItem(new SecurityRequirement().addList(schema))
                 .components(new Components().addSecuritySchemes(schema,
                         new SecurityScheme()

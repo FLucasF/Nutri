@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
-import { FieldError, useFieldErrors } from "../componentes/FieldError";
-import { useFeedback } from "../componentes/Feedback";
+import { FieldError, useFieldErrors } from "../components/FieldError";
+import { useFeedback } from "../components/Feedback";
 import { dayAbbreviated, formatBr, todayIso, weekStart, sumDays } from "../api/dates";
 import type {
   Appointment,

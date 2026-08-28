@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ErrorApi, api } from "../api/client";
 import { explainError } from "../api/errors";
-import { useFeedback } from "../componentes/Feedback";
+import { useFeedback } from "../components/Feedback";
 import type { Questionnaire } from "../api/types";
 import { count } from "../text";
 

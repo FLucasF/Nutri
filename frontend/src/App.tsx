@@ -19,7 +19,7 @@ import Team from "./pages/Team";
 import Labtests from "./pages/Labtests";
 import Finance from "./pages/Finance";
 import Handouts from "./pages/Handouts";
-import { FeedbackProvider } from "./componentes/Feedback";
+import { FeedbackProvider } from "./components/Feedback";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

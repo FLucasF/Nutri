@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
-import { useFeedback } from "../componentes/Feedback";
+import { useFeedback } from "../components/Feedback";
 import { NUTRIENTS, formatNutrient } from "../api/nutrients";
 import type { FoodDetail as Food, CalculatedServing } from "../api/types";
 

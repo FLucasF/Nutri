@@ -52,7 +52,7 @@
 
   --ink: #16211c;
   --ink: light-dark(#16211c, #e3e9e5);
-  /* Ink for titles and large numbers. It exists apart from --breu because that
+  /* Ink for titles and large numbers. It exists apart from --pitch because that
      one is the color of the rail, which stays dark in both themes: used as text
      in the dark theme, it gave black on black. */
   --ink-strong: #131c18;
@@ -398,7 +398,7 @@ nav a.active::before {
   letter-spacing: 0.02em;
 }
 
-/* ============================================================ componentes */
+/* ============================================================= components */
 
 .card {
   background: var(--paper);

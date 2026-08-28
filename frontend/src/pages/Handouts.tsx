@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
-import { useFeedback } from "../componentes/Feedback";
+import { useFeedback } from "../components/Feedback";
 import type { Handout } from "../api/types";
 import { count } from "../text";
 

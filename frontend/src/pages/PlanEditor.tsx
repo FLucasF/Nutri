@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import FoodSearch from "../componentes/FoodSearch";
+import FoodSearch from "../components/FoodSearch";
 import { ErrorApi, api } from "../api/client";
 import { explainError, whereLook } from "../api/errors";
-import { useFeedback } from "../componentes/Feedback";
+import { useFeedback } from "../components/Feedback";
 import { COLORS_MACRO, MACROS_PRINCIPAIS, NUTRIENTS, formatNutrient, labelDe } from "../api/nutrients";
 import type {
   FoodDetail,
@@ -644,7 +644,7 @@ export default function PlanEditor() {
   );
 }
 
-// --------------------------------------------------------------- subcomponentes
+// ---------------------------------------------------------------- subcomponents
 
 function BlockMeal({
   meal,

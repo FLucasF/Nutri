@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
-import { FieldError, useFieldErrors } from "../componentes/FieldError";
-import { useFeedback } from "../componentes/Feedback";
+import { FieldError, useFieldErrors } from "../components/FieldError";
+import { useFeedback } from "../components/Feedback";
 import { formatNutrient, MACROS_PRINCIPAIS, labelDe } from "../api/nutrients";
 import type { FoodSummary, RecipeIngredient, Measure, Recipe } from "../api/types";
-import FoodSearch from "../componentes/FoodSearch";
+import FoodSearch from "../components/FoodSearch";
 import { count } from "../text";
 
 /** An ingredient while it is being assembled on screen, before going to the server. */

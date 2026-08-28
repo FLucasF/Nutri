@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
-import { useFeedback } from "../componentes/Feedback";
+import { useFeedback } from "../components/Feedback";
 import { formatBr, todayIso } from "../api/dates";
 import type {
   LabtestResult,

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
-import { FieldError, useFieldErrors } from "../componentes/FieldError";
+import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useAuth } from "../auth/AuthContext";
 
 type Mode = "login" | "register" | "recover" | "reset";
