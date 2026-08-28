@@ -16,16 +16,16 @@
   <body>
     <!--
       Aplica o tema escolhido antes da primeira pintura. Se isto esperasse o
-      React, quem fixou "escuro" veria um lampejo claro a cada carregamento.
+      React, quem fixou "dark" veria um lampejo claro a cada carregamento.
       A chave repete a de src/tema.ts de proposito: este script precisa rodar
       sem carregar modulo nenhum.
     -->
     <script>
       (function () {
         try {
-          var t = localStorage.getItem("nutriplan.tema");
-          if (t === "claro" || t === "escuro") {
-            document.documentElement.setAttribute("data-tema", t);
+          var t = localStorage.getItem("nutriplan.theme");
+          if (t === "light" || t === "dark") {
+            document.documentElement.setAttribute("data-theme", t);
           }
         } catch (e) {
           /* armazenamento bloqueado: segue o sistema */

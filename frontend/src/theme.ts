@@ -12,7 +12,7 @@
 export type Theme = "system" | "light" | "dark";
 
 /** Also used by the script in index.html, which applies the theme before the paint. */
-export const KEY_THEME = "nutriplan.tema";
+export const KEY_THEME = "nutriplan.theme";
 
 export const THEMES: { value: Theme; label: string }[] = [
   { value: "system", label: "Sistema" },
