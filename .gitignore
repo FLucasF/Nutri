@@ -1,0 +1,32 @@
+# ---------------------------------------------------------------- backend
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# O banco H2 de desenvolvimento. São ~96 MB de dados de teste que o sistema
+# recria sozinho no primeiro start, importando as tabelas de referência.
+data/
+*.mv.db
+*.trace.db
+
+# ---------------------------------------------------------------- frontend
+node_modules/
+dist/
+.vite/
+*.local
+
+# --------------------------------------------------------------- ambiente
+.env
+.env.*
+!.env.example
+
+# ------------------------------------------------------------------ editor
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ------------------------------------------------------------------ saídas
+*.log
+/scratchpad/

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#131c18" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c1310" media="(prefers-color-scheme: dark)" />
+    <title>NutriPlan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Fraunces:SOFT,WONK,opsz,wght@0..100,0..1,9..144,400..700&display=swap"
+    />
+  </head>
+  <body>
+    <!--
+      Aplica o tema escolhido antes da primeira pintura. Se isto esperasse o
+      React, quem fixou "escuro" veria um lampejo claro a cada carregamento.
+      A chave repete a de src/tema.ts de proposito: este script precisa rodar
+      sem carregar modulo nenhum.
+    -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("nutriplan.tema");
+          if (t === "claro" || t === "escuro") {
+            document.documentElement.setAttribute("data-tema", t);
+          }
+        } catch (e) {
+          /* armazenamento bloqueado: segue o sistema */
+        }
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>NutriPlan — Fluxos do sistema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Archivo:wdth,wght@80,400;80,500;80,600;100,400;100,500;100,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --breu: #131c18;
+    --pedra: #e7eae5;
+    --papel: #ffffff;
+    --beterraba: #5e1a46;
+    --tinta: #1e2823;
+    --tinta-media: #566159;
+    --linha: #c4cac1;
+    --linha-fina: #dce0da;
+  }
+
+  @page {
+    size: A4;
+    margin: 18mm 16mm 16mm;
+  }
+  @page :first {
+    margin: 0;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    margin: 0;
+    font-family: "Archivo", "Segoe UI", system-ui, sans-serif;
+    font-stretch: 80%;
+    font-size: 9.6pt;
+    line-height: 1.5;
+    color: var(--tinta);
+    background: var(--papel);
+  }
+
+  h1, h2, h3, .display {
+    font-family: "Fraunces", Georgia, "Times New Roman", serif;
+    font-variation-settings: "WONK" 1, "SOFT" 0;
+    color: var(--breu);
+    margin: 0;
+    font-weight: 600;
+  }
+
+  /* ------------------------------------------------------------------ capa */
+
+  .capa {
+    height: 297mm;
+    background: var(--breu);
+    color: var(--pedra);
+    padding: 40mm 22mm 22mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+  }
+  .capa h1 {
+    color: var(--pedra);
+    font-size: 44pt;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  .capa .marca {
+    font-size: 8pt;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #9fb0a5;
+    font-stretch: 80%;
+  }
+  .capa .chamada {
+    font-size: 12pt;
+    line-height: 1.55;
+    color: #c9d3cc;
+    max-width: 118mm;
+    margin-top: 9mm;
+  }
+  .capa .rodape-capa {
+    font-size: 8.4pt;
+    color: #8b9c91;
+    border-top: 1px solid #2b3a33;
+    padding-top: 5mm;
+    display: flex;
+    justify-content: space-between;
+  }
+  .barra-capa {
+    width: 34mm;
+    height: 3.5mm;
+    background: var(--beterraba);
+    margin-bottom: 8mm;
+  }
+
+  /* --------------------------------------------------------------- estrutura */
+
+  .abertura {
+    border-left: 3px solid var(--beterraba);
+    padding-left: 7mm;
+    margin-bottom: 11mm;
+  }
+  .abertura p {
+    margin: 0 0 3.5mm;
+    font-size: 10.4pt;
+    line-height: 1.62;
+  }
+  .abertura p:last-child { margin-bottom: 0; }
+
+  .secao {
+    page-break-before: always;
+    padding-top: 1mm;
+  }
+  .secao:first-of-type { page-break-before: avoid; }
+
+  .secao > header {
+    border-bottom: 1.5px solid var(--breu);
+    padding-bottom: 3mm;
+    margin-bottom: 7mm;
+    display: flex;
+    align-items: baseline;
+    gap: 6mm;
+  }
+  .secao > header .numero {
+    font-family: "Archivo", sans-serif;
+    font-stretch: 80%;
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    color: var(--beterraba);
+    white-space: nowrap;
+  }
+  .secao > header h2 {
+    font-size: 21pt;
+    letter-spacing: -0.015em;
+    flex: 1;
+  }
+  .secao > header .quando {
+    font-size: 8.2pt;
+    color: var(--tinta-media);
+    text-align: right;
+    max-width: 62mm;
+    line-height: 1.35;
+  }
+
+  /* ------------------------------------------------------------------ fluxo */
+
+  .fluxo {
+    page-break-inside: avoid;
+    margin-bottom: 8mm;
+  }
+  .fluxo h3 {
+    font-size: 13pt;
+    margin-bottom: 1.5mm;
+  }
+  .fluxo .para-que {
+    color: var(--tinta-media);
+    font-size: 9.2pt;
+    margin: 0 0 4mm;
+    line-height: 1.5;
+    max-width: 150mm;
+  }
+
+  /* A régua: os passos pendurados numa linha vertical, numerados de verdade
+     porque aqui a ordem carrega informação — é a sequência do trabalho. */
+  .passos {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 13mm;
+    border-left: 1px solid var(--linha);
+    position: relative;
+  }
+  .passos li {
+    position: relative;
+    padding: 0 0 3.2mm;
+    line-height: 1.5;
+  }
+  .passos li:last-child { padding-bottom: 0; }
+  .passos li::before {
+    content: attr(data-passo);
+    position: absolute;
+    left: -13mm;
+    width: 9mm;
+    text-align: right;
+    font-family: "Archivo", sans-serif;
+    font-stretch: 80%;
+    font-variant-numeric: tabular-nums;
+    font-size: 8.6pt;
+    font-weight: 600;
+    color: var(--beterraba);
+    padding-top: 0.3mm;
+  }
+  .passos strong { font-weight: 600; color: var(--breu); }
+
+  .nota {
+    margin: 3.5mm 0 0 13mm;
+    padding: 2.6mm 4mm;
+    background: var(--pedra);
+    border-left: 2px solid var(--beterraba);
+    font-size: 8.6pt;
+    line-height: 1.5;
+    color: var(--tinta-media);
+  }
+  .nota strong { color: var(--breu); font-weight: 600; }
+
+  .duplo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6mm;
+  }
+
+  /* ------------------------------------------------------------- fecho */
+
+  .fecho {
+    page-break-before: always;
+  }
+  .fecho ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .fecho li {
+    padding: 3mm 0;
+    border-bottom: 1px solid var(--linha-fina);
+    display: grid;
+    grid-template-columns: 52mm 1fr;
+    gap: 6mm;
+    line-height: 1.5;
+  }
+  .fecho li:last-child { border-bottom: none; }
+  .fecho li .o-que {
+    font-weight: 600;
+    color: var(--breu);
+  }
+  .fecho li .porque { color: var(--tinta-media); font-size: 9.2pt; }
+
+  .encerramento {
+    margin-top: 9mm;
+    border-top: 1.5px solid var(--breu);
+    padding-top: 5mm;
+    font-size: 9pt;
+    color: var(--tinta-media);
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<section class="capa">
+  <div>
+    <div class="marca">NutriPlan · Sistema para consultório de nutrição</div>
+  </div>
+  <div>
+    <div class="barra-capa"></div>
+    <h1>Tudo o que<br>dá para fazer<br>aqui dentro</h1>
+    <p class="chamada">
+      Cada fluxo do sistema, na ordem em que o trabalho acontece: do primeiro
+      contato com o paciente até o plano na mão dele.
+    </p>
+  </div>
+  <div class="rodape-capa">
+    <span>Documento de apresentação</span>
+    <span>Agosto de 2026</span>
+  </div>
+</section>
+
+<section class="abertura">
+  <p>
+    Este documento percorre o sistema na ordem do seu dia: o paciente que chega,
+    a consulta que acontece, o plano que sai. Cada bloco é um caminho completo,
+    do início ao resultado.
+  </p>
+  <p>
+    Uma decisão explica boa parte do que você vai ler: <strong>o paciente não tem
+    conta no sistema.</strong> Ele recebe um link e lê o que você entregou — sem
+    cadastro, sem senha, sem aplicativo para instalar. Tudo o que o sistema faz é
+    feito por você, e o que chega ao paciente chega pronto.
+  </p>
+</section>
+
+<!-- ================================================================ 1 -->
+<section class="secao">
+  <header>
+    <span class="numero">01</span>
+    <h2>O consultório</h2>
+    <span class="quando">Uma vez, na primeira semana</span>
+  </header>
+
+  <div class="fluxo">
+    <h3>Abrir a sua conta</h3>
+    <p class="para-que">O consultório inteiro nasce de um cadastro. Nada precisa ser configurado antes de começar a atender.</p>
+    <ol class="passos">
+      <li data-passo="1">Você informa <strong>nome, e-mail e senha</strong>.</li>
+      <li data-passo="2">O sistema cria o consultório e o seu usuário como responsável.</li>
+      <li data-passo="3">A base de alimentos já vem carregada: <strong>23.945 alimentos</strong> e <strong>12.918 medidas caseiras</strong>, prontos para prescrever.</li>
+    </ol>
+    <div class="nota">
+      Os dados do seu consultório são só seus. Nenhum outro consultório enxerga
+      seus pacientes, seus planos ou seus alimentos cadastrados — a separação é
+      verificada por teste a cada versão do sistema.
+    </div>
+  </div>
+
+  <div class="fluxo">
+    <h3>Trabalhar com a secretária</h3>
+    <p class="para-que">Quem marca consulta não precisa ver prontuário.</p>
+    <ol class="passos">
+      <li data-passo="1">Você cadastra a pessoa com o perfil de <strong>secretária</strong>.</li>
+      <li data-passo="2">Ela entra com o login dela e trabalha na agenda e no cadastro de pacientes.</li>
+      <li data-passo="3">Você acompanha quem está ativo e desliga o acesso quando precisar.</li>
+    </ol>
+  </div>
+
+  <div class="fluxo">
+    <h3>Recuperar o acesso</h3>
+    <p class="para-que">Senha esquecida não vira chamado de suporte.</p>
+    <ol class="passos">
+      <li data-passo="1">Na tela de entrada, você pede o link de recuperação pelo seu e-mail.</li>
+      <li data-passo="2">O link vale por <strong>uma hora</strong> e serve uma vez só.</li>
+      <li data-passo="3">Ao trocar a senha, qualquer sessão aberta em outro aparelho é derrubada.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================================================================ 2 -->
+<section class="secao">
+  <header>
+    <span class="numero">02</span>
+    <h2>Antes da consulta</h2>
+    <span class="quando">O paciente ainda nem chegou</span>
+  </header>
+
+  <div class="fluxo">
+    <h3>Cadastrar o paciente</h3>
+    <p class="para-que">O cadastro mínimo é o nome. O resto entra quando você tiver.</p>
+    <ol class="passos">
+      <li data-passo="1">Você cadastra <strong>nome</strong> e, se quiser, contato, data de nascimento e sexo.</li>
+      <li data-passo="2">A idade é calculada sozinha, e se atualiza sem você tocar nela.</li>
+      <li data-passo="3">A busca encontra por <strong>nome, e-mail ou telefone</strong>, sem se importar com acento ou maiúscula.</li>
+    </ol>
+    <div class="nota">
+      <strong>Já tem uma lista pronta?</strong> A importação por planilha traz
+      todos de uma vez, aponta as linhas com problema e não deixa cadastro
+      duplicado passar.
+    </div>
+  </div>
+
+  <div class="fluxo">
+    <h3>Enviar o questionário pré-consulta</h3>
+    <p class="para-que">Chegar à consulta com a leitura feita — é disso que se trata.</p>
+    <ol class="passos">
+      <li data-passo="1">Você monta o questionário, ou parte do <strong>modelo de pré-consulta</strong> que já vem no sistema.</li>
+      <li data-passo="2">Gera o link para aquele paciente e o envia por onde já fala com ele.</li>
+      <li data-passo="3">O paciente responde <strong>sem criar conta</strong>, do celular, quando puder.</li>
+      <li data-passo="4">As respostas chegam ligadas ao paciente e ao atendimento marcado — sem redigitação.</li>
+      <li data-passo="5">O link aceita resposta <strong>uma vez só</strong>; depois disso ele não abre mais.</li>
+    </ol>
+    <div class="nota">
+      Questionário com pontuação é somado pelo sistema, e a classificação sai da
+      faixa de corte do próprio instrumento. Se faltar resposta obrigatória, o
+      escore <strong>não</strong> é calculado — e o sistema diz qual resposta falta,
+      em vez de entregar um número incompleto.
+    </div>
+  </div>
+
+  <div class="fluxo">
+    <h3>Marcar o atendimento</h3>
+    <p class="para-que">A agenda que impede o conflito antes dele acontecer.</p>
+    <ol class="passos">
+      <li data-passo="1">Você escolhe paciente, data, hora, duração e o <strong>tipo</strong>: primeira consulta, retorno ou avaliação.</li>
+      <li data-passo="2">Se o horário se sobrepõe a outro atendimento, o sistema recusa e mostra qual é o conflito.</li>
+      <li data-passo="3">Você acompanha o dia ou a semana inteira, com o vão entre um atendimento e outro aparecendo como vão de verdade.</li>
+    </ol>
+  </div>
+
+  <div class="fluxo">
+    <h3>Ver a agenda no calendário que você já usa</h3>
+    <p class="para-que">Duas agendas viram uma.</p>
+    <ol class="passos">
+      <li data-passo="1">Você gera um endereço de assinatura na tela da agenda.</li>
+      <li data-passo="2">Assina esse endereço no <strong>Google Agenda, Apple Calendar ou Outlook</strong>.</li>
+      <li data-passo="3">Eles passam a buscar sua agenda sozinhos: o que você marcar aqui aparece lá.</li>
+      <li data-passo="4">Se precisar cortar o acesso, gera outro endereço — o anterior deixa de funcionar na hora.</li>
+    </ol>
+    <div class="nota">
+      É um caminho de <strong>mão única</strong>: o que você marca aqui vai para o
+      seu calendário, mas um evento criado lá não vira atendimento aqui.
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 3 -->
+<section class="secao">
+  <header>
+    <span class="numero">03</span>
+    <h2>Na consulta</h2>
+    <span class="quando">Com o paciente na sala</span>
+  </header>
+
+  <div class="fluxo">
+    <h3>Avaliação antropométrica</h3>
+    <p class="para-que">Você registra a medida; o sistema faz a conta e guarda como chegou nela.</p>
+    <ol class="passos">
+      <li data-passo="1">Você lança <strong>peso, altura e data</strong>. O IMC sai calculado e classificado pela OMS.</li>
+      <li data-passo="2">Se medir <strong>dobras cutâneas</strong>, escolhe o protocolo e o sistema estima o percentual de gordura, com massa gorda e massa magra derivadas.</li>
+      <li data-passo="3">Se medir <strong>circunferências</strong>, sai a relação cintura-quadril com o risco sinalizado.</li>
+      <li data-passo="4">O <strong>gasto energético</strong> basal e total é estimado, e vai direto para a meta do plano alimentar.</li>
+      <li data-passo="5">A evolução entre avaliações aparece em série, para você enxergar tendência e não valor isolado.</li>
+    </ol>
+    <div class="nota">
+      Cada avaliação guarda <strong>qual protocolo foi usado</strong>. Se você mudar
+      de protocolo daqui a um ano, a avaliação antiga continua dizendo como o
+      número dela foi obtido — porque comparar estimativas de protocolos
+      diferentes não é comparar.
+    </div>
+  </div>
+
+  <div class="fluxo">
+    <h3>Criança e adolescente</h3>
+    <p class="para-que">Criança não se avalia pela faixa de adulto.</p>
+    <ol class="passos">
+      <li data-passo="1">Com a data de nascimento no cadastro, o sistema reconhece que é caso pediátrico.</li>
+      <li data-passo="2">A classificação sai por <strong>escore-z das curvas da OMS</strong>, e não pelas faixas de IMC de adulto.</li>
+      <li data-passo="3">Peso e estatura para a idade acompanham o crescimento ao longo das consultas.</li>
+    </ol>
+    <div class="nota">
+      As curvas são as tabelas oficiais da OMS, com <strong>916 pontos de
+      referência</strong> carregados no sistema, por sexo e por mês de idade.
+    </div>
+  </div>
+
+  <div class="fluxo">
+    <h3>Gestante</h3>
+    <p class="para-que">O ganho esperado depende de onde ela começou.</p>
+    <ol class="passos">
+      <li data-passo="1">Você registra o <strong>IMC pré-gestacional</strong> e a semana gestacional.</li>
+      <li data-passo="2">O sistema calcula a faixa de ganho esperada para aquele IMC de partida.</li>
+      <li data-passo="3">Cada consulta mostra se o ganho está abaixo, dentro ou acima do previsto.</li>
+    </ol>
+  </div>
+
+  <div class="fluxo">
+    <h3>Exames laboratoriais</h3>
+    <p class="para-que">O laboratório entrega o número; aqui ele vira leitura.</p>
+    <ol class="passos">
+      <li data-passo="1">Você registra <strong>parâmetro, valor, unidade e data da coleta</strong>. O sistema traz um catálogo com 30 parâmetros usuais.</li>
+      <li data-passo="2">O valor é classificado contra a faixa de referência <strong>daquele sexo e daquela idade</strong>.</li>
+      <li data-passo="3">Você anexa o laudo em arquivo, e ele fica junto do resultado.</li>
+      <li data-passo="4">A série histórica de um parâmetro mostra a evolução entre coletas.</li>
+      <li data-passo="5">A solicitação de exames que você pediu também fica registrada.</li>
+    </ol>
+    <div class="nota">
+      O resultado guarda <strong>a faixa de referência que foi usada</strong> na
+      classificação. Se a referência mudar depois, o exame antigo continua
+      contando a leitura que você fez na época — e não uma releitura silenciosa.
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 4 -->
+<section class="secao">
+  <header>
+    <span class="numero">04</span>
+    <h2>A prescrição</h2>
+    <span class="quando">O centro do trabalho</span>
+  </header>
+
+  <div class="fluxo">
+    <h3>Montar o plano alimentar</h3>
+    <p class="para-que">Refeição por refeição, com a conta acontecendo enquanto você monta.</p>
+    <ol class="passos">
+      <li data-passo="1">Você cria as refeições do dia, cada uma com <strong>nome e horário</strong>.</li>
+      <li data-passo="2">Busca o alimento e escolhe a <strong>medida caseira</strong> — colher de sopa, xícara, unidade — ou o peso em gramas.</li>
+      <li data-passo="3">Os totais de energia, proteína, carboidrato e gordura somam <strong>por refeição e por dia</strong>, enquanto você monta.</li>
+      <li data-passo="4">A distribuição entre macronutrientes aparece em percentual.</li>
+      <li data-passo="5">O prescrito é comparado com a <strong>meta energética</strong> que veio da avaliação.</li>
+    </ol>
+    <div class="nota">
+      Quando um alimento não tem determinado nutriente medido na tabela de
+      origem, o total é marcado como <strong>parcial</strong>. O sistema nunca trata
+      dado ausente como zero — a diferença entre "não tem" e "não foi medido" é
+      justamente o que faz um total mentir.
+    </div>
+  </div>
+
+  <div class="fluxo">
+    <h3>Encontrar o alimento certo</h3>
+    <p class="para-que">Três bases que se completam, numa busca só.</p>
+    <ol class="passos">
+      <li data-passo="1">Você digita e a busca ignora acento e maiúscula, ordenando por <strong>relevância clínica</strong> — não em ordem alfabética.</li>
+      <li data-passo="2">Filtra por grupo de alimentos ou por fonte, se quiser estreitar.</li>
+      <li data-passo="3">Cada alimento mostra <strong>de onde o dado veio</strong>: TACO, IBGE/POF ou rótulo do fabricante.</li>
+      <li data-passo="4">Para industrializado, a busca por <strong>código de barras</strong> chega direto no produto.</li>
+    </ol>
+  </div>
+
+  <div class="fluxo">
+    <h3>Cadastrar o que é seu</h3>
+    <p class="para-que">As tabelas de referência são um ponto de partida, não uma camisa de força.</p>
+    <ol class="passos">
+      <li data-passo="1">Você cadastra <strong>alimentos próprios</strong> do consultório, que só você enxerga.</li>
+      <li data-passo="2">Cria <strong>porções próprias</strong> sobre qualquer alimento, inclusive os das tabelas oficiais.</li>
+      <li data-passo="3">A sua porção tem precedência sobre a do acervo na hora de prescrever.</li>
+    </ol>
+    <div class="nota">
+      As tabelas de referência não são editáveis, e isso é proposital: elas são
+      acervo compartilhado, e alterá-las mudaria o dado para todo mundo. Quem
+      quer mudar, cadastra a versão própria.
+    </div>
+  </div>
+
+  <div class="fluxo">
+    <h3>Montar uma receita</h3>
+    <p class="para-que">"Arroz com brócolis" prescrito uma vez, usado sempre.</p>
+    <ol class="passos">
+      <li data-passo="1">Você combina alimentos como <strong>ingredientes</strong> e informa o rendimento da preparação.</li>
+      <li data-passo="2">A composição é calculada a partir dos ingredientes e do rendimento real.</li>
+      <li data-passo="3">A receita passa a aparecer na busca e a ser prescrita <strong>como qualquer alimento</strong> — com medida caseira e tudo.</li>
+      <li data-passo="4">Uma receita pode ser ingrediente de outra: um refogado dentro de uma torta.</li>
+    </ol>
+    <div class="nota">
+      O rendimento é informado por você e não somado dos ingredientes, porque
+      100 g de arroz cru viram cerca de 250 g cozido. Somar os ingredientes
+      daria uma composição duas vezes e meia mais concentrada que a realidade.
+    </div>
+  </div>
+
+  <div class="fluxo">
+    <h3>Prescrever com flexibilidade</h3>
+    <p class="para-que">Nem todo plano se escreve em gramas.</p>
+    <ol class="passos">
+      <li data-passo="1">Você oferece <strong>substituições</strong> para cada item: o paciente escolhe entre equivalentes.</li>
+      <li data-passo="2">Ou prescreve de forma <strong>qualitativa</strong>, sem quantificar, quando é isso que o caso pede.</li>
+      <li data-passo="3">Salva o plano como <strong>modelo</strong> e reaproveita a montagem no próximo paciente parecido.</li>
+    </ol>
+  </div>
+
+  <div class="fluxo">
+    <h3>Anexar as orientações</h3>
+    <p class="para-que">A explicação que você já escreveu uma vez, entregue de novo.</p>
+    <ol class="passos">
+      <li data-passo="1">Você mantém uma <strong>biblioteca de orientações</strong> do consultório, e o sistema já traz cinco modelos prontos.</li>
+      <li data-passo="2">Anexa ao plano, e pode <strong>adaptar o texto para aquele paciente</strong> sem alterar o seu modelo.</li>
+      <li data-passo="3">Acrescenta uma <strong>figura</strong> — o prato dividido, uma lista de compras desenhada — que vai junto no link e no impresso.</li>
+    </ol>
+    <div class="nota">
+      O texto entregue é <strong>congelado no momento do anexo</strong>. Se você
+      corrigir o modelo daqui a seis meses, o plano que o paciente já recebeu
+      continua dizendo o que dizia. Nada que foi entregue muda sozinho.
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 5 -->
+<section class="secao">
+  <header>
+    <span class="numero">05</span>
+    <h2>A entrega</h2>
+    <span class="quando">O plano saindo da sua mão</span>
+  </header>
+
+  <div class="fluxo">
+    <h3>Publicar e enviar o link</h3>
+    <p class="para-que">O paciente abre no celular, sem instalar nada e sem criar conta.</p>
+    <ol class="passos">
+      <li data-passo="1">Enquanto o plano é <strong>rascunho</strong>, o link não abre para ninguém — trabalho em andamento não vaza.</li>
+      <li data-passo="2">Você publica, e o sistema gera o endereço do plano.</li>
+      <li data-passo="3">Envia o link por onde já conversa com o paciente.</li>
+      <li data-passo="4">Ele abre e lê: refeições em ordem de horário, com a medida caseira em destaque e as substituições ao lado.</li>
+      <li data-passo="5">Se precisar cortar o acesso, você <strong>gera outro link</strong> e o anterior para de funcionar.</li>
+    </ol>
+  </div>
+
+  <div class="fluxo">
+    <h3>Imprimir o plano</h3>
+    <p class="para-que">O impresso é o único que funciona na cozinha sem bateria.</p>
+    <ol class="passos">
+      <li data-passo="1">Um botão gera o <strong>PDF</strong> do plano, pronto para imprimir ou anexar em e-mail.</li>
+      <li data-passo="2">A folha se basta: traz o consultório, o seu nome, o CRN e a vigência do plano.</li>
+      <li data-passo="3">As orientações e as figuras saem junto, depois das refeições.</li>
+      <li data-passo="4">Rascunho também imprime — carimbado como rascunho, para você conferir antes de publicar.</li>
+    </ol>
+    <div class="nota">
+      No impresso, a <strong>medida caseira aparece em corpo maior</strong> que o nome
+      do alimento. O paciente já sabe o que é arroz; o que ele não sabe é quanto.
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ 6 -->
+<section class="secao">
+  <header>
+    <span class="numero">06</span>
+    <h2>Depois da consulta</h2>
+    <span class="quando">O acompanhamento e a conta do mês</span>
+  </header>
+
+  <div class="fluxo">
+    <h3>Fechar o atendimento</h3>
+    <p class="para-que">Histórico verdadeiro do acompanhamento, e não só do que foi marcado.</p>
+    <ol class="passos">
+      <li data-passo="1">Você marca o atendimento como <strong>realizado, cancelado ou falta</strong>.</li>
+      <li data-passo="2">A falta fica no histórico do paciente.</li>
+      <li data-passo="3">O horário cancelado volta a ficar livre na agenda.</li>
+    </ol>
+  </div>
+
+  <div class="fluxo">
+    <h3>Acompanhar a evolução</h3>
+    <p class="para-que">O retorno começa sabendo o que mudou.</p>
+    <ol class="passos">
+      <li data-passo="1">A ficha do paciente reúne <strong>avaliações, exames, planos e atendimentos</strong> em ordem.</li>
+      <li data-passo="2">As medidas aparecem em série, comparáveis entre si.</li>
+      <li data-passo="3">O plano anterior vira ponto de partida do próximo, sem remontar do zero.</li>
+    </ol>
+  </div>
+
+  <div class="fluxo">
+    <h3>O financeiro do consultório</h3>
+    <p class="para-que">Saber quanto entrou, quanto falta entrar e de quem.</p>
+    <ol class="passos">
+      <li data-passo="1">Você registra <strong>receitas e despesas</strong>, ligando o lançamento ao paciente e ao atendimento.</li>
+      <li data-passo="2">Acompanha a situação de cada um: <strong>pendente, pago ou cancelado</strong>.</li>
+      <li data-passo="3">Apura o resultado do período.</li>
+      <li data-passo="4">Consulta a lista de <strong>inadimplência</strong>, com quem está devendo e desde quando.</li>
+      <li data-passo="5">Emite o <strong>recibo</strong> do atendimento.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================================================================ 7 -->
+<section class="secao">
+  <header>
+    <span class="numero">07</span>
+    <h2>O que o paciente vê</h2>
+    <span class="quando">De propósito, pouca coisa</span>
+  </header>
+
+  <div class="fluxo">
+    <p class="para-que" style="max-width: 158mm; font-size: 10pt; margin-bottom: 6mm;">
+      O paciente não tem conta, não instala aplicativo e não preenche diário
+      alimentar. Ele faz duas coisas, e as duas por link:
+    </p>
+    <ol class="passos">
+      <li data-passo="1"><strong>Lê o plano que você entregou</strong> — refeições, medidas caseiras, substituições, orientações e figuras. Abre no celular, e continua abrindo depois.</li>
+      <li data-passo="2"><strong>Responde o questionário pré-consulta</strong>, uma vez, antes de vir.</li>
+    </ol>
+    <div class="nota">
+      Isso é escolha de projeto, não falta. Sistema que exige adesão do paciente
+      cobra do nutricionista o trabalho de conseguir essa adesão — e o plano que
+      o paciente não abre é o plano que não existe. Aqui, o que chega até ele já
+      está pronto, e o esforço de abrir é um toque no link.
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ fecho -->
+<section class="fecho">
+  <header style="border-bottom: 1.5px solid var(--breu); padding-bottom: 3mm; margin-bottom: 7mm;">
+    <h2 style="font-size: 21pt;">O que o sistema não faz</h2>
+  </header>
+
+  <p style="margin: 0 0 6mm; color: var(--tinta-media); max-width: 158mm;">
+    Tão importante quanto a lista anterior. Cada ausência abaixo é uma decisão,
+    e vale saber dela antes e não depois.
+  </p>
+
+  <ul>
+    <li>
+      <span class="o-que">Aplicativo do paciente</span>
+      <span class="porque">Não existe, e não está previsto. O paciente lê pelo link, no navegador que já tem.</span>
+    </li>
+    <li>
+      <span class="o-que">Diário alimentar</span>
+      <span class="porque">O paciente não registra o que comeu. O sistema é ferramenta do nutricionista.</span>
+    </li>
+    <li>
+      <span class="o-que">Conversa por dentro do sistema</span>
+      <span class="porque">Você continua falando com o paciente por onde já fala.</span>
+    </li>
+    <li>
+      <span class="o-que">Envio automático de e-mail</span>
+      <span class="porque">Os links de plano e de questionário são gerados aqui e enviados por você.</span>
+    </li>
+    <li>
+      <span class="o-que">Evento criado no seu calendário</span>
+      <span class="porque">A agenda vai daqui para o seu calendário, e não de volta.</span>
+    </li>
+    <li>
+      <span class="o-que">Emissão fiscal</span>
+      <span class="porque">O financeiro apura o resultado e emite recibo; nota fiscal fica fora.</span>
+    </li>
+  </ul>
+
+  <p class="encerramento">
+    Três regras atravessam o sistema inteiro, e valem mais que qualquer
+    funcionalidade da lista: <strong>o registro guarda o que se sabia quando ele
+    foi feito</strong> — o peso prescrito, o protocolo da avaliação, a faixa do
+    exame, o texto da orientação; <strong>dado que não foi medido fica em branco,
+    nunca em zero</strong>; e <strong>o que foi entregue ao paciente não muda
+    sozinho.</strong>
+  </p>
+</section>
+
+</body>
+</html>

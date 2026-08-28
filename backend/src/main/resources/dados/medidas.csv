@@ -1,0 +1,1118 @@
+codigo_taco,descricao,gramas,padrao
+1,colher de sopa cheia,25,true
+1,escumadeira,90,false
+1,xícara,160,false
+2,xícara,180,true
+2,colher de sopa,20,false
+3,colher de sopa cheia,25,true
+3,escumadeira,90,false
+3,xícara,160,false
+4,xícara,180,true
+4,colher de sopa,20,false
+5,colher de sopa cheia,25,true
+5,escumadeira,90,false
+5,xícara,160,false
+6,xícara,180,true
+6,colher de sopa,20,false
+7,colher de sopa,15,true
+7,xícara,90,false
+8,unidade,8,true
+8,pacote,200,false
+9,unidade,8,true
+9,pacote,200,false
+10,unidade,8,true
+10,pacote,200,false
+11,unidade,6,true
+12,unidade,6,true
+13,unidade,6,true
+13,pacote,200,false
+14,colher de sopa,15,true
+15,fatia,60,true
+16,fatia,60,true
+17,fatia,60,true
+18,fatia,60,true
+19,xícara,180,true
+20,pote,200,true
+20,colher de sopa,30,false
+21,xícara,30,true
+21,colher de sopa,8,false
+22,xícara,30,true
+22,colher de sopa,8,false
+23,colher de sopa,12,true
+24,colher de sopa,15,true
+25,xícara,30,true
+25,colher de sopa,8,false
+26,xícara,30,true
+26,colher de sopa,8,false
+27,colher de sopa,12,true
+28,colher de sopa,12,true
+29,pote,120,true
+29,colher de sopa,30,false
+30,pote,120,true
+30,colher de sopa,30,false
+31,colher de sopa,15,true
+31,xícara,120,false
+32,colher de sopa,15,true
+32,xícara,120,false
+33,colher de sopa,15,true
+33,xícara,120,false
+34,colher de sopa,12,true
+35,colher de sopa,15,true
+35,xícara,120,false
+36,colher de sopa,15,true
+37,fatia,100,true
+38,fatia,100,true
+39,pacote,80,true
+40,porção,80,true
+40,xícara,70,false
+41,porção,80,true
+41,xícara,70,false
+42,colher de sopa,12,true
+42,colher de chá,4,false
+43,colher de sopa,15,true
+43,xícara,120,false
+44,colher de sopa,20,true
+44,espiga,90,false
+45,colher de sopa,20,true
+45,espiga,90,false
+46,colher de sopa,15,true
+47,unidade,200,true
+48,fatia,25,true
+48,2 fatias,50,false
+49,fatia,25,true
+49,2 fatias,50,false
+50,fatia,25,true
+50,2 fatias,50,false
+51,fatia,25,true
+51,2 fatias,50,false
+52,fatia,25,true
+52,2 fatias,50,false
+53,unidade,50,true
+53,metade,25,false
+54,fatia,25,true
+54,2 fatias,50,false
+55,unidade,60,true
+56,unidade,60,true
+57,unidade,60,true
+58,unidade,60,true
+59,unidade,20,true
+60,unidade,20,true
+61,xícara,12,true
+61,saco de cinema,30,false
+62,fatia,60,true
+63,unidade,8,true
+64,colher de sopa,20,true
+64,xícara,120,false
+65,colher de sopa,20,true
+65,xícara,120,false
+66,colher de sopa,20,true
+66,xícara,120,false
+67,colher de sopa,20,true
+67,xícara,120,false
+68,colher de sopa,20,true
+68,xícara,120,false
+69,colher de sopa,20,true
+69,xícara,120,false
+70,colher de sopa,20,true
+70,fatia,15,false
+71,colher de sopa,20,true
+71,fatia,15,false
+72,colher de sopa,20,true
+72,fatia,15,false
+73,colher de sopa,20,true
+73,fatia,15,false
+74,pires picado,25,true
+74,folha,8,false
+74,xícara,30,false
+75,pires picado,25,true
+75,folha,8,false
+75,xícara,30,false
+76,pires picado,25,true
+76,folha,8,false
+76,xícara,30,false
+77,folha,8,true
+77,pires picado,25,false
+77,pé,300,false
+78,folha,8,true
+78,pires picado,25,false
+78,pé,300,false
+79,folha,8,true
+79,pires picado,25,false
+79,pé,300,false
+80,folha,8,true
+80,pires picado,25,false
+80,pé,300,false
+81,pires picado,25,true
+81,folha,8,false
+81,xícara,30,false
+82,dente,3,true
+82,colher de chá,5,false
+83,colher de sopa,15,true
+84,pires picado,25,true
+84,folha,8,false
+84,xícara,30,false
+85,colher de sopa,20,true
+85,pires,60,false
+86,unidade média,100,true
+86,colher de sopa,25,false
+87,unidade média,100,true
+87,colher de sopa,25,false
+88,unidade média,100,true
+88,colher de sopa,25,false
+89,unidade média,100,true
+89,colher de sopa,25,false
+90,pacote,50,true
+90,punhado,20,false
+91,unidade média,100,true
+91,colher de sopa,25,false
+92,unidade média,100,true
+92,colher de sopa,25,false
+93,porção,100,true
+93,colher de sopa,20,false
+94,colher de sopa,25,true
+95,colher de sopa,20,true
+95,fatia,20,false
+96,colher de sopa,20,true
+96,fatia,20,false
+97,colher de sopa ralada,20,true
+97,unidade,100,false
+97,fatia,15,false
+98,colher de sopa ralada,20,true
+98,unidade,100,false
+98,fatia,15,false
+99,unidade,3,true
+99,pacote,50,false
+100,colher de sopa,20,true
+100,ramo,30,false
+101,colher de sopa,20,true
+101,ramo,30,false
+102,colher de sopa,25,true
+102,unidade,150,false
+103,colher de sopa,25,true
+103,unidade,150,false
+104,pires picado,25,true
+104,folha,8,false
+104,xícara,30,false
+105,pires picado,25,true
+105,folha,8,false
+105,xícara,30,false
+106,colher de sopa,20,true
+106,pires,60,false
+107,colher de sopa,15,true
+107,unidade média,70,false
+107,fatia,5,false
+108,colher de sopa,5,true
+109,colher de sopa ralada,15,true
+109,unidade média,70,false
+109,fatia,8,false
+110,colher de sopa ralada,15,true
+110,unidade média,70,false
+110,fatia,8,false
+111,pires picado,25,true
+111,folha,8,false
+111,xícara,30,false
+112,colher de sopa,20,true
+112,unidade,200,false
+113,colher de sopa,20,true
+113,unidade,200,false
+114,colher de chá,1,true
+115,pires picado,25,true
+115,folha,15,false
+116,colher de sopa,20,true
+116,pires,60,false
+117,colher de sopa,20,true
+117,ramo,30,false
+118,colher de sopa,20,true
+118,ramo,30,false
+119,pires picado,25,true
+119,folha,15,false
+120,colher de sopa,20,true
+120,pires,60,false
+121,colher de sopa,15,true
+122,colher de sopa,15,true
+123,colher de sopa,15,true
+124,colher de sopa,12,true
+125,colher de sopa,10,true
+126,unidade,120,true
+126,colher de sopa,25,false
+127,unidade,25,true
+127,colher de sopa,20,false
+128,pires picado,25,true
+128,folha,8,false
+128,xícara,30,false
+129,colher de sopa,25,true
+129,pedaço,60,false
+130,colher de sopa,25,true
+130,pedaço,60,false
+131,colher de sopa,15,true
+132,porção,100,true
+132,colher de sopa,20,false
+133,pires picado,25,true
+133,folha,8,false
+133,xícara,30,false
+134,unidade,25,true
+135,pires picado,25,true
+135,folha,8,false
+135,xícara,30,false
+136,colher de sopa,30,true
+136,porção,150,false
+137,colher de sopa,20,true
+138,colher de sopa,20,true
+138,tolete,15,false
+139,colher de sopa,20,true
+139,tolete,15,false
+140,unidade,30,true
+141,unidade,30,true
+142,colher de sopa,15,true
+142,fatia,8,false
+142,unidade,130,false
+143,colher de sopa,15,true
+143,unidade,100,false
+143,rodela,8,false
+144,colher de sopa,15,true
+144,unidade,100,false
+144,rodela,8,false
+145,colher de sopa,15,true
+145,unidade,100,false
+145,rodela,8,false
+146,colher de sopa,12,true
+147,colher de sopa,20,true
+147,unidade,12,false
+148,unidade,15,true
+149,colher de sopa,15,true
+149,xícara,40,false
+150,colher de sopa,15,true
+150,xícara,40,false
+151,colher de sopa,20,true
+151,pires,60,false
+152,pires picado,25,true
+152,folha,8,false
+152,xícara,30,false
+153,pires picado,25,true
+153,folha,8,false
+153,xícara,30,false
+154,colher de sopa,20,true
+155,pires picado,25,true
+155,folha,8,false
+155,xícara,30,false
+156,pires picado,25,true
+156,folha,8,false
+156,xícara,30,false
+157,unidade média,90,true
+157,fatia,15,false
+157,colher de sopa,20,false
+158,colher de sopa,15,true
+158,colher de chá,5,false
+159,colher de sopa,20,true
+159,xícara,130,false
+160,colher de sopa,18,true
+161,unidade média,90,true
+161,fatia,15,false
+161,colher de sopa,20,false
+162,colher de sopa,15,true
+163,colher de sopa,30,true
+163,metade,100,false
+164,fatia,75,true
+164,colher de sopa,25,false
+165,fatia,75,true
+165,colher de sopa,25,false
+166,unidade,100,true
+167,colher de sopa,25,true
+167,pote,200,false
+168,colher de sopa,25,true
+168,pote,200,false
+169,unidade,6,true
+169,colher de sopa,20,false
+170,colher de sopa,20,true
+171,unidade,25,true
+172,unidade,60,true
+173,unidade,25,true
+174,unidade,200,true
+175,unidade,150,true
+176,fatia,30,true
+177,unidade,40,true
+178,unidade,70,true
+179,unidade,85,true
+180,unidade,35,true
+181,unidade,120,true
+182,unidade,60,true
+183,unidade,20,true
+184,unidade,80,true
+185,colher de sopa,25,true
+185,pote,100,false
+186,unidade,70,true
+187,colher de sopa,25,true
+187,pote,100,false
+188,copo,200,true
+188,colher de sopa,15,false
+189,unidade,130,true
+190,unidade,90,true
+191,unidade,20,true
+192,colher de sopa,30,true
+193,colher de sopa,25,true
+193,pote,100,false
+194,unidade,50,true
+195,unidade,40,true
+196,fatia,80,true
+197,unidade,120,true
+197,metade,60,false
+198,colher de sopa,25,true
+198,fatia,30,false
+199,fatia,40,true
+200,unidade,120,true
+200,metade,60,false
+201,colher de sopa,30,true
+202,colher de sopa,25,true
+202,pote,100,false
+203,unidade,8,true
+203,xícara,100,false
+204,bago,15,true
+205,unidade,60,true
+206,unidade,5,true
+207,unidade,75,true
+208,unidade média,130,true
+208,gomo,15,false
+209,copo,200,true
+209,copo pequeno,150,false
+210,unidade média,130,true
+210,gomo,15,false
+211,copo,200,true
+211,copo pequeno,150,false
+212,unidade média,130,true
+212,gomo,15,false
+213,copo,200,true
+213,copo pequeno,150,false
+214,unidade média,130,true
+214,gomo,15,false
+215,copo,200,true
+215,copo pequeno,150,false
+216,unidade média,130,true
+216,gomo,15,false
+217,copo,200,true
+217,copo pequeno,150,false
+218,colher de sopa,15,true
+218,unidade,30,false
+219,colher de sopa,15,true
+219,unidade,30,false
+220,unidade,80,true
+221,unidade média,130,true
+221,fatia,20,false
+222,unidade média,130,true
+222,fatia,20,false
+223,unidade,30,true
+224,fatia,40,true
+225,fatia,170,true
+225,colher de sopa,25,false
+226,metade,150,true
+226,unidade,300,false
+227,fatia,40,true
+228,unidade,300,true
+228,fatia,60,false
+229,unidade,300,true
+229,fatia,60,false
+230,colher de sopa,25,true
+230,pote,100,false
+231,unidade,300,true
+231,fatia,60,false
+232,unidade,60,true
+232,colher de sopa da polpa,20,false
+233,colher de sopa,20,true
+234,copo,200,true
+234,colher de sopa,15,false
+235,fatia,200,true
+235,cubo,20,false
+236,fatia,90,true
+236,cubo,20,false
+237,unidade,100,true
+237,gomo,10,false
+238,unidade,100,true
+238,gomo,10,false
+239,unidade,12,true
+239,xícara,150,false
+240,unidade,25,true
+241,unidade,30,true
+242,unidade,130,true
+243,unidade,130,true
+244,unidade,100,true
+245,metade,40,true
+246,unidade,200,true
+247,unidade,6,true
+248,colher de sopa,25,true
+248,pote,100,false
+249,unidade,150,true
+250,unidade,10,true
+251,unidade,110,true
+251,gomo,10,false
+252,copo,200,true
+252,colher de sopa,15,false
+253,unidade,30,true
+254,unidade,25,true
+255,colher de sopa,25,true
+255,pote,100,false
+256,unidade,5,true
+256,cacho pequeno,100,false
+256,xícara,100,false
+257,unidade,5,true
+257,cacho pequeno,100,false
+257,xícara,100,false
+258,copo,200,true
+258,colher de sopa,15,false
+259,colher de sopa,8,true
+260,colher de sopa,8,true
+260,colher de chá,4,false
+260,fio,3,false
+261,colher de sopa,12,true
+261,ponta de faca,5,false
+261,colher de chá,4,false
+262,colher de sopa,12,true
+262,ponta de faca,5,false
+262,colher de chá,4,false
+263,colher de sopa,10,true
+263,ponta de faca,5,false
+264,colher de sopa,10,true
+264,ponta de faca,5,false
+265,colher de sopa,10,true
+265,ponta de faca,5,false
+266,colher de sopa,10,true
+266,ponta de faca,5,false
+267,colher de sopa,8,true
+267,colher de chá,3,false
+268,colher de sopa,8,true
+268,colher de chá,3,false
+269,colher de sopa,8,true
+269,colher de chá,3,false
+270,colher de sopa,8,true
+270,colher de chá,3,false
+271,colher de sopa,8,true
+271,colher de chá,3,false
+272,colher de sopa,8,true
+272,colher de chá,3,false
+273,filé médio,100,true
+273,posta média,120,false
+274,filé médio,100,true
+274,posta média,120,false
+275,filé médio,100,true
+275,posta média,120,false
+276,filé médio,100,true
+276,posta média,120,false
+277,filé médio,100,true
+277,posta média,120,false
+278,filé médio,100,true
+278,posta média,120,false
+279,filé médio,100,true
+279,posta média,120,false
+280,filé médio,100,true
+280,posta média,120,false
+281,filé médio,100,true
+281,posta média,120,false
+282,filé médio,100,true
+282,posta média,120,false
+283,filé médio,100,true
+283,posta média,120,false
+284,filé médio,100,true
+284,posta média,120,false
+285,filé médio,100,true
+285,posta média,120,false
+286,filé médio,100,true
+286,posta média,120,false
+287,filé médio,100,true
+287,posta média,120,false
+288,filé médio,100,true
+288,posta média,120,false
+289,filé médio,100,true
+289,posta média,120,false
+290,filé médio,100,true
+290,posta média,120,false
+291,filé médio,100,true
+291,posta média,120,false
+292,filé médio,100,true
+292,posta média,120,false
+293,filé médio,100,true
+293,posta média,120,false
+294,filé médio,100,true
+294,posta média,120,false
+295,filé médio,100,true
+295,posta média,120,false
+296,filé médio,100,true
+296,posta média,120,false
+297,filé médio,100,true
+297,posta média,120,false
+298,filé médio,100,true
+298,posta média,120,false
+299,filé médio,100,true
+299,posta média,120,false
+300,filé médio,100,true
+300,posta média,120,false
+301,filé médio,100,true
+301,posta média,120,false
+302,filé médio,100,true
+302,posta média,120,false
+303,filé médio,100,true
+303,posta média,120,false
+304,filé médio,100,true
+304,posta média,120,false
+305,filé médio,100,true
+305,posta média,120,false
+306,filé médio,100,true
+306,posta média,120,false
+307,filé médio,100,true
+307,posta média,120,false
+308,filé médio,100,true
+308,posta média,120,false
+309,filé médio,100,true
+309,posta média,120,false
+310,filé médio,100,true
+310,posta média,120,false
+311,filé médio,100,true
+311,posta média,120,false
+312,filé médio,100,true
+312,posta média,120,false
+313,filé médio,100,true
+313,posta média,120,false
+314,filé médio,100,true
+314,posta média,120,false
+315,filé médio,100,true
+315,posta média,120,false
+316,filé médio,100,true
+316,posta média,120,false
+317,filé médio,100,true
+317,posta média,120,false
+318,filé médio,100,true
+318,posta média,120,false
+319,filé médio,100,true
+319,posta média,120,false
+320,filé médio,100,true
+320,posta média,120,false
+321,filé médio,100,true
+321,posta média,120,false
+322,filé médio,100,true
+322,posta média,120,false
+323,porção média,100,true
+323,colher de sopa,30,false
+324,porção média,100,true
+324,colher de sopa,30,false
+325,porção média,100,true
+325,colher de sopa,30,false
+326,porção média,100,true
+326,colher de sopa,30,false
+327,porção média,100,true
+327,colher de sopa,30,false
+328,porção média,100,true
+328,colher de sopa,30,false
+329,porção média,100,true
+329,colher de sopa,30,false
+330,porção média,100,true
+330,colher de sopa,30,false
+331,porção média,100,true
+331,colher de sopa,30,false
+332,porção média,100,true
+332,colher de sopa,30,false
+333,porção média,100,true
+333,colher de sopa,30,false
+334,porção média,100,true
+334,colher de sopa,30,false
+335,porção média,100,true
+335,colher de sopa,30,false
+336,porção média,100,true
+336,colher de sopa,30,false
+337,porção média,100,true
+337,colher de sopa,30,false
+338,porção média,100,true
+338,colher de sopa,30,false
+339,porção média,100,true
+339,colher de sopa,30,false
+340,porção média,100,true
+340,colher de sopa,30,false
+341,porção média,100,true
+341,colher de sopa,30,false
+342,porção média,100,true
+342,colher de sopa,30,false
+343,porção média,100,true
+343,colher de sopa,30,false
+344,porção média,100,true
+344,colher de sopa,30,false
+345,porção média,100,true
+345,colher de sopa,30,false
+346,porção média,100,true
+346,colher de sopa,30,false
+347,porção média,100,true
+347,colher de sopa,30,false
+348,porção média,100,true
+348,colher de sopa,30,false
+349,porção média,100,true
+349,colher de sopa,30,false
+350,porção média,100,true
+350,colher de sopa,30,false
+351,porção média,100,true
+351,colher de sopa,30,false
+352,porção média,100,true
+352,colher de sopa,30,false
+353,porção média,100,true
+353,colher de sopa,30,false
+354,porção média,100,true
+354,colher de sopa,30,false
+355,porção média,100,true
+355,colher de sopa,30,false
+356,porção média,100,true
+356,colher de sopa,30,false
+357,porção média,100,true
+357,colher de sopa,30,false
+358,porção média,100,true
+358,colher de sopa,30,false
+359,porção média,100,true
+359,colher de sopa,30,false
+360,porção média,100,true
+360,colher de sopa,30,false
+361,porção média,100,true
+361,colher de sopa,30,false
+362,porção média,100,true
+362,colher de sopa,30,false
+363,porção média,100,true
+363,colher de sopa,30,false
+364,porção média,100,true
+364,colher de sopa,30,false
+365,porção média,100,true
+365,colher de sopa,30,false
+366,porção média,100,true
+366,colher de sopa,30,false
+367,porção média,100,true
+367,colher de sopa,30,false
+368,porção média,100,true
+368,colher de sopa,30,false
+369,porção média,100,true
+369,colher de sopa,30,false
+370,porção média,100,true
+370,colher de sopa,30,false
+371,porção média,100,true
+371,colher de sopa,30,false
+372,porção média,100,true
+372,colher de sopa,30,false
+373,porção média,100,true
+373,colher de sopa,30,false
+374,porção média,100,true
+374,colher de sopa,30,false
+375,porção média,100,true
+375,colher de sopa,30,false
+376,porção média,100,true
+376,colher de sopa,30,false
+377,porção média,100,true
+377,colher de sopa,30,false
+378,porção média,100,true
+378,colher de sopa,30,false
+379,porção média,100,true
+379,colher de sopa,30,false
+380,porção média,100,true
+380,colher de sopa,30,false
+381,porção média,100,true
+381,colher de sopa,30,false
+382,porção média,100,true
+382,colher de sopa,30,false
+383,porção média,100,true
+383,colher de sopa,30,false
+384,porção média,100,true
+384,colher de sopa,30,false
+385,porção média,100,true
+385,colher de sopa,30,false
+386,porção média,100,true
+386,colher de sopa,30,false
+387,porção média,100,true
+387,colher de sopa,30,false
+388,porção média,100,true
+388,colher de sopa,30,false
+389,porção média,100,true
+389,colher de sopa,30,false
+390,porção média,100,true
+390,colher de sopa,30,false
+391,porção média,100,true
+391,colher de sopa,30,false
+392,porção média,100,true
+392,colher de sopa,30,false
+393,porção média,100,true
+393,colher de sopa,30,false
+394,porção média,100,true
+394,colher de sopa,30,false
+395,porção média,100,true
+395,colher de sopa,30,false
+396,porção média,100,true
+396,colher de sopa,30,false
+397,porção média,100,true
+397,colher de sopa,30,false
+398,porção média,100,true
+398,colher de sopa,30,false
+399,porção média,100,true
+399,colher de sopa,30,false
+400,porção média,100,true
+400,colher de sopa,30,false
+401,porção média,100,true
+401,colher de sopa,30,false
+402,porção média,100,true
+402,colher de sopa,30,false
+403,porção média,100,true
+403,colher de sopa,30,false
+404,porção média,100,true
+404,colher de sopa,30,false
+405,porção média,100,true
+405,colher de sopa,30,false
+406,porção média,100,true
+406,colher de sopa,30,false
+407,porção média,100,true
+407,colher de sopa,30,false
+408,porção média,100,true
+408,colher de sopa,30,false
+409,porção média,100,true
+409,colher de sopa,30,false
+410,porção média,100,true
+410,colher de sopa,30,false
+411,porção média,100,true
+411,colher de sopa,30,false
+412,porção média,100,true
+412,colher de sopa,30,false
+413,porção média,100,true
+413,colher de sopa,30,false
+414,porção média,100,true
+414,colher de sopa,30,false
+415,porção média,100,true
+415,colher de sopa,30,false
+416,porção média,100,true
+416,colher de sopa,30,false
+417,porção média,100,true
+417,colher de sopa,30,false
+418,porção média,100,true
+418,colher de sopa,30,false
+419,porção média,100,true
+419,colher de sopa,30,false
+420,porção média,100,true
+420,colher de sopa,30,false
+421,porção média,100,true
+421,colher de sopa,30,false
+422,porção média,100,true
+422,colher de sopa,30,false
+423,porção média,100,true
+423,colher de sopa,30,false
+424,porção média,100,true
+424,colher de sopa,30,false
+425,porção média,100,true
+425,colher de sopa,30,false
+426,porção média,100,true
+426,colher de sopa,30,false
+427,porção média,100,true
+427,colher de sopa,30,false
+428,porção média,100,true
+428,colher de sopa,30,false
+429,porção média,100,true
+429,colher de sopa,30,false
+430,porção média,100,true
+430,colher de sopa,30,false
+431,porção média,100,true
+431,colher de sopa,30,false
+432,porção média,100,true
+432,colher de sopa,30,false
+433,porção média,100,true
+433,colher de sopa,30,false
+434,porção média,100,true
+434,colher de sopa,30,false
+435,porção média,100,true
+435,colher de sopa,30,false
+436,porção média,100,true
+436,colher de sopa,30,false
+437,porção média,100,true
+437,colher de sopa,30,false
+438,porção média,100,true
+438,colher de sopa,30,false
+439,porção média,100,true
+439,colher de sopa,30,false
+440,porção média,100,true
+440,colher de sopa,30,false
+441,porção média,100,true
+441,colher de sopa,30,false
+442,porção média,100,true
+442,colher de sopa,30,false
+443,porção média,100,true
+443,colher de sopa,30,false
+444,porção média,100,true
+444,colher de sopa,30,false
+445,porção média,100,true
+445,colher de sopa,30,false
+446,garrafa,200,true
+447,colher de sopa,15,true
+447,lata,300,false
+448,pote,170,true
+448,colher de sopa,20,false
+448,copo,200,false
+449,pote,170,true
+449,colher de sopa,20,false
+449,copo,200,false
+450,pote,170,true
+451,pote,170,true
+452,pote,170,true
+453,colher de sopa,20,true
+453,lata,395,false
+454,copo,200,true
+454,xícara,160,false
+454,colher de sopa,15,false
+455,copo,200,true
+456,colher de sopa,12,true
+456,colher de chá,4,false
+457,copo,200,true
+457,xícara,160,false
+457,colher de sopa,15,false
+458,copo,200,true
+458,xícara,160,false
+458,colher de sopa,15,false
+459,colher de sopa,12,true
+459,colher de chá,4,false
+460,frasco,80,true
+461,fatia,30,true
+461,colher de sopa,25,false
+462,fatia,30,true
+462,colher de sopa,25,false
+463,fatia,20,true
+464,colher de sopa ralado,10,true
+464,colher de chá,3,false
+465,fatia,20,true
+466,pote,45,true
+467,fatia,20,true
+468,colher de sopa,20,true
+468,colher de chá,7,false
+469,fatia,30,true
+469,colher de sopa,25,false
+470,copo,200,true
+470,dose,50,false
+471,copo,200,true
+471,dose,50,false
+472,copo,200,true
+472,dose,50,false
+473,copo,200,true
+473,dose,50,false
+474,copo,200,true
+474,dose,50,false
+475,copo,200,true
+475,dose,50,false
+476,copo,200,true
+476,dose,50,false
+477,copo,200,true
+477,dose,50,false
+478,copo,200,true
+478,dose,50,false
+479,copo,200,true
+479,dose,50,false
+480,copo,200,true
+480,dose,50,false
+481,copo,200,true
+481,dose,50,false
+482,copo,200,true
+482,dose,50,false
+483,copo,200,true
+483,dose,50,false
+484,unidade,90,true
+485,unidade,10,true
+486,unidade,33,true
+487,unidade,17,true
+488,unidade,50,true
+489,unidade,50,true
+490,unidade,50,true
+491,colher de sopa,12,true
+491,colher de chá,4,false
+492,colher de sopa,12,true
+492,colher de chá,4,false
+492,sachê,5,false
+493,colher de sopa,12,true
+493,colher de chá,4,false
+494,colher de sopa,12,true
+494,colher de chá,4,false
+494,sachê,5,false
+495,barra pequena,25,true
+495,quadradinho,6,false
+496,barra pequena,25,true
+496,quadradinho,6,false
+497,barra pequena,25,true
+497,quadradinho,6,false
+498,barra pequena,25,true
+498,quadradinho,6,false
+499,unidade,30,true
+500,colher de sopa,25,true
+501,colher de sopa,20,true
+502,colher de sopa,20,true
+503,colher de sopa,20,true
+504,unidade,20,true
+505,unidade,20,true
+506,fatia,30,true
+507,colher de sopa,20,true
+507,colher de chá,7,false
+508,colher de sopa,20,true
+509,unidade,40,true
+510,pedaço,30,true
+511,colher de sopa,8,true
+511,colher de chá,3,false
+512,colher de sopa,12,true
+513,colher de chá,4,true
+513,colher de sopa,12,false
+514,tablete,15,true
+515,colher de sopa,12,true
+515,pacote,25,false
+516,pitada,0.4,true
+516,colher de chá,5,false
+516,colher de sopa,15,false
+517,pitada,0.4,true
+517,colher de chá,5,false
+517,colher de sopa,15,false
+518,colher de sopa,15,true
+518,colher de chá,5,false
+519,colher de chá,5,true
+519,colher de sopa,15,false
+520,porção,100,true
+520,colher de sopa,20,false
+521,porção,100,true
+521,colher de sopa,20,false
+522,porção,100,true
+522,colher de sopa,20,false
+523,porção,100,true
+523,colher de sopa,20,false
+524,porção,100,true
+524,colher de sopa,20,false
+525,porção,100,true
+525,colher de sopa,30,false
+526,porção,100,true
+526,colher de sopa,30,false
+527,porção,100,true
+527,colher de sopa,30,false
+528,porção,100,true
+528,colher de sopa,30,false
+529,porção,100,true
+529,colher de sopa,30,false
+530,porção,100,true
+530,colher de sopa,30,false
+531,porção,100,true
+531,colher de sopa,30,false
+532,porção,100,true
+532,colher de sopa,30,false
+533,porção,100,true
+533,colher de sopa,30,false
+534,porção,100,true
+534,colher de sopa,30,false
+535,porção,100,true
+535,colher de sopa,30,false
+536,porção,100,true
+536,colher de sopa,30,false
+537,porção,100,true
+537,colher de sopa,30,false
+538,porção,100,true
+538,colher de sopa,30,false
+539,porção,100,true
+539,colher de sopa,30,false
+540,porção,100,true
+540,colher de sopa,30,false
+541,porção,100,true
+541,colher de sopa,30,false
+542,porção,100,true
+542,colher de sopa,30,false
+543,porção,100,true
+543,colher de sopa,30,false
+544,porção,100,true
+544,colher de sopa,30,false
+545,porção,100,true
+545,colher de sopa,30,false
+546,porção,100,true
+546,colher de sopa,30,false
+547,porção,100,true
+547,colher de sopa,30,false
+548,porção,100,true
+548,colher de sopa,30,false
+549,porção,100,true
+549,colher de sopa,30,false
+550,porção,100,true
+550,colher de sopa,30,false
+551,porção,100,true
+551,colher de sopa,30,false
+552,porção,100,true
+552,colher de sopa,30,false
+553,porção,100,true
+553,colher de sopa,30,false
+554,porção,100,true
+554,colher de sopa,30,false
+555,porção,100,true
+555,colher de sopa,30,false
+556,porção,100,true
+556,colher de sopa,30,false
+557,colher de sopa,12,true
+557,punhado,25,false
+558,colher de sopa,12,true
+558,punhado,25,false
+559,colher de sopa,15,true
+560,colher de sopa,20,true
+561,concha média,80,true
+561,colher de sopa,25,false
+561,concha pequena,50,false
+562,xícara,180,true
+562,colher de sopa,20,false
+563,concha média,80,true
+563,colher de sopa,25,false
+563,concha pequena,50,false
+564,xícara,180,true
+564,colher de sopa,20,false
+565,concha média,80,true
+565,colher de sopa,25,false
+565,concha pequena,50,false
+566,xícara,180,true
+566,colher de sopa,20,false
+567,concha média,80,true
+567,colher de sopa,25,false
+567,concha pequena,50,false
+568,xícara,180,true
+568,colher de sopa,20,false
+569,concha média,80,true
+569,colher de sopa,25,false
+569,concha pequena,50,false
+570,xícara,180,true
+570,colher de sopa,20,false
+571,concha média,80,true
+571,colher de sopa,25,false
+571,concha pequena,50,false
+572,xícara,180,true
+572,colher de sopa,20,false
+573,concha média,80,true
+573,colher de sopa,25,false
+573,concha pequena,50,false
+574,xícara,180,true
+574,colher de sopa,20,false
+575,xícara,180,true
+575,colher de sopa,20,false
+576,colher de sopa,20,true
+577,concha média,80,true
+577,colher de sopa,25,false
+577,concha pequena,50,false
+578,xícara,180,true
+578,colher de sopa,20,false
+579,unidade,20,true
+580,unidade,25,true
+581,colher de sopa,15,true
+582,copo,200,true
+583,colher de sopa,12,true
+584,fatia,40,true
+584,colher de sopa,30,false
+585,unidade,5,true
+585,colher de sopa,25,false
+586,unidade,5,true
+586,colher de sopa,25,false
+587,colher de sopa,15,true
+587,unidade,5,false
+588,colher de sopa,15,true
+588,unidade,5,false
+589,colher de sopa,15,true
+589,unidade,5,false
+590,colher de sopa,15,true
+590,unidade,5,false
+591,colher de sopa,15,true
+591,unidade,5,false
+592,colher de sopa,15,true
+592,unidade,5,false
+593,colher de sopa,15,true
+593,unidade,5,false
+594,colher de sopa,15,true
+594,unidade,5,false
+595,colher de sopa,15,true
+595,unidade,5,false
+596,colher de sopa,15,true
+596,unidade,5,false
+597,colher de sopa,15,true
+597,unidade,5,false
