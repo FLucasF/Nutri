@@ -13,9 +13,9 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Base de todas as entidades persistentes: identidade, auditoria e
- * equals/hashCode seguros para entidades JPA (baseados no id, tolerando
- * instancias ainda nao persistidas e proxies do Hibernate).
+ * Base of every persistent entity: identity, auditing and equals/hashCode that
+ * are safe for JPA entities (based on the id, tolerating instances not yet
+ * persisted and Hibernate proxies).
  */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
@@ -28,20 +28,20 @@ public abstract class BaseEntity {
     private Long id;
 
     @CreatedDate
-    @Column(name = "criado_em", nullable = false, updatable = false)
-    private Instant criadoEm;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
     @LastModifiedDate
-    @Column(name = "atualizado_em")
-    private Instant atualizadoEm;
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
     @CreatedBy
-    @Column(name = "criado_por", updatable = false)
-    private String criadoPor;
+    @Column(name = "created_by", updatable = false)
+    private String createdBy;
 
     @LastModifiedBy
-    @Column(name = "atualizado_por")
-    private String atualizadoPor;
+    @Column(name = "updated_by")
+    private String updatedBy;
 
     public boolean isNovo() {
         return id == null;
@@ -52,8 +52,8 @@ public abstract class BaseEntity {
         if (this == o) return true;
         if (o == null) return false;
         Class<?> esta = org.hibernate.Hibernate.getClass(this);
-        Class<?> outra = org.hibernate.Hibernate.getClass(o);
-        if (!esta.equals(outra)) return false;
+        Class<?> other = org.hibernate.Hibernate.getClass(o);
+        if (!esta.equals(other)) return false;
         BaseEntity that = (BaseEntity) o;
         return id != null && Objects.equals(id, that.id);
     }

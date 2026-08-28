@@ -1298,16 +1298,16 @@ testes é bem maior que o de cenários.
 
 | Seção | Cobertos | Especificados | Verificado em |
 |---|---|---|---|
-| 1. Acesso e isolamento | 13 | — | `FluxoAutenticacaoTest`, `PacienteTest`, `RecuperacaoDeSenhaTest` |
-| 2. Pacientes | 12 | — | `PacienteTest`, `ImportacaoDePacientesTest` |
-| 3. Alimentos e porções | 40 | — | `AlimentoTest`, `MedidaCaseiraTest`, `BaseDeAlimentosTest`, `ReceitaTest` |
-| 4. Prescrição | 20 | — | `PrescricaoTest`, `PlanoEmPdfTest` |
-| 5. Antropometria | 30 | 1 parcial | `AntropometriaTest`, `CrescimentoEGestacaoTest` |
-| 6. Agenda | 15 | — | `AgendaTest`, `AssinaturaDaAgendaTest` |
-| 7. Financeiro | 6 | — | `FinanceiroTest` |
-| 8. Questionários e coleta pré-consulta | 6 | — | `QuestionarioTest` |
-| 9. Exames laboratoriais | 17 | — | `ExameTest` |
-| 10. Orientações nutricionais | 18 | — | `OrientacaoTest` |
+| 1. Acesso e isolamento | 13 | — | `AuthenticationFlowTest`, `PatientTest`, `PasswordRecoveryTest` |
+| 2. Pacientes | 12 | — | `PatientTest`, `PatientsImportTest` |
+| 3. Alimentos e porções | 40 | — | `FoodTest`, `HouseholdMeasureTest`, `FoodsBaseTest`, `RecipeTest` |
+| 4. Prescrição | 20 | — | `PrescriptionTest`, `PlanPdfTest` |
+| 5. Antropometria | 30 | 1 parcial | `AnthropometryTest`, `GrowthAndPregnancyTest` |
+| 6. Agenda | 15 | — | `ScheduleTest`, `ScheduleSubscriptionTest` |
+| 7. Financeiro | 6 | — | `FinanceTest` |
+| 8. Questionários e coleta pré-consulta | 6 | — | `QuestionnaireTest` |
+| 9. Exames laboratoriais | 17 | — | `LabtestTest` |
+| 10. Orientações nutricionais | 18 | — | `HandoutTest` |
 | **Total** | **177** | **1 parcial** | **284 testes, todos passando** |
 
 O único parcial é o passo que leva o gasto energético à meta do plano (RF68):
@@ -1316,7 +1316,7 @@ suíte automatizada. Nenhum cenário deste documento continua apenas especificad
 
 O número de testes é maior que o de cenários cobertos: parte da suíte verifica
 regra que não nasceu de cenário — a concordância da medida caseira
-(`MedidaNoPluralTest`) e a composição da base de alimentos, por exemplo.
+(`PluralMeasureTest`) e a composição da base de alimentos, por exemplo.
 
 ---
 

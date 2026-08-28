@@ -193,7 +193,7 @@ chegar à consulta com a leitura feita é o que ele compra aqui.
 
 | ID | Requisito | Como é atendido |
 |---|---|---|
-| RNF01 | **Isolamento entre consultórios.** | Coluna `conta_id` obrigatória em toda consulta; verificado por teste que simula acesso cruzado. |
+| RNF01 | **Isolamento entre consultórios.** | Coluna `account_id` obrigatória em toda consulta; verificado por teste que simula acesso cruzado. |
 | RNF02 | **Exatidão do cálculo.** | `BigDecimal` em toda a composição; arredondamento explícito em escala fixa. |
 | RNF03 | **Honestidade do dado.** | Nutriente não determinado permanece nulo e é omitido da resposta. Nunca exibido como zero. |
 | RNF04 | **Rastreabilidade da fonte.** | Todo alimento carrega sua procedência. Toda avaliação antropométrica carrega o protocolo usado. |
@@ -665,26 +665,26 @@ Os critérios de aceite de cada história viram cenários em
 
 | Requisito | Verificado em |
 |---|---|
-| RF01, RF02, RNF07, RNF08 | `FluxoAutenticacaoTest` |
-| RF06, RNF07, RNF08 | `RecuperacaoDeSenhaTest` |
-| RF03, RF05, RNF01, RNF09 | `EquipeDoConsultorioTest` |
-| RF90–RF95, RNF01 | `QuestionarioTest` |
-| RF10–RF13, RF04, RNF01 | `PacienteTest` |
-| RF14 | `ImportacaoDePacientesTest` |
-| RF20–RF27, RNF02, RNF03 | `AlimentoTest` |
-| RF28, RNF02, RNF03 | `ReceitaTest` |
-| RF30–RF34, RNF01 | `MedidaCaseiraTest` |
-| RF40–RF50, RNF01, RNF02 | `PrescricaoTest` |
-| RF51, RNF01 | `PlanoEmPdfTest` |
-| RF60–RF67 | `AntropometriaTest` |
-| RF68 (cliente), RF69–RF69b, RNF11 | `CrescimentoEGestacaoTest` |
-| RF70–RF75 | `AgendaTest` |
-| RF76, RNF01 | `AssinaturaDaAgendaTest` |
-| RF80–RF85 | `FinanceiroTest` |
-| RF100–RF106, RNF01, RNF03, RNF11 | `ExameTest` |
-| RF110–RF114, RNF01 | `OrientacaoTest` |
-| — | `MedidaNoPluralTest` (concordância da medida caseira na entrega ao paciente) |
-| RNF12 | `ErrosDaApiTest` (o que a API responde quando o pedido está errado) |
+| RF01, RF02, RNF07, RNF08 | `AuthenticationFlowTest` |
+| RF06, RNF07, RNF08 | `PasswordRecoveryTest` |
+| RF03, RF05, RNF01, RNF09 | `PracticeTeamTest` |
+| RF90–RF95, RNF01 | `QuestionnaireTest` |
+| RF10–RF13, RF04, RNF01 | `PatientTest` |
+| RF14 | `PatientsImportTest` |
+| RF20–RF27, RNF02, RNF03 | `FoodTest` |
+| RF28, RNF02, RNF03 | `RecipeTest` |
+| RF30–RF34, RNF01 | `HouseholdMeasureTest` |
+| RF40–RF50, RNF01, RNF02 | `PrescriptionTest` |
+| RF51, RNF01 | `PlanPdfTest` |
+| RF60–RF67 | `AnthropometryTest` |
+| RF68 (cliente), RF69–RF69b, RNF11 | `GrowthAndPregnancyTest` |
+| RF70–RF75 | `ScheduleTest` |
+| RF76, RNF01 | `ScheduleSubscriptionTest` |
+| RF80–RF85 | `FinanceTest` |
+| RF100–RF106, RNF01, RNF03, RNF11 | `LabtestTest` |
+| RF110–RF114, RNF01 | `HandoutTest` |
+| — | `PluralMeasureTest` (concordância da medida caseira na entrega ao paciente) |
+| RNF12 | `ApiErrorsTest` (o que a API responde quando o pedido está errado) |
 
 Todos os requisitos funcionais aparecem nesta tabela. A exceção é o que vive no
 cliente, explicada abaixo.

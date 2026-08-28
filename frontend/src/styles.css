@@ -1,147 +1,147 @@
 /* ============================================================================
-   NutriPlan — sistema visual "Régua"
+   NutriPlan — "Ruler" visual system
    ----------------------------------------------------------------------------
-   Quase toda tela deste produto é um dia: a agenda é um dia de atendimentos, o
-   plano é um dia de refeições. O sistema tem, por isso, uma espinha única — uma
-   régua vertical com horas reais fixadas nela — reaproveitada no plano público
-   e na agenda. É o único elemento que se permite ser marcante; o resto fica
-   quieto para deixá-lo aparecer.
+   Almost every screen in this product is a day: the schedule is a day of
+   appointments, the plan is a day of meals. The system therefore has a single
+   spine — a vertical ruler with real hours pinned to it — reused in the public
+   plan and in the schedule. It is the one element allowed to be striking; the
+   rest stays quiet so that it can show.
 
-   A cor de índice (beterraba) marca posição, nunca decora: item de menu ativo,
-   ação principal, a hora na régua e a medida caseira. Verde, âmbar e vermelho
-   ficam reservados para significado clínico e de situação.
+   The index color (beetroot) marks position, it never decorates: active menu
+   item, primary action, the hour on the ruler and the household measure.
+   Green, amber and red stay reserved for clinical and status meaning.
    ========================================================================== */
 
 /* ----------------------------------------------------------------------------
-   Tema claro e escuro
+   Light and dark themes
    ----------------------------------------------------------------------------
-   O par de valores de cada token fica na mesma linha, em light-dark(): assim
-   nao existe um bloco escuro separado que possa ficar para tras quando o claro
-   muda. A linha simples antes de cada par e o valor claro puro — navegador sem
-   light-dark() descarta a segunda declaracao e continua no tema claro, em vez
-   de ficar sem token nenhum.
+   Both values of a token sit on the same line, inside light-dark(): that way
+   there is no separate dark block that can fall behind when the light one
+   changes. The plain line before each pair is the pure light value — a browser
+   without light-dark() drops the second declaration and stays on the light
+   theme, instead of being left with no token at all.
 
-   color-scheme nao e so um interruptor para os tokens: e o que faz o navegador
-   desenhar no tema certo o que nao e nosso — o seletor de data, o menu do
-   select, a barra de rolagem. Este sistema e cheio dos tres.
+   color-scheme is not just a switch for the tokens: it is what makes the
+   browser draw what is not ours in the right theme — the date picker, the
+   select menu, the scrollbar. This system is full of all three.
    -------------------------------------------------------------------------- */
 
 :root {
-  color-scheme: light dark; /* sem escolha explicita, segue o sistema */
+  color-scheme: light dark; /* no explicit choice, it follows the system */
 }
-:root[data-tema="claro"] {
+:root[data-theme="light"] {
   color-scheme: light;
 }
-:root[data-tema="escuro"] {
+:root[data-theme="dark"] {
   color-scheme: dark;
 }
 
 :root {
   /* --------------------------------------------------------------- paleta */
-  /* preto-abeto: trilho lateral e tinta de display */
-  --breu: #131c18;
-  --breu: light-dark(#131c18, #0c1310);
-  /* pedra fria: fundo do aplicativo */
-  --pedra: #e7eae5;
-  --pedra: light-dark(#e7eae5, #151d19);
-  --papel: #ffffff;
-  --papel: light-dark(#ffffff, #1b2420);
-  /* superficie secundaria sobre papel */
-  --pedra-clara: #f1f3ef;
-  --pedra-clara: light-dark(#f1f3ef, #212b26);
+  /* spruce black: side rail and display ink */
+  --pitch: #131c18;
+  --pitch: light-dark(#131c18, #0c1310);
+  /* cold stone: the application background */
+  --stone: #e7eae5;
+  --stone: light-dark(#e7eae5, #151d19);
+  --paper: #ffffff;
+  --paper: light-dark(#ffffff, #1b2420);
+  /* secondary surface over paper */
+  --stone-light: #f1f3ef;
+  --stone-light: light-dark(#f1f3ef, #212b26);
 
-  --tinta: #16211c;
-  --tinta: light-dark(#16211c, #e3e9e5);
-  /* Tinta de titulo e de numero grande. Existe separada de --breu porque
-     aquele e a cor do trilho, que fica escuro nos dois temas: usada como texto
-     no tema escuro, dava preto sobre preto. */
-  --tinta-forte: #131c18;
-  --tinta-forte: light-dark(#131c18, #f2f6f3);
-  --tinta-media: #566159;
-  --tinta-media: light-dark(#566159, #9ba79f);
-  /* Escurecida em relacao ao desenho anterior (#8b958c dava 3,1:1). Carrega
-     texto pequeno de verdade — a grama na porcao, o rotulo da fonte, o
-     "nao informado" — e precisa dos 4,5:1. */
-  --tinta-fraca: #6e776f;
-  --tinta-fraca: light-dark(#6e776f, #838f87);
+  --ink: #16211c;
+  --ink: light-dark(#16211c, #e3e9e5);
+  /* Ink for titles and large numbers. It exists apart from --breu because that
+     one is the color of the rail, which stays dark in both themes: used as text
+     in the dark theme, it gave black on black. */
+  --ink-strong: #131c18;
+  --ink-strong: light-dark(#131c18, #f2f6f3);
+  --ink-medium: #566159;
+  --ink-medium: light-dark(#566159, #9ba79f);
+  /* Darkened relative to the earlier design (#8b958c gave 3.1:1). It carries
+     genuinely small text — the grams in the portion, the source label, the
+     "not reported" — and it needs the 4.5:1. */
+  --ink-weak: #6e776f;
+  --ink-weak: light-dark(#6e776f, #838f87);
 
-  --linha: #dce0da;
-  --linha: light-dark(#dce0da, #2a3531);
-  --linha-forte: #c4cac1;
-  --linha-forte: light-dark(#c4cac1, #3c4842);
-  /* Divisor de tabela pode ser fio claro: quem identifica a linha e o texto.
-     A borda de um campo, nao — ela e a unica coisa que diz onde da para
-     escrever, e por isso segue a exigencia de 3:1 para contorno de controle. */
-  --contorno-campo: #8a938a;
-  --contorno-campo: light-dark(#8a938a, #6b766e);
+  --row: #dce0da;
+  --row: light-dark(#dce0da, #2a3531);
+  --row-strong: #c4cac1;
+  --row-strong: light-dark(#c4cac1, #3c4842);
+  /* A table divider can be a light hairline: what identifies the row is the
+     text. The border of a field cannot — it is the only thing saying where you
+     can write, and so it follows the 3:1 requirement for control outlines. */
+  --outline-field: #8a938a;
+  --outline-field: light-dark(#8a938a, #6b766e);
 
-  /* O indice. No escuro ele se divide: o mesmo tom que serve de fundo para o
-     botao seria ilegivel como texto, e vice-versa. */
-  --beterraba-base: #5e1a46;
-  --beterraba: #5e1a46;
-  --beterraba: light-dark(#5e1a46, #8b3268);
-  --beterraba-viva: #7a2a5e;
-  --beterraba-viva: light-dark(#7a2a5e, #b74a89);
-  --beterraba-texto: #5e1a46;
-  --beterraba-texto: light-dark(#5e1a46, #d98cba);
-  --beterraba-lavada: #f4eaf0;
-  --beterraba-lavada: light-dark(#f4eaf0, #2e1b28);
-  --foco-halo: #f4eaf0;
-  --foco-halo: light-dark(#f4eaf0, rgba(217, 140, 186, 0.25));
+  /* The index. In the dark it splits in two: the same shade that serves as
+     background for the button would be unreadable as text, and vice versa. */
+  --beetroot-base: #5e1a46;
+  --beetroot: #5e1a46;
+  --beetroot: light-dark(#5e1a46, #8b3268);
+  --beetroot-vivid: #7a2a5e;
+  --beetroot-vivid: light-dark(#7a2a5e, #b74a89);
+  --beetroot-text: #5e1a46;
+  --beetroot-text: light-dark(#5e1a46, #d98cba);
+  --beetroot-washed: #f4eaf0;
+  --beetroot-washed: light-dark(#f4eaf0, #2e1b28);
+  --focus-halo: #f4eaf0;
+  --focus-halo: light-dark(#f4eaf0, rgba(217, 140, 186, 0.25));
 
-  --musgo: #3c6e52;
-  --musgo: light-dark(#3c6e52, #7fc0a0);
-  --musgo-forte: #2c5540;
-  --musgo-forte: light-dark(#2c5540, #a8dcc2);
-  --musgo-lavado: #e6efe9;
-  --musgo-lavado: light-dark(#e6efe9, #17291f);
-  --musgo-borda: #cbe0d4;
-  --musgo-borda: light-dark(#cbe0d4, #2c4a39);
+  --moss: #3c6e52;
+  --moss: light-dark(#3c6e52, #7fc0a0);
+  --moss-strong: #2c5540;
+  --moss-strong: light-dark(#2c5540, #a8dcc2);
+  --moss-washed: #e6efe9;
+  --moss-washed: light-dark(#e6efe9, #17291f);
+  --moss-border: #cbe0d4;
+  --moss-border: light-dark(#cbe0d4, #2c4a39);
 
-  --ocre: #8a5d12;
-  --ocre: light-dark(#8a5d12, #d9a94a);
-  --ocre-forte: #6f4b0e;
-  --ocre-forte: light-dark(#6f4b0e, #ecca85);
-  --ocre-lavado: #f7efdd;
-  --ocre-lavado: light-dark(#f7efdd, #2b2213);
-  --ocre-borda: #e7d5ab;
-  --ocre-borda: light-dark(#e7d5ab, #4d3d1c);
+  --ochre: #8a5d12;
+  --ochre: light-dark(#8a5d12, #d9a94a);
+  --ochre-strong: #6f4b0e;
+  --ochre-strong: light-dark(#6f4b0e, #ecca85);
+  --ochre-washed: #f7efdd;
+  --ochre-washed: light-dark(#f7efdd, #2b2213);
+  --ochre-border: #e7d5ab;
+  --ochre-border: light-dark(#e7d5ab, #4d3d1c);
 
-  --tijolo: #b3261e;
-  --tijolo: light-dark(#b3261e, #f08a80);
-  --tijolo-forte: #86201a;
-  --tijolo-forte: light-dark(#86201a, #f7b4ac);
-  --tijolo-lavado: #fbeae8;
-  --tijolo-lavado: light-dark(#fbeae8, #2e1815);
-  --tijolo-borda: #edc6c2;
-  --tijolo-borda: light-dark(#edc6c2, #55251f);
+  --brick: #b3261e;
+  --brick: light-dark(#b3261e, #f08a80);
+  --brick-strong: #86201a;
+  --brick-strong: light-dark(#86201a, #f7b4ac);
+  --brick-washed: #fbeae8;
+  --brick-washed: light-dark(#fbeae8, #2e1815);
+  --brick-border: #edc6c2;
+  --brick-border: light-dark(#edc6c2, #55251f);
 
-  /* Distribuicao energetica. Sao tres faixas lado a lado: precisam se separar
-     por matiz, nao por claridade, senao viram uma barra so no tema escuro. */
-  --macro-proteina: #3c6e52;
-  --macro-proteina: light-dark(#3c6e52, #6fb894);
-  --macro-carboidrato: #8a5d12;
-  --macro-carboidrato: light-dark(#8a5d12, #d2a24d);
-  --macro-lipideo: #6e4a8f;
-  --macro-lipideo: light-dark(#6e4a8f, #a98cc9);
+  /* Energy distribution. Three tracks side by side: they have to separate by
+     hue, not by lightness, or they become one single bar in the dark theme. */
+  --macro-protein: #3c6e52;
+  --macro-protein: light-dark(#3c6e52, #6fb894);
+  --macro-carbohydrate: #8a5d12;
+  --macro-carbohydrate: light-dark(#8a5d12, #d2a24d);
+  --macro-lipid: #6e4a8f;
+  --macro-lipid: light-dark(#6e4a8f, #a98cc9);
 
-  --sombra-perto: rgba(19, 28, 24, 0.08);
-  --sombra-perto: light-dark(rgba(19, 28, 24, 0.08), rgba(0, 0, 0, 0.45));
-  --sombra-longe: rgba(19, 28, 24, 0.12);
-  --sombra-longe: light-dark(rgba(19, 28, 24, 0.12), rgba(0, 0, 0, 0.55));
+  --shadow-near: rgba(19, 28, 24, 0.08);
+  --shadow-near: light-dark(rgba(19, 28, 24, 0.08), rgba(0, 0, 0, 0.45));
+  --shadow-far: rgba(19, 28, 24, 0.12);
+  --shadow-far: light-dark(rgba(19, 28, 24, 0.12), rgba(0, 0, 0, 0.55));
 
   /* ----------------------------------------------------------- tipografia */
   --f-display: "Fraunces", Georgia, "Times New Roman", serif;
-  --f-texto: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --f-codigo: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --f-text: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --f-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  /* Largura estreita do Archivo. Cabeçalho de tabela de composição se imprime
-     condensado; aqui ele substitui a monoespaçada em caixa alta. */
-  --estreito: 80%;
+  /* Archivo's narrow width. A composition table header prints condensed; here
+     it replaces the uppercase monospace. */
+  --narrow: 80%;
 
-  --raio: 3px;
-  --raio-cartao: 4px;
-  --flutua: 0 2px 4px var(--sombra-perto), 0 12px 28px var(--sombra-longe);
+  --radius: 3px;
+  --radius-card: 4px;
+  --float: 0 2px 4px var(--shadow-near), 0 12px 28px var(--shadow-far);
 }
 
 * {
@@ -150,9 +150,9 @@
 
 body {
   margin: 0;
-  background: var(--pedra);
-  color: var(--tinta);
-  font-family: var(--f-texto);
+  background: var(--stone);
+  color: var(--ink);
+  font-family: var(--f-text);
   font-size: 15px;
   line-height: 1.55;
   font-variant-numeric: tabular-nums;
@@ -172,17 +172,17 @@ h1 {
   font-weight: 600;
   font-variation-settings: "opsz" 48, "WONK" 1, "SOFT" 6;
   letter-spacing: -0.015em;
-  color: var(--tinta-forte);
+  color: var(--ink-strong);
 }
 h2 {
   font-family: var(--f-display);
   font-size: 1.2rem;
   font-weight: 600;
   font-variation-settings: "opsz" 24, "WONK" 1, "SOFT" 4;
-  color: var(--tinta-forte);
+  color: var(--ink-strong);
 }
 h3 {
-  font-family: var(--f-texto);
+  font-family: var(--f-text);
   font-size: 0.95rem;
   font-weight: 600;
 }
@@ -192,7 +192,7 @@ p {
 }
 
 a {
-  color: var(--beterraba-texto);
+  color: var(--beetroot-text);
   text-underline-offset: 2px;
 }
 
@@ -205,29 +205,29 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid var(--beterraba-texto);
+  outline: 2px solid var(--beetroot-text);
   outline-offset: 2px;
   border-radius: 2px;
 }
 
-/* ============================================================== estrutura */
+/* ============================================================== structure */
 
 .app {
   display: grid;
-  /* minmax(0, 1fr) e nao 1fr: a faixa 1fr tem minimo automatico e cresce ate o
-     conteudo, entao uma tabela larga — ou o proprio menu — empurraria a pagina
-     em vez de rolar dentro do proprio contêiner. */
+  /* minmax(0, 1fr) and not 1fr: the 1fr track has an automatic minimum and grows
+     to the content, so a wide table — or the menu itself — would push the page
+     instead of scrolling inside its own container. */
   grid-template-columns: 216px minmax(0, 1fr);
-  /* dvh e nao vh: no celular, 100vh conta a barra do navegador que some ao
-     rolar, e a pagina fica alta demais desde o primeiro toque. */
+  /* dvh and not vh: on the phone, 100vh counts the browser bar that disappears
+     on scroll, and the page is too tall from the first touch. */
   min-height: 100vh;
   min-height: 100dvh;
 }
 
-/* O trilho. Escuro para separar a moldura do trabalho sem precisar de sombra,
-   e para dar contraste ao índice de beterraba. */
-.barra-lateral {
-  background: var(--breu);
+/* The rail. Dark so as to separate the frame from the work without needing a
+   shadow, and to give contrast to the beetroot index. */
+.bar-side {
+  background: var(--pitch);
   color: #cfd6d0;
   padding: 1.4rem 0 1.1rem;
   display: flex;
@@ -239,7 +239,7 @@ textarea {
   height: 100dvh;
 }
 
-.marca {
+.brand {
   font-family: var(--f-display);
   font-size: 1.35rem;
   font-weight: 600;
@@ -248,11 +248,11 @@ textarea {
   padding: 0 1.15rem;
   line-height: 1.05;
 }
-.marca small {
+.brand small {
   display: block;
   margin-top: 0.25rem;
-  font-family: var(--f-texto);
-  font-stretch: var(--estreito);
+  font-family: var(--f-text);
+  font-stretch: var(--narrow);
   font-size: 0.66rem;
   font-weight: 500;
   letter-spacing: 0.16em;
@@ -275,7 +275,7 @@ nav a {
   font-weight: 500;
   transition: color 120ms ease, background-color 120ms ease;
 }
-/* A barra de índice: mesma linguagem da hora na régua do dia. */
+/* The index bar: same language as the hour on the day ruler. */
 nav a::before {
   content: "";
   position: absolute;
@@ -283,7 +283,7 @@ nav a::before {
   top: 50%;
   width: 3px;
   height: 0;
-  background: var(--beterraba-viva);
+  background: var(--beetroot-vivid);
   transform: translateY(-50%);
   transition: height 160ms ease;
 }
@@ -291,62 +291,62 @@ nav a:hover {
   color: #e4e9e5;
   background: rgba(255, 255, 255, 0.04);
 }
-/* Sem fundo: a barra de indice ja marca o item, e somar realce de fundo
-   seria o terceiro sinal para um estado so. */
-nav a.ativo {
+/* No background: the index bar already marks the item, and adding a background
+   highlight would be the third signal for a single state. */
+nav a.active {
   color: #fff;
   font-weight: 600;
 }
-nav a.ativo::before {
+nav a.active::before {
   height: 100%;
 }
 
-.rodape-lateral {
+.footer-side {
   padding: 0.95rem 1.15rem 0;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.8rem;
   color: #8d988f;
 }
-.rodape-lateral b {
+.footer-side b {
   display: block;
   color: #eef1ee;
   font-size: 0.88rem;
   font-weight: 600;
 }
-.rodape-lateral .minusculo {
+.footer-side .minusculo {
   color: #78837a;
 }
 
-/* Sobre o trilho escuro, o botao secundario claro brigaria com a marca. */
-.rodape-lateral .botao.secundario {
+/* Over the dark rail, a light secondary button would fight with the brand. */
+.footer-side .button.secundario {
   background: transparent;
   color: #cfd6d0;
   border-color: rgba(255, 255, 255, 0.18);
 }
-.rodape-lateral .botao.secundario:hover:not(:disabled) {
+.footer-side .button.secundario:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.32);
   color: #fff;
 }
 
-/* Tres estados, e nao um interruptor de dois: "sistema" precisa ser
-   escolhivel de volta depois que alguem fixa claro ou escuro. Fica no trilho,
-   que e escuro nos dois temas — por isso as cores aqui sao fixas. */
-.seletor-tema {
+/* Three states, and not a two-way switch: "system" has to be choosable again
+   after somebody pins light or dark. It lives on the rail, which is dark in
+   both themes — which is why the colors here are fixed. */
+.picker-theme {
   margin-top: auto;
   margin-inline: 1.15rem;
   display: flex;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: var(--raio);
+  border-radius: var(--radius);
   overflow: hidden;
 }
-.seletor-tema button {
+.picker-theme button {
   flex: 1;
   background: none;
   border: 0;
   color: #8d988f;
   font-family: inherit;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   font-size: 0.66rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -355,66 +355,67 @@ nav a.ativo::before {
   cursor: pointer;
   transition: color 120ms ease, background-color 120ms ease;
 }
-.seletor-tema button + button {
+.picker-theme button + button {
   border-left: 1px solid rgba(255, 255, 255, 0.14);
 }
-.seletor-tema button:hover {
+.picker-theme button:hover {
   color: #e4e9e5;
   background: rgba(255, 255, 255, 0.06);
 }
-.seletor-tema button[aria-pressed="true"] {
+.picker-theme button[aria-pressed="true"] {
   color: #fff;
   background: rgba(255, 255, 255, 0.12);
 }
 
-.conteudo {
+.content {
   padding: 2.1rem 2.25rem 5rem;
   max-width: 1240px;
   width: 100%;
-  /* Centraliza na coluna livre. Sem isto o conteúdo encosta à esquerda e um
-     monitor largo mostra 464px de vazio só de um lado — a tela parece torta
-     mesmo com todos os elementos no lugar. */
+  /* Centers in the free column. Without this the content sits to the left and a
+     wide monitor shows 464px of emptiness on one side only — the screen looks
+     crooked even with every element in its place. */
   margin-inline: auto;
 }
 
-/* Título e, logo abaixo, o estado medido da página ("1 paciente ativo").
-   A hierarquia é nome / medida, que é como se lê um instrumento. */
-.cabecalho-pagina {
+/* A title and, right below it, the measured state of the page ("1 active
+   patient"). The hierarchy is name / measure, which is how an instrument is
+   read. */
+.header-page {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
   padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--linha-forte);
+  border-bottom: 1px solid var(--row-strong);
   margin-bottom: 1.4rem;
 }
-.cabecalho-pagina p {
+.header-page p {
   margin: 0.45rem 0 0;
-  color: var(--tinta-media);
-  font-stretch: var(--estreito);
+  color: var(--ink-medium);
+  font-stretch: var(--narrow);
   font-size: 0.85rem;
   letter-spacing: 0.02em;
 }
 
 /* ============================================================ componentes */
 
-.cartao {
-  background: var(--papel);
-  border: 1px solid var(--linha);
-  border-radius: var(--raio-cartao);
+.card {
+  background: var(--paper);
+  border: 1px solid var(--row);
+  border-radius: var(--radius-card);
   padding: 1.15rem 1.3rem;
 }
 
-.botao {
+.button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  background: var(--beterraba);
+  background: var(--beetroot);
   color: #fff;
-  border: 1px solid var(--beterraba);
-  border-radius: var(--raio);
+  border: 1px solid var(--beetroot);
+  border-radius: var(--radius);
   padding: 0.46rem 0.95rem;
   font-size: 0.88rem;
   font-weight: 600;
@@ -422,98 +423,98 @@ nav a.ativo::before {
   white-space: nowrap;
   transition: background-color 120ms ease, border-color 120ms ease;
 }
-.botao:hover:not(:disabled) {
-  background: var(--beterraba-viva);
-  border-color: var(--beterraba-viva);
+.button:hover:not(:disabled) {
+  background: var(--beetroot-vivid);
+  border-color: var(--beetroot-vivid);
 }
-.botao:disabled {
+.button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.botao.secundario {
-  background: var(--papel);
-  color: var(--tinta);
-  border-color: var(--contorno-campo);
+.button.secundario {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--outline-field);
 }
-.botao.secundario:hover:not(:disabled) {
-  background: var(--pedra-clara);
-  border-color: var(--tinta-fraca);
+.button.secundario:hover:not(:disabled) {
+  background: var(--stone-light);
+  border-color: var(--ink-weak);
 }
-.botao.perigo {
-  background: var(--papel);
-  color: var(--tijolo);
-  border-color: var(--contorno-campo);
+.button.perigo {
+  background: var(--paper);
+  color: var(--brick);
+  border-color: var(--outline-field);
 }
-.botao.perigo:hover:not(:disabled) {
-  background: var(--tijolo-lavado);
-  border-color: var(--tijolo);
+.button.perigo:hover:not(:disabled) {
+  background: var(--brick-washed);
+  border-color: var(--brick);
 }
-.botao.pequeno {
+.button.pequeno {
   padding: 0.24rem 0.58rem;
   font-size: 0.79rem;
 }
 
-.campo {
+.field {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
-.campo > label {
+.field > label {
   font-size: 0.76rem;
   font-weight: 600;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
 }
-.campo input,
-.campo select,
-.campo textarea {
-  background: var(--papel);
-  border: 1px solid var(--contorno-campo);
-  border-radius: var(--raio);
+.field input,
+.field select,
+.field textarea {
+  background: var(--paper);
+  border: 1px solid var(--outline-field);
+  border-radius: var(--radius);
   padding: 0.46rem 0.6rem;
   font-size: 0.9rem;
   width: 100%;
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
-.campo input:focus,
-.campo select:focus,
-.campo textarea:focus {
-  border-color: var(--beterraba);
-  box-shadow: 0 0 0 3px var(--foco-halo);
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--beetroot);
+  box-shadow: 0 0 0 3px var(--focus-halo);
   outline: none;
 }
-.campo input::placeholder {
-  color: var(--tinta-fraca);
+.field input::placeholder {
+  color: var(--ink-weak);
 }
-.campo .erro-campo {
+.field .error-field {
   font-size: 0.78rem;
-  color: var(--tijolo);
+  color: var(--brick);
 }
-.campo.invalido input,
-.campo.invalido select {
-  border-color: var(--tijolo);
+.field.invalid input,
+.field.invalid select {
+  border-color: var(--brick);
 }
 
-.grade {
+.grid {
   display: grid;
   gap: 0.85rem;
 }
-.grade.duas {
+.grid.two {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
-.grade.tres {
+.grid.three {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
-.linha {
+.row {
   display: flex;
   gap: 0.6rem;
   align-items: center;
   flex-wrap: wrap;
 }
-.linha.fim {
+.row.end {
   justify-content: flex-end;
 }
 
@@ -521,9 +522,9 @@ nav a.ativo::before {
 
 .rolagem {
   overflow-x: auto;
-  border: 1px solid var(--linha);
-  border-radius: var(--raio-cartao);
-  background: var(--papel);
+  border: 1px solid var(--row);
+  border-radius: var(--radius-card);
+  background: var(--paper);
 }
 table {
   width: 100%;
@@ -532,20 +533,20 @@ table {
 }
 th {
   text-align: left;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--tinta-media);
-  background: var(--pedra-clara);
+  color: var(--ink-medium);
+  background: var(--stone-light);
   padding: 0.62rem 0.9rem;
-  border-bottom: 1px solid var(--linha-forte);
+  border-bottom: 1px solid var(--row-strong);
   white-space: nowrap;
 }
 td {
   padding: 0.62rem 0.9rem;
-  border-bottom: 1px solid var(--linha);
+  border-bottom: 1px solid var(--row);
   vertical-align: middle;
 }
 tbody tr:last-child td {
@@ -555,7 +556,7 @@ tbody tr.clicavel {
   cursor: pointer;
 }
 tbody tr.clicavel:hover {
-  background: var(--beterraba-lavada);
+  background: var(--beetroot-washed);
 }
 td.num,
 th.num {
@@ -566,77 +567,77 @@ th.num {
 
 /* ------------------------------------------------------------- etiquetas */
 
-.etiqueta {
+.tag {
   display: inline-flex;
   align-items: center;
   gap: 0.3em;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   padding: 0.16em 0.5em;
   border-radius: 2px;
-  background: var(--pedra-clara);
-  color: var(--tinta-media);
-  border: 1px solid var(--linha);
+  background: var(--stone-light);
+  color: var(--ink-medium);
+  border: 1px solid var(--row);
   white-space: nowrap;
 }
-.etiqueta.verde {
-  background: var(--musgo-lavado);
-  color: var(--musgo);
-  border-color: var(--musgo-borda);
+.tag.verde {
+  background: var(--moss-washed);
+  color: var(--moss);
+  border-color: var(--moss-border);
 }
-.etiqueta.ambar {
-  background: var(--ocre-lavado);
-  color: var(--ocre);
-  border-color: var(--ocre-borda);
+.tag.ambar {
+  background: var(--ochre-washed);
+  color: var(--ochre);
+  border-color: var(--ochre-border);
 }
-.etiqueta.vermelha {
-  background: var(--tijolo-lavado);
-  color: var(--tijolo);
-  border-color: var(--tijolo-borda);
+.tag.vermelha {
+  background: var(--brick-washed);
+  color: var(--brick);
+  border-color: var(--brick-border);
 }
 
-/* --------------------------------------------------------------- avisos */
+/* ------------------------------------------------------------- warnings */
 
-.aviso {
-  border-radius: var(--raio);
+.warning {
+  border-radius: var(--radius);
   padding: 0.72rem 0.95rem;
   font-size: 0.87rem;
   border: 1px solid;
   border-left-width: 3px;
 }
-.aviso.erro {
-  background: var(--tijolo-lavado);
-  border-color: var(--tijolo-borda);
-  border-left-color: var(--tijolo);
-  color: var(--tijolo-forte);
+.warning.error {
+  background: var(--brick-washed);
+  border-color: var(--brick-border);
+  border-left-color: var(--brick);
+  color: var(--brick-strong);
 }
-.aviso.atencao {
-  background: var(--ocre-lavado);
-  border-color: var(--ocre-borda);
-  border-left-color: var(--ocre);
-  color: var(--ocre-forte);
+.warning.attention {
+  background: var(--ochre-washed);
+  border-color: var(--ochre-border);
+  border-left-color: var(--ochre);
+  color: var(--ochre-strong);
 }
-.aviso.ok {
-  background: var(--musgo-lavado);
-  border-color: var(--musgo-borda);
-  border-left-color: var(--musgo);
-  color: var(--musgo-forte);
+.warning.ok {
+  background: var(--moss-washed);
+  border-color: var(--moss-border);
+  border-left-color: var(--moss);
+  color: var(--moss-strong);
 }
 
-.vazio {
+.empty {
   text-align: center;
   padding: 2.6rem 1.2rem;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
   font-size: 0.92rem;
 }
 
-.carregando {
+.loading {
   padding: 2rem;
   text-align: center;
-  color: var(--tinta-fraca);
+  color: var(--ink-weak);
   font-size: 0.9rem;
 }
 
@@ -644,30 +645,31 @@ th.num {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
 }
-.codigo {
-  font-family: var(--f-codigo);
+.code {
+  font-family: var(--f-code);
   font-size: 0.85em;
 }
 .discreto {
-  color: var(--tinta-media);
+  color: var(--ink-medium);
   font-size: 0.85rem;
 }
 .minusculo {
   font-size: 0.77rem;
-  color: var(--tinta-fraca);
+  color: var(--ink-weak);
 }
 
-/* ========================================================== tela de acesso */
+/* =========================================================== access screen */
 
-.tela-acesso {
+.screen-access {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
 
-/* O lado escuro repete o trilho: quem entra já vê a moldura do produto. */
-.acesso-marca {
-  background: var(--breu);
+/* The dark side repeats the rail: whoever comes in already sees the frame of
+   the product. */
+.access-brand {
+  background: var(--pitch);
   color: #fff;
   padding: 3rem;
   display: flex;
@@ -675,37 +677,37 @@ th.num {
   justify-content: space-between;
   gap: 2rem;
 }
-.acesso-marca .marca {
+.access-brand .brand {
   padding: 0;
   font-size: 1.6rem;
 }
-.acesso-marca h2 {
+.access-brand h2 {
   color: #fff;
   font-size: 2.3rem;
   font-variation-settings: "opsz" 60, "WONK" 1, "SOFT" 8;
   max-width: 14ch;
 }
-.acesso-marca p {
+.access-brand p {
   color: #9aa69d;
   font-size: 0.95rem;
   max-width: 34ch;
   margin: 0.9rem 0 0;
 }
-.acesso-marca footer {
-  font-stretch: var(--estreito);
+.access-brand footer {
+  font-stretch: var(--narrow);
   font-size: 0.72rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #6d786f;
 }
 
-.acesso-formulario {
+.access-form {
   display: grid;
   place-items: center;
   padding: 2.5rem 1.5rem;
-  background: var(--papel);
+  background: var(--paper);
 }
-.caixa-acesso {
+.box-access {
   width: 100%;
   max-width: 360px;
   display: flex;
@@ -713,56 +715,56 @@ th.num {
   gap: 1rem;
 }
 
-/* ============================================== régua do dia (a assinatura) */
+/* ================================================ day ruler (the signature) */
 
-/* Uma coluna de hora e uma linha vertical contínua. Os blocos penduram na
-   linha; o vão entre duas refeições aparece como vão de verdade. */
-.regua-dia {
+/* A column of hours and one continuous vertical line. The blocks hang from the
+   line; the gap between two meals shows up as a real gap. */
+.ruler-day {
   display: grid;
   grid-template-columns: 4.6rem 1fr;
   column-gap: 0;
 }
 
-.regua-item {
+.ruler-item {
   display: contents;
 }
 
-.regua-hora {
+.ruler-hour {
   grid-column: 1;
   font-family: var(--f-display);
   font-variation-settings: "opsz" 20, "WONK" 1;
   font-size: 1.05rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--tinta-forte);
+  color: var(--ink-strong);
   text-align: right;
   padding: 0.95rem 0.85rem 0 0;
   line-height: 1;
 }
-.regua-hora.sem-hora {
-  color: var(--tinta-fraca);
-  font-family: var(--f-texto);
+.ruler-hour.without-hour {
+  color: var(--ink-weak);
+  font-family: var(--f-text);
   font-size: 0.72rem;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding-top: 1.1rem;
 }
 
-/* O corpo do bloco carrega a própria régua na borda esquerda, e o ponto de
-   índice é um pseudoelemento sobre ela. Assim a linha nunca descasa do
-   conteúdo, mesmo quando o bloco cresce. */
-.regua-corpo {
+/* The body of the block carries its own ruler on the left border, and the
+   index dot is a pseudo-element over it. That way the line never comes apart
+   from the content, even when the block grows. */
+.ruler-body {
   grid-column: 2;
   position: relative;
-  border-left: 1px solid var(--linha-forte);
+  border-left: 1px solid var(--row-strong);
   padding: 0.85rem 0 1.7rem 1.5rem;
 }
-.regua-item:last-child .regua-corpo {
+.ruler-item:last-child .ruler-body {
   padding-bottom: 0.3rem;
 }
-.regua-corpo::before {
+.ruler-body::before {
   content: "";
   position: absolute;
   left: -5px;
@@ -770,29 +772,30 @@ th.num {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  /* Tom mais aceso que o do botao: aqui o beterraba fica sobre o fundo da
-     pagina, e nao sob texto branco. */
-  background: var(--beterraba-viva);
+  /* A brighter shade than the button's: here the beetroot sits on the page
+     background, and not under white text. */
+  background: var(--beetroot-vivid);
 }
 
-/* =========================================================== plano público */
+/* ============================================================= public plan */
 
-.pagina-paciente {
-  /* A cor do consultorio, quando existe, chega em --tema-conta. No tema escuro
-     ela e clareada: uma marca escura desapareceria sobre o fundo escuro, e a
-     porcao — que e o maior texto da pagina — ficaria ilegivel. */
-  --tema-base: var(--tema-conta, var(--beterraba-base));
-  --tema: var(--tema-base);
-  --tema: light-dark(var(--tema-base), color-mix(in oklab, var(--tema-base) 55%, white));
+.page-patient {
+  /* The practice color, when there is one, arrives in --theme-account. In the dark
+     theme it is lightened: a dark brand would disappear against the dark
+     background, and the portion — the largest text on the page — would be
+     unreadable. */
+  --theme-base: var(--theme-account, var(--beetroot-base));
+  --theme: var(--theme-base);
+  --theme: light-dark(var(--theme-base), color-mix(in oklab, var(--theme-base) 55%, white));
   min-height: 100vh;
-  background: var(--pedra);
+  background: var(--stone);
   padding: 0 0 4rem;
-  /* A capa sangra ate as bordas com margem negativa; sem isto ela empurra a
-     pagina e cria rolagem horizontal. "clip" em vez de "hidden" para nao criar
-     um contexto de rolagem. */
+  /* The cover bleeds to the edges with a negative margin; without this it pushes
+     the page and creates horizontal scrolling. "clip" instead of "hidden" so as
+     not to create a scrolling context. */
   overflow-x: clip;
 }
-.plano-paciente {
+.plan-patient {
   max-width: 640px;
   margin: 0 auto;
   padding: 0 1.25rem;
@@ -801,72 +804,73 @@ th.num {
   gap: 1.4rem;
 }
 
-/* Sangra até as bordas da janela sem sair do fluxo da coluna central. */
-.capa-plano {
-  background: var(--breu);
+/* Bleeds to the edges of the window without leaving the flow of the central
+   column. */
+.cover-plan {
+  background: var(--pitch);
   color: #fff;
   margin: 0 -50vw 0.6rem;
   padding: 2.6rem 50vw 2.2rem;
 }
-.capa-plano .eyebrow {
+.cover-plan .eyebrow {
   display: block;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   font-size: 0.7rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #8c988f;
   font-weight: 600;
 }
-.capa-plano h1 {
+.cover-plan h1 {
   color: #fff;
   font-size: 2.5rem;
   font-variation-settings: "opsz" 72, "WONK" 1, "SOFT" 10;
   margin-top: 0.5rem;
 }
-.capa-plano p {
+.cover-plan p {
   margin: 0.7rem 0 0;
   color: #b3bdb6;
   font-size: 0.92rem;
 }
-.capa-plano .vigencia {
+.cover-plan .validity {
   margin-top: 0.9rem;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   font-size: 0.76rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #7f8b82;
 }
 
-/* Cada refeição pendura na régua; o bloco não tem moldura, para que a linha
-   seja a única estrutura visível. */
-.refeicao-paciente h2 {
+/* Each meal hangs from the ruler; the block has no frame, so that the line is
+   the only visible structure. */
+.meal-patient h2 {
   font-size: 1.3rem;
   margin-bottom: 0.1rem;
 }
-.refeicao-paciente .nota-refeicao {
+.meal-patient .note-meal {
   margin: 0.2rem 0 0;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
   font-size: 0.87rem;
 }
 
-.item-paciente {
+.item-patient {
   padding: 0.8rem 0;
-  border-bottom: 1px solid var(--linha);
+  border-bottom: 1px solid var(--row);
 }
-.item-paciente:last-child {
+.item-patient:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
-.item-paciente .nome-alimento {
+.item-patient .name-food {
   display: block;
   font-size: 0.95rem;
-  color: var(--tinta);
+  color: var(--ink);
 }
 
-/* O risco assumido: a medida caseira é o maior texto da página. O paciente já
-   sabe o que é arroz — o que ele não sabe é quanto. As gramas continuam ali,
-   discretas, porque é o registro do nutricionista. */
-.item-paciente .porcao {
+/* The risk taken: the household measure is the largest text on the page. The
+   patient already knows what rice is — what they do not know is how much. The
+   grams stay there, discreet, because they are the nutritionist's record. */
+.item-patient .serving {
   display: block;
   margin-top: 0.1rem;
   font-family: var(--f-display);
@@ -874,72 +878,72 @@ th.num {
   font-size: 1.35rem;
   font-weight: 600;
   line-height: 1.15;
-  color: var(--tema);
+  color: var(--theme);
 }
-/* Sem caixa alta: "G" nao e o simbolo do grama, e a pagina do paciente e o
-   ultimo lugar onde uma unidade pode aparecer errada. */
-.item-paciente .peso {
-  font-family: var(--f-texto);
+/* No uppercase: "G" is not the symbol for the gram, and the patient's page is
+   the last place where a unit can appear wrong. */
+.item-patient .weight {
+  font-family: var(--f-text);
   font-size: 0.78rem;
   font-weight: 500;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   letter-spacing: 0.02em;
-  color: var(--tinta-fraca);
+  color: var(--ink-weak);
   margin-left: 0.55rem;
   vertical-align: 0.28em;
 }
 
-.substituicoes {
+.substitutions {
   margin-top: 0.55rem;
   padding-left: 0.85rem;
-  border-left: 2px solid var(--linha-forte);
+  border-left: 2px solid var(--row-strong);
   font-size: 0.87rem;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
 }
-.substituicoes .titulo-sub {
+.substitutions .title-sub {
   display: block;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--tinta-fraca);
+  color: var(--ink-weak);
   font-weight: 600;
 }
-.substituicoes ul {
+.substitutions ul {
   margin: 0.25rem 0 0;
   padding-left: 1.05rem;
 }
 
-.resumo-dia {
+.summary-day {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 0.9rem;
 }
-.resumo-dia .valor {
+.summary-day .value {
   font-family: var(--f-display);
   font-variation-settings: "opsz" 36, "WONK" 1;
   font-size: 1.55rem;
   font-weight: 600;
   line-height: 1.1;
-  color: var(--tinta-forte);
+  color: var(--ink-strong);
 }
-.resumo-dia .rotulo {
+.summary-day .label {
   display: block;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
   font-weight: 600;
   margin-bottom: 0.2rem;
 }
 
-/* A única animação do produto: as refeições sobem pela régua na ordem em que
-   o dia acontece. */
+/* The only animation in the product: the meals rise along the ruler in the
+   order the day happens. */
 @media (prefers-reduced-motion: no-preference) {
-  .pagina-paciente .regua-item > * {
+  .page-patient .ruler-item > * {
     animation: subir 420ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
-    animation-delay: calc(var(--ordem, 0) * 55ms);
+    animation-delay: calc(var(--order, 0) * 55ms);
   }
 }
 @keyframes subir {
@@ -949,47 +953,47 @@ th.num {
   }
 }
 
-/* ================================================================== agenda */
+/* ================================================================ schedule */
 
-.atendimento-quem {
+.appointment-who {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
 }
-.atendimento-quem strong {
+.appointment-who strong {
   font-size: 1rem;
   font-weight: 600;
 }
-.atendimento-meta {
+.appointment-target {
   margin: 0.15rem 0 0;
-  font-stretch: var(--estreito);
+  font-stretch: var(--narrow);
   font-size: 0.78rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
 }
-.atendimento-nota {
+.appointment-note {
   margin: 0.35rem 0 0;
   font-size: 0.86rem;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
 }
-.atendimento-acoes {
+.appointment-actions {
   margin-top: 0.6rem;
 }
 
-/* Seletor de visão da agenda. Mesmo desenho do seletor de tema, mas sobre
-   papel: aqui não estamos no trilho escuro. */
-.seletor-visao {
+/* The schedule's view picker. Same design as the theme picker, but on paper:
+   here we are not on the dark rail. */
+.picker-view {
   display: flex;
-  border: 1px solid var(--contorno-campo);
-  border-radius: var(--raio);
+  border: 1px solid var(--outline-field);
+  border-radius: var(--radius);
   overflow: hidden;
 }
-.seletor-visao button {
-  background: var(--papel);
+.picker-view button {
+  background: var(--paper);
   border: 0;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
   font-family: inherit;
   font-size: 0.79rem;
   font-weight: 600;
@@ -997,51 +1001,51 @@ th.num {
   cursor: pointer;
   transition: color 120ms ease, background-color 120ms ease;
 }
-.seletor-visao button + button {
-  border-left: 1px solid var(--contorno-campo);
+.picker-view button + button {
+  border-left: 1px solid var(--outline-field);
 }
-.seletor-visao button:hover {
-  background: var(--pedra-clara);
-  color: var(--tinta);
+.picker-view button:hover {
+  background: var(--stone-light);
+  color: var(--ink);
 }
-.seletor-visao button[aria-pressed="true"] {
-  background: var(--beterraba);
+.picker-view button[aria-pressed="true"] {
+  background: var(--beetroot);
   color: #fff;
 }
 
-/* ------------------------------------------------------------ semana */
+/* -------------------------------------------------------------- week */
 
-.semana {
+.week {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.dia-da-semana {
-  background: var(--papel);
-  border: 1px solid var(--linha);
-  border-radius: var(--raio-cartao);
+.week-day {
+  background: var(--paper);
+  border: 1px solid var(--row);
+  border-radius: var(--radius-card);
   padding: 0.85rem 1.1rem;
 }
-/* Dia sem atendimento fica rebaixado, mas continua na lista: um buraco na
-   agenda e informacao, e some se a linha nao for desenhada. */
-.dia-da-semana:not(:has(.regua-dia)) {
+/* A day with no appointment is played down, but stays in the list: a hole in
+   the schedule is information, and it vanishes if the row is not drawn. */
+.week-day:not(:has(.ruler-day)) {
   background: transparent;
   border-style: dashed;
   padding: 0.5rem 1.1rem;
 }
-.dia-da-semana.hoje {
-  border-color: var(--beterraba);
+.week-day.today {
+  border-color: var(--beetroot);
 }
 
-.dia-da-semana header {
+.week-day header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.2rem;
 }
-.dia-da-semana header button {
+.week-day header button {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
@@ -1052,33 +1056,33 @@ th.num {
   color: inherit;
   text-align: left;
 }
-.dia-da-semana header button:hover .data-dia {
-  color: var(--beterraba-texto);
+.week-day header button:hover .date-day {
+  color: var(--beetroot-text);
 }
-.rotulo-dia {
-  font-stretch: var(--estreito);
+.label-day {
+  font-stretch: var(--narrow);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
 }
-.data-dia {
+.date-day {
   font-family: var(--f-display);
   font-variation-settings: "opsz" 24, "WONK" 1;
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--tinta-forte);
+  color: var(--ink-strong);
 }
-.dia-da-semana.hoje .data-dia {
-  color: var(--beterraba-texto);
+.week-day.today .date-day {
+  color: var(--beetroot-text);
 }
-.dia-da-semana .regua-dia {
+.week-day .ruler-day {
   margin-top: 0.6rem;
 }
 
-/* Texto de tabela que age como link, sem virar âncora falsa. */
-.ligacao {
+/* Table text that acts as a link, without becoming a fake anchor. */
+.link {
   background: none;
   border: 0;
   padding: 0;
@@ -1087,114 +1091,115 @@ th.num {
   cursor: pointer;
   text-align: left;
 }
-.ligacao:hover {
-  color: var(--beterraba-texto);
+.link:hover {
+  color: var(--beetroot-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-/* ------------------------------------------------------- orientações */
+/* ---------------------------------------------------------- handouts */
 
-.lista-orientacoes {
+.list-handouts {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
 
-.orientacao header {
+.handout header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.7rem;
 }
-.titulo-orientacao {
+.title-handout {
   background: none;
   border: 0;
-  /* Padding vertical, e não zero: o título abre e fecha a orientação, então é
-     alvo de clique e precisa dos 24px da WCAG 2.5.8 — o texto sozinho tinha
-     22px de altura. */
+  /* Vertical padding, and not zero: the title opens and closes the handout, so
+     it is a click target and needs the 24px of WCAG 2.5.8 — the text on its own
+     was 22px tall. */
   padding: 0.15rem 0;
   min-height: 24px;
   text-align: left;
   cursor: pointer;
   color: inherit;
 }
-.titulo-orientacao h2 {
+.title-handout h2 {
   font-size: 1.05rem;
 }
-.titulo-orientacao:hover h2 {
-  color: var(--beterraba-texto);
+.title-handout:hover h2 {
+  color: var(--beetroot-text);
 }
-/* Modelo do sistema fica um degrau atrás: é ponto de partida, não conduta. */
-.orientacao.modelo {
+/* The system template stays one step back: it is a starting point, not
+   conduct. */
+.handout.template {
   background: transparent;
   border-style: dashed;
 }
 
-/* Recolhido mostra as duas primeiras linhas: o bastante para reconhecer o
-   texto sem transformar a lista numa parede. */
-.corpo-orientacao {
+/* Collapsed it shows the first two lines: enough to recognize the text
+   without turning the list into a wall. */
+.body-handout {
   margin: 0.4rem 0 0;
   white-space: pre-line;
   font-size: 0.9rem;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.corpo-orientacao.aberta {
+.body-handout.open {
   -webkit-line-clamp: unset;
   line-clamp: unset;
   overflow: visible;
-  color: var(--tinta);
+  color: var(--ink);
 }
 
-/* Orientações anexadas ao plano, na página do paciente e no editor. */
-.orientacao-anexada {
-  border-left: 2px solid var(--beterraba-texto);
+/* Handouts attached to the plan, on the patient's page and in the editor. */
+.handout-attached {
+  border-left: 2px solid var(--beetroot-text);
   padding-left: 0.85rem;
   margin-top: 0.9rem;
 }
-.orientacao-anexada h3 {
+.handout-attached h3 {
   font-size: 0.95rem;
   margin-bottom: 0.2rem;
 }
-.orientacao-anexada p {
+.handout-attached p {
   margin: 0;
   white-space: pre-line;
   font-size: 0.9rem;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
 }
 
-/* A figura da orientação — um prato dividido, uma lista de compras desenhada.
-   Vale mais que o parágrafo que a descreve, e por isso ganha largura inteira
-   no plano do paciente; na lista da biblioteca fica em miniatura, para a lista
-   continuar sendo uma lista. */
-.figura-orientacao {
+/* The handout figure — a divided plate, a drawn shopping list. It is worth
+   more than the paragraph describing it, and so it takes the full width in the
+   patient's plan; in the library list it stays a thumbnail, so that the list
+   can go on being a list. */
+.figure-handout {
   display: block;
   margin-top: 0.7rem;
   max-width: 100%;
   height: auto;
   border-radius: 3px;
-  border: 1px solid var(--linha);
-  background: var(--papel);
+  border: 1px solid var(--row);
+  background: var(--paper);
 }
-.figura-orientacao.recolhida {
+.figure-handout.recolhida {
   max-width: 132px;
 }
 
-/* ============================================================== prescrição */
+/* ============================================================ prescription */
 
-.editor-plano {
+.editor-plan {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 1.5rem;
   align-items: start;
 }
 
-.painel-totais {
+.panel-totals {
   position: sticky;
   top: 1.25rem;
   display: flex;
@@ -1202,23 +1207,23 @@ th.num {
   gap: 0.9rem;
 }
 
-.refeicao {
-  background: var(--papel);
-  border: 1px solid var(--linha);
-  border-radius: var(--raio-cartao);
+.meal {
+  background: var(--paper);
+  border: 1px solid var(--row);
+  border-radius: var(--radius-card);
   margin-bottom: 0.85rem;
 }
-.refeicao-topo {
+.meal-top {
   display: flex;
   gap: 0.6rem;
   align-items: center;
   padding: 0.65rem 0.9rem;
-  background: var(--pedra-clara);
-  border-bottom: 1px solid var(--linha);
-  border-radius: var(--raio-cartao) var(--raio-cartao) 0 0;
+  background: var(--stone-light);
+  border-bottom: 1px solid var(--row);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   flex-wrap: wrap;
 }
-.refeicao-topo input[type="text"] {
+.meal-top input[type="text"] {
   flex: 1;
   min-width: 140px;
   border: 1px solid transparent;
@@ -1226,86 +1231,86 @@ th.num {
   font-weight: 600;
   font-size: 0.95rem;
   padding: 0.25rem 0.4rem;
-  border-radius: var(--raio);
+  border-radius: var(--radius);
 }
-.refeicao-topo input[type="text"]:hover,
-.refeicao-topo input[type="text"]:focus {
-  border-color: var(--contorno-campo);
-  background: var(--papel);
+.meal-top input[type="text"]:hover,
+.meal-top input[type="text"]:focus {
+  border-color: var(--outline-field);
+  background: var(--paper);
 }
-.refeicao-topo input[type="time"] {
-  border: 1px solid var(--contorno-campo);
-  border-radius: var(--raio);
+.meal-top input[type="time"] {
+  border: 1px solid var(--outline-field);
+  border-radius: var(--radius);
   padding: 0.25rem 0.4rem;
-  background: var(--papel);
+  background: var(--paper);
   font-variant-numeric: tabular-nums;
   font-size: 0.84rem;
 }
 
-.item-linha {
+.item-row {
   display: grid;
-  /* Todas as faixas cedem juntas. Com colunas fixas, a coluna do nome era a
-     unica que encolhia: a 1024px ela ficava com 131px enquanto as fixas
-     seguravam 330px, e o nome do alimento — a informacao principal — era o
-     que sumia. */
+  /* Every track gives way together. With fixed columns, the name column was the
+     only one shrinking: at 1024px it was left with 131px while the fixed ones
+     held 330px, and the food name — the main information — was what
+     disappeared. */
   grid-template-columns:
     minmax(0, 1.7fr) minmax(64px, 0.5fr) minmax(96px, 0.9fr) minmax(64px, 0.5fr) auto;
   gap: 0.5rem;
   align-items: center;
   padding: 0.5rem 0.9rem;
-  border-bottom: 1px solid var(--linha);
+  border-bottom: 1px solid var(--row);
 }
-.item-linha:last-child {
+.item-row:last-child {
   border-bottom: none;
 }
-.item-linha .descricao-item {
+.item-row .description-item {
   font-size: 0.89rem;
 }
-.item-linha .descricao-item small {
+.item-row .description-item small {
   display: block;
-  color: var(--tinta-fraca);
+  color: var(--ink-weak);
   font-size: 0.74rem;
 }
-.item-linha input,
-.item-linha select {
+.item-row input,
+.item-row select {
   padding: 0.3rem 0.45rem;
   font-size: 0.84rem;
-  border: 1px solid var(--contorno-campo);
-  border-radius: var(--raio);
+  border: 1px solid var(--outline-field);
+  border-radius: var(--radius);
   width: 100%;
 }
 
-.nutriente-linha {
+.nutrient-row {
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.32rem 0;
-  border-bottom: 1px solid var(--linha);
+  border-bottom: 1px solid var(--row);
   font-size: 0.85rem;
 }
-.nutriente-linha:last-child {
+.nutrient-row:last-child {
   border-bottom: none;
 }
-.nutriente-linha span:last-child {
+.nutrient-row span:last-child {
   font-variant-numeric: tabular-nums;
   font-weight: 500;
 }
-/* Nutriente não determinado na fonte não é zero; a diferença tem de ser
-   visível sem precisar ler o texto. */
-.nutriente-linha.ausente span:last-child {
-  color: var(--tinta-fraca);
+/* A nutrient not determined in the source is not zero; the difference has to
+   be visible without having to read the text. */
+.nutrient-row.missing span:last-child {
+  color: var(--ink-weak);
   font-style: italic;
   font-weight: 400;
 }
 
-.barra-macro {
+.bar-macro {
   display: flex;
   height: 6px;
   border-radius: 3px;
   overflow: hidden;
-  background: var(--pedra-clara);
+  background: var(--stone-light);
 }
-.barra-macro i {
+.bar-macro i {
   display: block;
 }
 .legenda-macro {
@@ -1313,7 +1318,7 @@ th.num {
   gap: 0.85rem;
   flex-wrap: wrap;
   font-size: 0.76rem;
-  color: var(--tinta-media);
+  color: var(--ink-medium);
 }
 .legenda-macro span {
   display: inline-flex;
@@ -1326,10 +1331,10 @@ th.num {
   border-radius: 2px;
 }
 
-.seletor-alimento {
+.picker-food {
   position: relative;
 }
-.resultados-busca {
+.results-search {
   position: absolute;
   z-index: 20;
   top: calc(100% + 2px);
@@ -1337,44 +1342,44 @@ th.num {
   right: 0;
   max-height: 280px;
   overflow-y: auto;
-  background: var(--papel);
-  border: 1px solid var(--linha-forte);
-  border-radius: var(--raio);
-  box-shadow: var(--flutua);
+  background: var(--paper);
+  border: 1px solid var(--row-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--float);
 }
-.resultados-busca button {
+.results-search button {
   display: block;
   width: 100%;
   text-align: left;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--linha);
+  border-bottom: 1px solid var(--row);
   padding: 0.5rem 0.7rem;
   cursor: pointer;
   font-size: 0.85rem;
 }
-.resultados-busca button:hover {
-  background: var(--beterraba-lavada);
+.results-search button:hover {
+  background: var(--beetroot-washed);
 }
-.resultados-busca button small {
+.results-search button small {
   display: block;
-  color: var(--tinta-fraca);
+  color: var(--ink-weak);
   font-size: 0.74rem;
 }
 
-/* ================================================== mesa estreita (laptop) */
+/* ==================================================== narrow desk (laptop) */
 
-/* Entre 900 e 1180 o layout de mesa ainda serve, mas nao com as medidas de um
-   monitor. O trilho e o painel lateral cedem primeiro, porque sao moldura — o
-   plano no meio e o trabalho. */
+/* Between 900 and 1180 the desk layout still serves, but not with the measures
+   of a monitor. The rail and the side panel give way first, because they are
+   frame — the plan in the middle is the work. */
 @media (max-width: 1180px) {
   .app {
     grid-template-columns: 184px minmax(0, 1fr);
   }
-  .conteudo {
+  .content {
     padding: 1.8rem 1.5rem 4rem;
   }
-  .editor-plano {
+  .editor-plan {
     grid-template-columns: minmax(0, 1fr) 250px;
     gap: 1.1rem;
   }
@@ -1385,12 +1390,12 @@ th.num {
 @media (max-width: 900px) {
   .app {
     grid-template-columns: minmax(0, 1fr);
-    /* Sem isto as duas linhas dividem os 100vh e o trilho estica ate 228px. */
+    /* Without this the two rows split the 100vh and the rail stretches to 228px. */
     grid-template-rows: auto 1fr;
   }
-  /* O trilho vira barra. Os itens quebram linha em vez de rolar na
-     horizontal: menu escondido atras de rolagem nao e descoberto. */
-  .barra-lateral {
+  /* The rail becomes a bar. The items wrap instead of scrolling horizontally:
+     a menu hidden behind scrolling is not discovered. */
+  .bar-side {
     position: static;
     height: auto;
     flex-direction: row;
@@ -1399,12 +1404,12 @@ th.num {
     gap: 0.5rem 1rem;
     padding: 0.75rem 1rem;
   }
-  .marca {
+  .brand {
     padding: 0;
     font-size: 1.1rem;
     white-space: nowrap;
   }
-  .marca small {
+  .brand small {
     display: none;
   }
   nav {
@@ -1415,7 +1420,7 @@ th.num {
   nav a {
     padding: 0.35rem 0.6rem;
     white-space: nowrap;
-    border-radius: var(--raio);
+    border-radius: var(--radius);
   }
   nav a::before {
     top: auto;
@@ -1426,139 +1431,141 @@ th.num {
     height: 0;
     transform: none;
   }
-  nav a.ativo::before {
+  nav a.active::before {
     height: 2px;
   }
-  .rodape-lateral {
+  .footer-side {
     display: none;
   }
-  .seletor-tema {
+  .picker-theme {
     margin: 0 0 0 auto;
     flex: 0 0 auto;
   }
-  .conteudo {
+  .content {
     padding: 1.4rem 1.1rem 3rem;
   }
   h1 {
     font-size: 1.7rem;
   }
-  .editor-plano {
-    /* minmax(0, …) e nao 1fr: a faixa 1fr tem mínimo automático, e o cartão
-       dentro dela cresce até o próprio min-content em vez de encolher — o que
-       empurrava a página 47px para fora a 375px. */
+  .editor-plan {
+    /* minmax(0, …) and not 1fr: the 1fr track has an automatic minimum, and the
+       card inside it grows to its own min-content instead of shrinking — which
+       pushed the page 47px out at 375px. */
     grid-template-columns: minmax(0, 1fr);
   }
-  .painel-totais {
+  .panel-totals {
     position: static;
   }
-  .tela-acesso {
+  .screen-access {
     grid-template-columns: 1fr;
   }
-  .acesso-marca {
+  .access-brand {
     padding: 2rem 1.5rem;
     gap: 1.2rem;
   }
-  .acesso-marca h2 {
+  .access-brand h2 {
     font-size: 1.7rem;
   }
-  .acesso-marca footer {
+  .access-brand footer {
     display: none;
   }
-  .capa-plano {
+  .cover-plan {
     padding-top: 2rem;
     padding-bottom: 1.8rem;
   }
-  .capa-plano h1 {
+  .cover-plan h1 {
     font-size: 2rem;
   }
-  .regua-dia {
+  .ruler-day {
     grid-template-columns: 3.4rem 1fr;
   }
-  .regua-hora {
+  .ruler-hour {
     font-size: 0.95rem;
     padding-right: 0.6rem;
   }
-  .regua-corpo {
+  .ruler-body {
     padding-left: 1.1rem;
   }
 }
 
 /* ============================================== telas estreitas e de toque */
 
-/* 760px é onde a linha do item deixa de caber em cinco faixas. Ela vira duas
-   camadas — o nome ocupa a largura toda, os controles dividem a linha de baixo
-   — em vez de empilhar um campo por linha, que triplicava a altura da refeição
-   e obrigava a rolar para ver quatro alimentos. */
+/* 760px is where the item row stops fitting in five tracks. It becomes two
+   layers — the name takes the whole width, the controls share the row below —
+   instead of stacking one field per row, which tripled the height of the meal
+   and forced scrolling to see four foods. */
 @media (max-width: 760px) {
-  .item-linha {
+  .item-row {
     display: flex;
     flex-wrap: wrap;
     gap: 0.45rem 0.5rem;
     padding: 0.7rem 0.8rem;
   }
-  .item-linha > .descricao-item {
+  .item-row > .description-item {
     flex: 1 0 100%;
   }
-  .item-linha > * {
+  .item-row > * {
     flex: 1 1 5rem;
     min-width: 0;
   }
-  .item-linha > button {
+  .item-row > button {
     flex: 0 0 auto;
   }
 }
 
-/* Abaixo de 600px a tela é de uma coluna só, e cada cartão respira menos. */
+/* Below 600px the screen is a single column, and each card breathes less. */
 @media (max-width: 600px) {
-  .conteudo {
+  .content {
     padding: 1.1rem 0.85rem 3rem;
   }
-  .cabecalho-pagina {
+  .header-page {
     flex-direction: column;
     align-items: stretch;
     gap: 0.7rem;
   }
-  .cabecalho-pagina .botao {
+  .header-page .button {
     width: 100%;
     justify-content: center;
   }
-  /* Botões de barra passam a dividir a linha em vez de escapar pela borda. */
-  .linha {
+  /* Toolbar buttons start sharing the row instead of escaping past the edge. */
+  .row {
     flex-wrap: wrap;
   }
   .duplo,
-  .grade-campos {
+  .grid-fields {
     grid-template-columns: 1fr;
   }
 }
 
-/* Num aparelho de toque não existe mira de mouse: o alvo precisa caber no dedo.
-   24px é o mínimo da WCAG 2.5.8; 40 é o que se acerta sem pensar. */
+/* On a touch device there is no mouse pointer: the target has to fit the
+   finger. 24px is the WCAG 2.5.8 minimum; 40 is what you hit without
+   thinking. */
 @media (pointer: coarse) {
-  .botao,
-  .botao.pequeno,
+  .button,
+  .button.pequeno,
   nav a,
   input,
   select,
   textarea {
     min-height: 40px;
   }
-  .botao.pequeno {
+  .button.pequeno {
     padding-inline: 0.75rem;
   }
-  .seletor-tema button,
-  .seletor-visao button {
+  .picker-theme button,
+  .picker-view button {
     min-height: 36px;
     padding-inline: 0.7rem;
   }
 }
 
-/* ==================================================== recado e erro de campo */
+/* ================================================== feedback and field error */
 
-/* A tira de recado mora no pé da tela, presa à janela: uma confirmação que
-   aparece no topo de uma página rolada não é vista por quem estava no fim dela.
-   safe-area para não cair embaixo da barra do iPhone. */
-.ancora-do-recado {
+/* The feedback strip lives at the foot of the screen, pinned to the window: a
+   confirmation that shows up at the top of a scrolled page is not seen by
+   somebody who was at the bottom of it. safe-area so that it does not fall
+   under the iPhone bar. */
+.feedback-anchor {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
@@ -1570,52 +1577,52 @@ th.num {
   gap: 0.5rem;
   pointer-events: none;
 }
-.regiao-de-recado:empty {
+.feedback-region:empty {
   display: none;
 }
 
-.tira-de-recado {
+.feedback-banner {
   pointer-events: auto;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: start;
   gap: 0.7rem;
   padding: 0.7rem 0.85rem;
-  border-radius: var(--raio-cartao);
-  background: var(--breu);
-  color: var(--pedra);
+  border-radius: var(--radius-card);
+  background: var(--pitch);
+  color: var(--stone);
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22);
 }
 
-/* A hora à esquerda repete a régua do dia. Não é enfeite: depois de uma edição
-   longa a pergunta real não é "salvou?", é "a minha última alteração entrou?",
-   e é a hora que responde isso. */
-.recado-hora {
-  font-family: var(--f-texto);
+/* The hour on the left repeats the day ruler. It is not decoration: after a
+   long edit the real question is not "did it save?", it is "did my last change
+   go in?", and it is the hour that answers that. */
+.feedback-hour {
+  font-family: var(--f-text);
   font-stretch: 80%;
   font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: var(--beterraba-viva);
+  color: var(--beetroot-vivid);
   padding-top: 0.12rem;
   white-space: nowrap;
 }
-.tira-de-recado.erro .recado-hora {
+.feedback-banner.error .feedback-hour {
   color: #ff9c9c;
 }
-.recado-texto {
+.feedback-text {
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.45;
   grid-column: 2;
 }
-.tira-de-recado.erro {
-  /* A barra vermelha à esquerda separa "deu certo" de "não deu" antes da
-     leitura — sem depender só da cor do texto. */
+.feedback-banner.error {
+  /* The red bar on the left separates "it worked" from "it did not" before
+     reading — without depending on the color of the text alone. */
   border-left: 3px solid #d4574f;
 }
-.recado-fechar {
+.feedback-close {
   background: none;
   border: 0;
   color: inherit;
@@ -1627,12 +1634,12 @@ th.num {
   min-width: 24px;
   min-height: 24px;
 }
-.recado-fechar:hover {
+.feedback-close:hover {
   opacity: 1;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .tira-de-recado {
+  .feedback-banner {
     animation: recado-entra 180ms ease-out;
   }
   @keyframes recado-entra {
@@ -1643,53 +1650,57 @@ th.num {
   }
 }
 
-/* O campo que recusou o valor. O contorno muda e a mensagem fica embaixo dele,
-   e não numa frase única no topo do formulário: num formulário de vinte campos
-   a frase no topo vira caça ao campo. */
-.campo input[aria-invalid="true"],
-.campo select[aria-invalid="true"],
-.campo textarea[aria-invalid="true"] {
+/* The field that refused the value. The outline changes and the message sits
+   underneath it, and not in a single sentence at the top of the form: in a form
+   with twenty fields the sentence at the top turns into a hunt for the
+   field. */
+.field input[aria-invalid="true"],
+.field select[aria-invalid="true"],
+.field textarea[aria-invalid="true"] {
   border-color: #b3352c;
   box-shadow: 0 0 0 2px rgba(179, 53, 44, 0.16);
 }
-.mensagem-de-campo {
+.field-message {
   display: block;
   margin-top: 0.25rem;
   font-size: 0.78rem;
   line-height: 1.4;
-  /* Mesmo par do resto da folha: valor simples primeiro, light-dark() depois,
-     para o navegador que não conhece a função ficar com o tema claro. */
+  /* Same pair as the rest of the sheet: plain value first, light-dark() after,
+     so that a browser which does not know the function keeps the light
+     theme. */
   color: #b3352c;
   color: light-dark(#b3352c, #ef9a94);
 }
 
-/* Início e fim lado a lado enquanto couber, empilhados quando não couber.
-   Antes eram dois campos de data com flex-wrap: nowrap — a intenção de manter
-   o par junto estava certa, mas num painel de 216px dois campos de 145px não
-   cabem, e o segundo saía pela borda da página. auto-fit resolve sem escolher
-   uma largura de tela: quem decide é o espaço que existe. */
-.par-de-datas {
+/* Start and end side by side while they fit, stacked when they do not.
+   They used to be two date fields with flex-wrap: nowrap — the intent of
+   keeping the pair together was right, but in a 216px panel two 145px fields
+   do not fit, and the second one left through the edge of the page. auto-fit
+   solves it without picking a screen width: what decides is the space that
+   exists. */
+.dates-par {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
   gap: 0.4rem;
 }
-.par-de-datas input {
-  /* Campo de data tem largura intrínseca própria; sem isto ele ignora a faixa. */
+.dates-par input {
+  /* A date field has an intrinsic width of its own; without this it ignores
+   the track. */
   min-width: 0;
   width: 100%;
 }
 
-/* ------------------------------------------------- tamanho mínimo de alvo */
+/* ---------------------------------------------------- minimum target size */
 
-/* 24px é o mínimo da WCAG 2.5.8, e vale para mouse também — não só para toque.
-   Fora da regra ficam links no meio de uma frase, que a norma isenta porque
-   aumentá-los quebraria a entrelinha do texto. */
-.botao.pequeno {
+/* 24px is the WCAG 2.5.8 minimum, and it holds for the mouse too — not only
+   for touch. Out of the rule fall links in the middle of a sentence, which the
+   standard exempts because enlarging them would break the line height. */
+.button.pequeno {
   min-height: 24px;
 }
 
-/* Link de volta e afins: são navegação, não texto corrido, e por isso não
-   entram na isenção de link em linha. */
+/* Back links and the like: they are navigation, not running text, and so they
+   do not fall under the inline-link exemption. */
 a.minusculo,
 .migalha a {
   display: inline-flex;
@@ -1697,13 +1708,13 @@ a.minusculo,
   min-height: 24px;
 }
 
-/* A caixa de marcar nativa vem com 13px. O rótulo inteiro já alterna o valor;
-   o que faltava era o alvo ter tamanho de alvo. */
+/* The native checkbox comes in at 13px. The whole label already toggles the
+   value; what was missing was for the target to be target-sized. */
 input[type="checkbox"],
 input[type="radio"] {
   width: 1.05rem;
   height: 1.05rem;
-  accent-color: var(--beterraba);
+  accent-color: var(--beetroot);
 }
 label:has(> input[type="checkbox"]),
 label:has(> input[type="radio"]) {
@@ -1713,83 +1724,86 @@ label:has(> input[type="radio"]) {
   min-height: 24px;
 }
 
-/* Defesa geral do mesmo tropeço: filho de grade que não pode encolher fura a
-   página inteira, e o sintoma aparece longe da causa. */
-.editor-plano > * {
+/* General defense against the same stumble: a grid child that cannot shrink
+   punches through the whole page, and the symptom shows up far from the
+   cause. */
+.editor-plan > * {
   min-width: 0;
 }
 
-/* Caixa de marcar dentro de linha flexível não pode encolher: ela tem tamanho
-   de alvo, não de texto. */
+/* A checkbox inside a flexible row must not shrink: it is target-sized, not
+   text-sized. */
 input[type="checkbox"],
 input[type="radio"] {
   flex: none;
 }
 
-/* O campo precisa poder encolher junto com a faixa que o hospeda.
+/* The field has to be able to shrink along with the track hosting it.
 
-   Sem isto ele para no próprio min-content — num formulário estreito, um campo
-   de 350px dentro de uma faixa de 200px vaza para fora do cartão, e o estouro
-   aparece na borda da página, longe da causa. É o mesmo motivo do minmax(0, …)
-   nas grades: em CSS, "cabe" precisa ser dito explicitamente. */
-.campo {
+   Without this it stops at its own min-content — in a narrow form, a 350px
+   field inside a 200px track leaks out of the card, and the overflow shows up
+   at the edge of the page, far from the cause. It is the same reason as the
+   minmax(0, …) in the grids: in CSS, "it fits" has to be said out loud. */
+.field {
   min-width: 0;
 }
-.campo input,
-.campo select,
-.campo textarea {
+.field input,
+.field select,
+.field textarea {
   min-width: 0;
   max-width: 100%;
 }
 
-/* Lista de problemas do plano: um por linha, e não uma frase corrida.
-   Cinco erros numa frase só viram parágrafo; em lista, viram cinco tarefas. */
-.lista-de-problemas {
+/* The list of problems with the plan: one per row, and not one running
+   sentence. Five errors in a single sentence become a paragraph; in a list,
+   they become five tasks. */
+.problems-list {
   margin: 0.4rem 0 0;
   padding-left: 1.1rem;
   font-size: 0.86rem;
   line-height: 1.5;
 }
-.lista-de-problemas li + li {
+.problems-list li + li {
   margin-top: 0.2rem;
 }
 
-/* ------------------------------------------- texto que veio de quem digita */
+/* -------------------------------------------------- text somebody typed in */
 
-/* Palavra longa demais não pode empurrar a página.
+/* A word that is too long must not push the page.
 
-   Texto escrito por gente costuma ter espaços, e aí esta regra não faz nada.
-   Mas basta uma URL colada na observação, ou um código de exame sem separador,
-   para a linha não ter onde quebrar: o contêiner cresce até caber a palavra e
-   arrasta o layout inteiro junto — medido em 4.418px de estouro num campo de
-   observação com 700 caracteres sem espaço.
+   Text written by people usually has spaces, and then this rule does nothing.
+   But one URL pasted into the note, or one lab code with no separator, is
+   enough for the line to have nowhere to break: the container grows until the
+   word fits and drags the whole layout along — measured at 4,418px of overflow
+   in a note field with 700 characters and no space.
 
-   `break-word` no corpo é o piso seguro: só age quando a palavra realmente não
-   cabe. Nos campos de texto livre, `anywhere` é mais firme, porque ali a
-   quebra também conta para calcular a largura mínima do contêiner. */
+   `break-word` on the body is the safe floor: it only acts when the word really
+   does not fit. In free-text fields, `anywhere` is firmer, because there the
+   break also counts toward computing the container's minimum width. */
 body {
   overflow-wrap: break-word;
 }
 
-.atendimento-nota,
-.corpo-orientacao,
-.orientacao-anexada p,
-.descricao-item,
-.recado-texto,
-.mensagem-de-campo,
-.lista-de-problemas li,
-.item-observacao,
-.aviso {
+.appointment-note,
+.body-handout,
+.handout-attached p,
+.description-item,
+.feedback-text,
+.field-message,
+.problems-list li,
+.item-notes,
+.warning {
   overflow-wrap: anywhere;
 }
 
-/* Abaixo de 480px o par de datas não tenta mais dividir a linha.
+/* Below 480px the date pair stops trying to split the row.
 
-   `auto-fit` resolve sozinho quase sempre, mas o campo de data tem largura
-   intrínseca própria e, num cartão já estreito, duas faixas de 8,5rem cabem por
-   pouco e estouram por pouco. Aqui a certeza vale mais que a elegância. */
+   `auto-fit` sorts this out on its own almost always, but the date field has an
+   intrinsic width of its own and, in an already narrow card, two 8.5rem tracks
+   fit by a hair and overflow by a hair. Here certainty is worth more than
+   elegance. */
 @media (max-width: 480px) {
-  .par-de-datas {
+  .dates-par {
     grid-template-columns: 1fr;
   }
 }

@@ -13,14 +13,14 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI openApi() {
-        final String esquema = "bearerAuth";
+        final String schema = "bearerAuth";
         return new OpenAPI()
                 .info(new Info()
                         .title("NutriPlan API")
                         .version("0.1.0")
                         .description("Software de gestao para nutricionistas"))
-                .addSecurityItem(new SecurityRequirement().addList(esquema))
-                .components(new Components().addSecuritySchemes(esquema,
+                .addSecurityItem(new SecurityRequirement().addList(schema))
+                .components(new Components().addSecuritySchemes(schema,
                         new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")

@@ -1,625 +1,625 @@
 import type {
-  Agendamento,
-  AgendamentoRequest,
-  AlimentoDetalhe,
-  AlimentoResumo,
-  Apuracao,
-  Avaliacao,
-  AvaliacaoRequest,
-  Composicao,
-  DiaDaAgenda,
-  Evolucao,
-  FonteDeDados,
-  Lancamento,
-  LancamentoRequest,
-  Medida,
-  Pagina,
-  Paciente,
-  PacienteResumo,
-  PlanoPublico,
-  PlanoRequest,
-  PlanoResponse,
-  PlanoResumo,
-  PorcaoCalculada,
-  ProtocoloInfo,
-  Orientacao,
-  OrientacaoDoPlano,
-  ExameResultado,
-  ParametroExame,
-  FormularioPublico,
-  Questionario,
-  Recibo,
-  RespostaDeQuestionario,
-  UsuarioDaConta,
-  SerieDeExame,
-  SolicitacaoDeExame,
-  Receita,
-  ReceitaRequest,
-  ReceitaResumo,
-  ResultadoImportacao,
-  SituacaoAtendimento,
-  SituacaoLancamento,
-  TipoAtendimentoInfo,
-  TipoLancamento,
+  Appointment,
+  AppointmentRequest,
+  FoodDetail,
+  FoodSummary,
+  Summary,
+  Assessment,
+  AssessmentRequest,
+  Composition,
+  ScheduleDay,
+  Progress,
+  DataSource,
+  Transaction,
+  TransactionRequest,
+  Measure,
+  Page,
+  Patient,
+  PatientSummary,
+  PublicPlan,
+  PlanRequest,
+  PlanResponse,
+  PlanSummary,
+  CalculatedServing,
+  ProtocolInfo,
+  Handout,
+  PlanHandout,
+  LabtestResult,
+  LabtestParameter,
+  PublicForm,
+  Questionnaire,
+  Receipt,
+  QuestionnaireAnswer,
+  AccountUser,
+  LabtestSeries,
+  LabtestOrder,
+  Recipe,
+  RecipeRequest,
+  RecipeSummary,
+  ResultImport,
+  AppointmentStatus,
+  TransactionStatus,
+  TypeAppointmentInfo,
+  TransactionType,
   TokenResponse,
 } from "./types";
 
 const BASE = "/api";
-const CHAVE_TOKEN = "nutriplan.token";
+const KEY_TOKEN = "nutriplan.token";
 
-/** Erro da API já traduzido para o que a interface precisa mostrar. */
-export class ErroApi extends Error {
+/** An API error already translated into what the interface needs to show. */
+export class ErrorApi extends Error {
   constructor(
     readonly status: number,
-    mensagem: string,
-    readonly campos?: { campo: string; mensagem: string }[],
+    message: string,
+    readonly fields?: { field: string; message: string }[],
   ) {
-    super(mensagem);
+    super(message);
     this.name = "ErroApi";
   }
 
-  /** Erro de validação tem detalhe por campo; os demais, só a mensagem. */
-  get ehValidacao() {
-    return this.status === 400 && !!this.campos?.length;
+  /** A validation error has per-field detail; the others, only the message. */
+  get isValidation() {
+    return this.status === 400 && !!this.fields?.length;
   }
 }
 
-export function lerToken(): string | null {
+export function readToken(): string | null {
   try {
-    return localStorage.getItem(CHAVE_TOKEN);
+    return localStorage.getItem(KEY_TOKEN);
   } catch {
     return null;
   }
 }
 
-export function gravarToken(token: string | null) {
+export function storeToken(token: string | null) {
   try {
-    if (token) localStorage.setItem(CHAVE_TOKEN, token);
-    else localStorage.removeItem(CHAVE_TOKEN);
+    if (token) localStorage.setItem(KEY_TOKEN, token);
+    else localStorage.removeItem(KEY_TOKEN);
   } catch {
-    /* navegação privada: a sessão vale só enquanto a aba viver */
+    /* private browsing: the session lasts only as long as the tab */
   }
 }
 
-type Opcoes = {
-  metodo?: "GET" | "POST" | "PUT" | "DELETE";
-  corpo?: unknown;
-  /** Requisição pública: não envia credencial nem redireciona ao expirar. */
-  semAutenticacao?: boolean;
-  formData?: FormData;
+type Options = {
+  method?: "GET" | "POST" | "PUT" | "DELETE";
+  body?: unknown;
+  /** Public request: it sends no credential and does not redirect on expiry. */
+  withoutAuthentication?: boolean;
+  formDate?: FormData;
 };
 
-let aoExpirarSessao: (() => void) | null = null;
+let onExpireSession: (() => void) | null = null;
 
-/** Registrado pelo contexto de autenticação para reagir a um 401. */
-export function definirTratamentoDeSessaoExpirada(callback: () => void) {
-  aoExpirarSessao = callback;
+/** Registered by the authentication context so it can react to a 401. */
+export function defineSessionExpiredHandling(callback: () => void) {
+  onExpireSession = callback;
 }
 
 /**
- * Busca um arquivo em rota autenticada e devolve a URL temporária dele.
+ * Fetches a file from an authenticated route and returns its temporary URL.
  *
- * Quem chama é responsável por liberar a URL depois de usá-la; sem isso o
- * arquivo fica retido em memória enquanto a aba viver.
+ * The caller is responsible for releasing the URL after using it; without that
+ * the file stays held in memory for as long as the tab lives.
  */
-async function baixar(caminho: string): Promise<{ url: string; nome: string }> {
-  const token = lerToken();
-  const resposta = await fetch(`${BASE}${caminho}`, {
+async function download(path: string): Promise<{ url: string; name: string }> {
+  const token = readToken();
+  const answer = await fetch(`${BASE}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 
-  if (!resposta.ok) {
-    if (resposta.status === 401) {
-      aoExpirarSessao?.();
+  if (!answer.ok) {
+    if (answer.status === 401) {
+      onExpireSession?.();
     }
-    throw new ErroApi(resposta.status, "Não foi possível gerar o arquivo.");
+    throw new ErrorApi(answer.status, "Não foi possível gerar o arquivo.");
   }
 
-  const disposicao = resposta.headers.get("Content-Disposition") ?? "";
-  const nome = /filename="?([^";]+)"?/.exec(disposicao)?.[1] ?? "arquivo.pdf";
-  return { url: URL.createObjectURL(await resposta.blob()), nome };
+  const disposition = answer.headers.get("Content-Disposition") ?? "";
+  const name = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? "arquivo.pdf";
+  return { url: URL.createObjectURL(await answer.blob()), name };
 }
 
-async function requisitar<T>(caminho: string, opcoes: Opcoes = {}): Promise<T> {
-  const cabecalhos: Record<string, string> = {};
-  const token = lerToken();
+async function request<T>(path: string, options: Options = {}): Promise<T> {
+  const headers: Record<string, string> = {};
+  const token = readToken();
 
-  if (!opcoes.semAutenticacao && token) {
-    cabecalhos.Authorization = `Bearer ${token}`;
+  if (!options.withoutAuthentication && token) {
+    headers.Authorization = `Bearer ${token}`;
   }
-  if (opcoes.corpo !== undefined) {
-    cabecalhos["Content-Type"] = "application/json";
+  if (options.body !== undefined) {
+    headers["Content-Type"] = "application/json";
   }
 
-  const resposta = await fetch(`${BASE}${caminho}`, {
-    method: opcoes.metodo ?? "GET",
-    headers: cabecalhos,
-    body: opcoes.formData ?? (opcoes.corpo !== undefined ? JSON.stringify(opcoes.corpo) : undefined),
+  const answer = await fetch(`${BASE}${path}`, {
+    method: options.method ?? "GET",
+    headers: headers,
+    body: options.formDate ?? (options.body !== undefined ? JSON.stringify(options.body) : undefined),
   });
 
-  if (resposta.status === 204) {
+  if (answer.status === 204) {
     return undefined as T;
   }
 
-  const texto = await resposta.text();
-  const dados = texto ? JSON.parse(texto) : null;
+  const text = await answer.text();
+  const data = text ? JSON.parse(text) : null;
 
-  if (!resposta.ok) {
-    if (resposta.status === 401 && !opcoes.semAutenticacao) {
-      aoExpirarSessao?.();
+  if (!answer.ok) {
+    if (answer.status === 401 && !options.withoutAuthentication) {
+      onExpireSession?.();
     }
-    throw new ErroApi(
-      resposta.status,
-      dados?.mensagem ?? "Não foi possível completar a operação.",
-      dados?.campos,
+    throw new ErrorApi(
+      answer.status,
+      data?.message ?? "Não foi possível completar a operação.",
+      data?.fields,
     );
   }
-  return dados as T;
+  return data as T;
 }
 
 function query(params: Record<string, string | number | boolean | undefined>) {
-  const busca = new URLSearchParams();
-  Object.entries(params).forEach(([chave, valor]) => {
-    if (valor !== undefined && valor !== "") busca.set(chave, String(valor));
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") search.set(key, String(value));
   });
-  const texto = busca.toString();
-  return texto ? `?${texto}` : "";
+  const text = search.toString();
+  return text ? `?${text}` : "";
 }
 
 export const api = {
-  // ------------------------------------------------------------- autenticação
-  login: (email: string, senha: string) =>
-    requisitar<TokenResponse>("/auth/login", {
-      metodo: "POST",
-      corpo: { email, senha },
-      semAutenticacao: true,
+  // ----------------------------------------------------------- authentication
+  login: (email: string, password: string) =>
+    request<TokenResponse>("/auth/login", {
+      method: "POST",
+      body: { email, password },
+      withoutAuthentication: true,
     }),
 
-  cadastrar: (dados: { nome: string; email: string; senha: string; crn?: string; telefone?: string }) =>
-    requisitar<TokenResponse>("/auth/cadastro", {
-      metodo: "POST",
-      corpo: dados,
-      semAutenticacao: true,
+  register: (data: { name: string; email: string; password: string; crn?: string; phone?: string }) =>
+    request<TokenResponse>("/auth/signup", {
+      method: "POST",
+      body: data,
+      withoutAuthentication: true,
     }),
 
-  eu: () => requisitar<TokenResponse["usuario"]>("/auth/eu"),
+  eu: () => request<TokenResponse["user"]>("/auth/eu"),
 
-  // ------------------------------------------------------------------ pacientes
-  pacientes: {
-    listar: (params: { termo?: string; ativo?: boolean; page?: number; size?: number }) =>
-      requisitar<Pagina<PacienteResumo>>(`/pacientes${query(params)}`),
+  // ------------------------------------------------------------------- patients
+  patients: {
+    list: (params: { term?: string; active?: boolean; page?: number; size?: number }) =>
+      request<Page<PatientSummary>>(`/patients${query(params)}`),
 
-    buscar: (id: number) => requisitar<Paciente>(`/pacientes/${id}`),
+    find: (id: number) => request<Patient>(`/patients/${id}`),
 
-    criar: (dados: Partial<Paciente>) =>
-      requisitar<Paciente>("/pacientes", { metodo: "POST", corpo: dados }),
+    create: (data: Partial<Patient>) =>
+      request<Patient>("/patients", { method: "POST", body: data }),
 
-    atualizar: (id: number, dados: Partial<Paciente>) =>
-      requisitar<Paciente>(`/pacientes/${id}`, { metodo: "PUT", corpo: dados }),
+    update: (id: number, data: Partial<Patient>) =>
+      request<Patient>(`/patients/${id}`, { method: "PUT", body: data }),
 
-    inativar: (id: number) => requisitar<void>(`/pacientes/${id}`, { metodo: "DELETE" }),
+    deactivate: (id: number) => request<void>(`/patients/${id}`, { method: "DELETE" }),
 
-    reativar: (id: number) =>
-      requisitar<Paciente>(`/pacientes/${id}/reativar`, { metodo: "POST" }),
+    reactivate: (id: number) =>
+      request<Patient>(`/patients/${id}/reactivate`, { method: "POST" }),
 
-    importar: (arquivo: File, separador = ",") => {
-      const dados = new FormData();
-      dados.append("arquivo", arquivo);
-      dados.append("separador", separador);
-      return requisitar<ResultadoImportacao>("/pacientes/importar", {
-        metodo: "POST",
-        formData: dados,
+    importAll: (file: File, separator = ",") => {
+      const data = new FormData();
+      data.append("file", file);
+      data.append("separator", separator);
+      return request<ResultImport>("/patients/import", {
+        method: "POST",
+        formDate: data,
       });
     },
   },
 
-  // ------------------------------------------------------------------ alimentos
-  alimentos: {
-    buscar: (params: { termo?: string; grupo?: string; fonte?: FonteDeDados; page?: number; size?: number }) =>
-      requisitar<Pagina<AlimentoResumo>>(`/alimentos${query(params)}`),
+  // ---------------------------------------------------------------------- foods
+  foods: {
+    find: (params: { term?: string; group?: string; source?: DataSource; page?: number; size?: number }) =>
+      request<Page<FoodSummary>>(`/foods${query(params)}`),
 
-    grupos: () => requisitar<string[]>("/alimentos/grupos"),
+    groups: () => request<string[]>("/foods/groups"),
 
-    detalhar: (id: number) => requisitar<AlimentoDetalhe>(`/alimentos/${id}`),
+    detail: (id: number) => request<FoodDetail>(`/foods/${id}`),
 
     /**
-     * Busca pelo código de barras. Devolve lista porque o código não é chave:
-     * o mesmo EAN aparece mais de uma vez na base colaborativa, e o
-     * consultório pode ter cadastrado o próprio produto com ele.
+     * Searches by barcode. It returns a list because the code is not a key: the
+     * same EAN shows up more than once in the collaborative base, and the
+     * practice may have registered its own product with it.
      */
-    porCodigoDeBarras: (codigo: string) =>
-      requisitar<AlimentoDetalhe[]>(`/alimentos/codigo-barras/${encodeURIComponent(codigo)}`),
+    byBarcodeCode: (code: string) =>
+      request<FoodDetail[]>(`/foods/barcode/${encodeURIComponent(code)}`),
 
-    porcao: (id: number, quantidade: number, medidaId?: number) =>
-      requisitar<PorcaoCalculada>(`/alimentos/${id}/porcao${query({ quantidade, medidaId })}`),
+    serving: (id: number, quantity: number, measureId?: number) =>
+      request<CalculatedServing>(`/foods/${id}/serving${query({ quantity, measureId })}`),
 
-    criar: (dados: {
-      descricao: string;
-      grupo?: string;
-      marca?: string;
-      codigoBarras?: string;
-      composicao: Composicao;
-      medidas?: unknown[];
+    create: (data: {
+      description: string;
+      group?: string;
+      brand?: string;
+      codeBarcode?: string;
+      composition: Composition;
+      measures?: unknown[];
     }) =>
-      requisitar<AlimentoDetalhe>("/alimentos", { metodo: "POST", corpo: dados }),
+      request<FoodDetail>("/foods", { method: "POST", body: data }),
 
-    atualizar: (id: number, dados: unknown) =>
-      requisitar<AlimentoDetalhe>(`/alimentos/${id}`, { metodo: "PUT", corpo: dados }),
+    update: (id: number, data: unknown) =>
+      request<FoodDetail>(`/foods/${id}`, { method: "PUT", body: data }),
 
-    adicionarMedida: (id: number, dados: { descricao: string; gramas: number; padrao: boolean }) =>
-      requisitar<Medida>(`/alimentos/${id}/medidas`, { metodo: "POST", corpo: dados }),
+    addMeasure: (id: number, data: { description: string; grams: number; standard: boolean }) =>
+      request<Measure>(`/foods/${id}/measures`, { method: "POST", body: data }),
 
-    removerMedida: (id: number, medidaId: number) =>
-      requisitar<void>(`/alimentos/${id}/medidas/${medidaId}`, { metodo: "DELETE" }),
+    removeMeasure: (id: number, measureId: number) =>
+      request<void>(`/foods/${id}/measures/${measureId}`, { method: "DELETE" }),
 
-    importar: (arquivo: File, fonte?: FonteDeDados, separador = ",") => {
-      const dados = new FormData();
-      dados.append("arquivo", arquivo);
-      if (fonte) dados.append("fonte", fonte);
-      dados.append("separador", separador);
-      return requisitar<ResultadoImportacao>("/alimentos/importar", {
-        metodo: "POST",
-        formData: dados,
+    importAll: (file: File, source?: DataSource, separator = ",") => {
+      const data = new FormData();
+      data.append("file", file);
+      if (source) data.append("source", source);
+      data.append("separator", separator);
+      return request<ResultImport>("/foods/import", {
+        method: "POST",
+        formDate: data,
       });
     },
   },
 
-  // ---------------------------------------------------------------- prescrições
-  prescricoes: {
-    listar: (params: { pacienteId?: number; modelo?: boolean; termo?: string; page?: number; size?: number }) =>
-      requisitar<Pagina<PlanoResumo>>(`/prescricoes${query(params)}`),
+  // -------------------------------------------------------------- prescriptions
+  prescriptions: {
+    list: (params: { patientId?: number; template?: boolean; term?: string; page?: number; size?: number }) =>
+      request<Page<PlanSummary>>(`/prescriptions${query(params)}`),
 
-    detalhar: (id: number) => requisitar<PlanoResponse>(`/prescricoes/${id}`),
+    detail: (id: number) => request<PlanResponse>(`/prescriptions/${id}`),
 
-    criar: (dados: PlanoRequest) =>
-      requisitar<PlanoResponse>("/prescricoes", { metodo: "POST", corpo: dados }),
+    create: (data: PlanRequest) =>
+      request<PlanResponse>("/prescriptions", { method: "POST", body: data }),
 
-    atualizar: (id: number, dados: PlanoRequest) =>
-      requisitar<PlanoResponse>(`/prescricoes/${id}`, { metodo: "PUT", corpo: dados }),
+    update: (id: number, data: PlanRequest) =>
+      request<PlanResponse>(`/prescriptions/${id}`, { method: "PUT", body: data }),
 
-    publicar: (id: number) =>
-      requisitar<PlanoResponse>(`/prescricoes/${id}/publicar`, { metodo: "POST" }),
+    publish: (id: number) =>
+      request<PlanResponse>(`/prescriptions/${id}/publish`, { method: "POST" }),
 
-    encerrar: (id: number) =>
-      requisitar<PlanoResponse>(`/prescricoes/${id}/encerrar`, { metodo: "POST" }),
+    close: (id: number) =>
+      request<PlanResponse>(`/prescriptions/${id}/close`, { method: "POST" }),
 
-    voltarParaRascunho: (id: number) =>
-      requisitar<PlanoResponse>(`/prescricoes/${id}/rascunho`, { metodo: "POST" }),
+    backToDraft: (id: number) =>
+      request<PlanResponse>(`/prescriptions/${id}/draft`, { method: "POST" }),
 
-    regerarLink: (id: number) =>
-      requisitar<PlanoResponse>(`/prescricoes/${id}/regerar-link`, { metodo: "POST" }),
+    regenerateLink: (id: number) =>
+      request<PlanResponse>(`/prescriptions/${id}/regenerate-link`, { method: "POST" }),
 
-    duplicar: (id: number, pacienteId?: number, titulo?: string) =>
-      requisitar<PlanoResponse>(`/prescricoes/${id}/duplicar${query({ pacienteId, titulo })}`, {
-        metodo: "POST",
+    duplicate: (id: number, patientId?: number, title?: string) =>
+      request<PlanResponse>(`/prescriptions/${id}/duplicate${query({ patientId, title })}`, {
+        method: "POST",
       }),
 
-    remover: (id: number) => requisitar<void>(`/prescricoes/${id}`, { metodo: "DELETE" }),
+    remove: (id: number) => request<void>(`/prescriptions/${id}`, { method: "DELETE" }),
 
     /**
-     * Baixa o plano em PDF.
+     * Downloads the plan as a PDF.
      *
-     * Vai por fetch, e não por link direto: a rota exige autenticação, e uma
-     * âncora comum não carrega o cabeçalho do token.
+     * It goes by fetch, and not by a direct link: the route requires
+     * authentication, and a plain anchor does not carry the token header.
      */
-    pdf: (id: number) => baixar(`/prescricoes/${id}/pdf`),
+    pdf: (id: number) => download(`/prescriptions/${id}/pdf`),
   },
 
-  // ------------------------------------------------------------------ receitas
-  receitas: {
-    listar: (params: { termo?: string; page?: number; size?: number }) =>
-      requisitar<Pagina<ReceitaResumo>>(`/receitas${query(params)}`),
+  // ------------------------------------------------------------------- recipes
+  recipes: {
+    list: (params: { term?: string; page?: number; size?: number }) =>
+      request<Page<RecipeSummary>>(`/recipes${query(params)}`),
 
-    detalhar: (id: number) => requisitar<Receita>(`/receitas/${id}`),
+    detail: (id: number) => request<Recipe>(`/recipes/${id}`),
 
-    criar: (dados: ReceitaRequest) =>
-      requisitar<Receita>("/receitas", { metodo: "POST", corpo: dados }),
+    create: (data: RecipeRequest) =>
+      request<Recipe>("/recipes", { method: "POST", body: data }),
 
-    atualizar: (id: number, dados: ReceitaRequest) =>
-      requisitar<Receita>(`/receitas/${id}`, { metodo: "PUT", corpo: dados }),
+    update: (id: number, data: RecipeRequest) =>
+      request<Recipe>(`/recipes/${id}`, { method: "PUT", body: data }),
 
-    remover: (id: number) => requisitar<void>(`/receitas/${id}`, { metodo: "DELETE" }),
+    remove: (id: number) => request<void>(`/recipes/${id}`, { method: "DELETE" }),
   },
 
-  // ---------------------------------------------------------- questionários
-  questionarios: {
-    listar: () => requisitar<Questionario[]>("/questionarios"),
+  // --------------------------------------------------------- questionnaires
+  questionnaires: {
+    list: () => request<Questionnaire[]>("/questionnaires"),
 
-    detalhar: (id: number) => requisitar<Questionario>(`/questionarios/${id}`),
+    detail: (id: number) => request<Questionnaire>(`/questionnaires/${id}`),
 
-    duplicar: (id: number) =>
-      requisitar<Questionario>(`/questionarios/${id}/duplicar`, { metodo: "POST" }),
+    duplicate: (id: number) =>
+      request<Questionnaire>(`/questionnaires/${id}/duplicate`, { method: "POST" }),
 
-    remover: (id: number) => requisitar<void>(`/questionarios/${id}`, { metodo: "DELETE" }),
+    remove: (id: number) => request<void>(`/questionnaires/${id}`, { method: "DELETE" }),
 
-    doPaciente: (pacienteId: number) =>
-      requisitar<RespostaDeQuestionario[]>(`/pacientes/${pacienteId}/questionarios`),
+    forPatient: (patientId: number) =>
+      request<QuestionnaireAnswer[]>(`/patients/${patientId}/questionnaires`),
 
-    enviar: (pacienteId: number, dados: { questionarioId: number; agendamentoId?: number }) =>
-      requisitar<RespostaDeQuestionario>(`/pacientes/${pacienteId}/questionarios`, {
-        metodo: "POST",
-        corpo: dados,
+    send: (patientId: number, data: { questionnaireId: number; appointmentId?: number }) =>
+      request<QuestionnaireAnswer>(`/patients/${patientId}/questionnaires`, {
+        method: "POST",
+        body: data,
       }),
 
-    cancelarEnvio: (id: number) =>
-      requisitar<void>(`/questionarios/envios/${id}`, { metodo: "DELETE" }),
+    cancelSending: (id: number) =>
+      request<void>(`/questionnaires/sendings/${id}`, { method: "DELETE" }),
 
-    /** Formulário como o paciente o vê: sem credencial nenhuma. */
-    formulario: (identificador: string) =>
-      requisitar<FormularioPublico>(`/publico/questionarios/${identificador}`, {
-        semAutenticacao: true,
+    /** The form as the patient sees it: with no credential at all. */
+    form: (identifier: string) =>
+      request<PublicForm>(`/public/questionnaires/${identifier}`, {
+        withoutAuthentication: true,
       }),
 
-    responder: (identificador: string, respostas: { perguntaId: number; valor: string }[]) =>
-      requisitar<void>(`/publico/questionarios/${identificador}`, {
-        metodo: "POST",
-        corpo: { respostas },
-        semAutenticacao: true,
+    answer: (identifier: string, answers: { questionId: number; value: string }[]) =>
+      request<void>(`/public/questionnaires/${identifier}`, {
+        method: "POST",
+        body: { answers },
+        withoutAuthentication: true,
       }),
   },
 
-  // ---------------------------------------------------------------- equipe
-  usuarios: {
-    listar: () => requisitar<UsuarioDaConta[]>("/usuarios"),
+  // ------------------------------------------------------------------ team
+  users: {
+    list: () => request<AccountUser[]>("/users"),
 
-    criarSecretaria: (dados: {
-      nome: string;
+    createAssistant: (data: {
+      name: string;
       email: string;
-      senhaInicial: string;
-      telefone?: string;
-    }) => requisitar<UsuarioDaConta>("/usuarios", { metodo: "POST", corpo: dados }),
+      initialPassword: string;
+      phone?: string;
+    }) => request<AccountUser>("/users", { method: "POST", body: data }),
 
-    inativar: (id: number) => requisitar<void>(`/usuarios/${id}`, { metodo: "DELETE" }),
+    deactivate: (id: number) => request<void>(`/users/${id}`, { method: "DELETE" }),
 
-    reativar: (id: number) =>
-      requisitar<UsuarioDaConta>(`/usuarios/${id}/reativar`, { metodo: "POST" }),
+    reactivate: (id: number) =>
+      request<AccountUser>(`/users/${id}/reactivate`, { method: "POST" }),
   },
 
-  // ---------------------------------------------------------------- acesso
-  acesso: {
+  // ---------------------------------------------------------------- access
+  access: {
     /**
-     * Pede o link de redefinição.
+     * Asks for the reset link.
      *
-     * Responde igual exista o e-mail ou não: um endpoint que dissesse
-     * "e-mail não encontrado" permitiria varrer endereços e descobrir quem
-     * tem conta.
+     * It answers the same whether the email exists or not: an endpoint that
+     * said "email not found" would let someone sweep addresses and discover who
+     * has an account.
      */
-    recuperarSenha: (email: string) =>
-      requisitar<void>("/auth/recuperar-senha", {
-        metodo: "POST",
-        corpo: { email },
-        semAutenticacao: true,
+    recoverPassword: (email: string) =>
+      request<void>("/auth/recover-password", {
+        method: "POST",
+        body: { email },
+        withoutAuthentication: true,
       }),
 
-    redefinirSenha: (token: string, novaSenha: string) =>
-      requisitar<void>("/auth/redefinir-senha", {
-        metodo: "POST",
-        corpo: { token, novaSenha },
-        semAutenticacao: true,
+    resetPassword: (token: string, novaPassword: string) =>
+      request<void>("/auth/reset-password", {
+        method: "POST",
+        body: { token, novaPassword },
+        withoutAuthentication: true,
       }),
   },
 
-  // ------------------------------------------------------------------ exames
-  exames: {
-    parametros: () => requisitar<ParametroExame[]>("/exames/parametros"),
+  // --------------------------------------------------------------- lab tests
+  labtests: {
+    parameters: () => request<LabtestParameter[]>("/labtests/parameters"),
 
-    criarParametro: (dados: {
-      nome: string;
-      unidadePadrao: string;
-      grupo?: string;
-      minimo?: number;
-      maximo?: number;
-    }) => requisitar<ParametroExame>("/exames/parametros", { metodo: "POST", corpo: dados }),
+    createParameter: (data: {
+      name: string;
+      unitStandard: string;
+      group?: string;
+      minimum?: number;
+      maximum?: number;
+    }) => request<LabtestParameter>("/labtests/parameters", { method: "POST", body: data }),
 
-    doPaciente: (pacienteId: number) =>
-      requisitar<ExameResultado[]>(`/pacientes/${pacienteId}/exames`),
+    forPatient: (patientId: number) =>
+      request<LabtestResult[]>(`/patients/${patientId}/labtests`),
 
-    registrar: (
-      pacienteId: number,
-      dados: {
-        parametroId: number;
-        dataColeta: string;
-        valor?: number;
-        unidade?: string;
-        observacao?: string;
+    entry: (
+      patientId: number,
+      data: {
+        parameterId: number;
+        dateCollection: string;
+        value?: number;
+        unit?: string;
+        notes?: string;
       },
     ) =>
-      requisitar<ExameResultado>(`/pacientes/${pacienteId}/exames`, {
-        metodo: "POST",
-        corpo: dados,
+      request<LabtestResult>(`/patients/${patientId}/labtests`, {
+        method: "POST",
+        body: data,
       }),
 
-    serie: (pacienteId: number, parametroId: number) =>
-      requisitar<SerieDeExame>(`/pacientes/${pacienteId}/exames/serie/${parametroId}`),
+    series: (patientId: number, parameterId: number) =>
+      request<LabtestSeries>(`/patients/${patientId}/labtests/series/${parameterId}`),
 
-    remover: (id: number) => requisitar<void>(`/exames/${id}`, { metodo: "DELETE" }),
+    remove: (id: number) => request<void>(`/labtests/${id}`, { method: "DELETE" }),
 
-    anexarLaudo: (id: number, arquivo: File) => {
-      const dados = new FormData();
-      dados.append("arquivo", arquivo);
-      return requisitar<void>(`/exames/${id}/laudo`, { metodo: "POST", formData: dados });
+    attachReport: (id: number, file: File) => {
+      const data = new FormData();
+      data.append("file", file);
+      return request<void>(`/labtests/${id}/report`, { method: "POST", formDate: data });
     },
 
-    laudo: (id: number) => baixar(`/exames/${id}/laudo`),
+    report: (id: number) => download(`/labtests/${id}/report`),
 
-    solicitacoes: (pacienteId: number) =>
-      requisitar<SolicitacaoDeExame[]>(`/pacientes/${pacienteId}/solicitacoes-de-exame`),
+    requests: (patientId: number) =>
+      request<LabtestOrder[]>(`/patients/${patientId}/requests-from-labtest`),
 
-    solicitar: (
-      pacienteId: number,
-      dados: { data: string; parametroIds: number[]; observacao?: string },
+    request: (
+      patientId: number,
+      data: { date: string; parameterIds: number[]; notes?: string },
     ) =>
-      requisitar<SolicitacaoDeExame>(`/pacientes/${pacienteId}/solicitacoes-de-exame`, {
-        metodo: "POST",
-        corpo: dados,
+      request<LabtestOrder>(`/patients/${patientId}/requests-from-labtest`, {
+        method: "POST",
+        body: data,
       }),
   },
 
-  // ------------------------------------------------------------- orientações
-  orientacoes: {
-    listar: (params: { termo?: string; page?: number; size?: number }) =>
-      requisitar<Pagina<Orientacao>>(`/orientacoes${query(params)}`),
+  // ---------------------------------------------------------------- handouts
+  handouts: {
+    list: (params: { term?: string; page?: number; size?: number }) =>
+      request<Page<Handout>>(`/handouts${query(params)}`),
 
-    detalhar: (id: number) => requisitar<Orientacao>(`/orientacoes/${id}`),
+    detail: (id: number) => request<Handout>(`/handouts/${id}`),
 
-    criar: (dados: { titulo: string; corpo: string }) =>
-      requisitar<Orientacao>("/orientacoes", { metodo: "POST", corpo: dados }),
+    create: (data: { title: string; body: string }) =>
+      request<Handout>("/handouts", { method: "POST", body: data }),
 
-    duplicar: (id: number) =>
-      requisitar<Orientacao>(`/orientacoes/${id}/duplicar`, { metodo: "POST" }),
+    duplicate: (id: number) =>
+      request<Handout>(`/handouts/${id}/duplicate`, { method: "POST" }),
 
-    atualizar: (id: number, dados: { titulo: string; corpo: string }) =>
-      requisitar<Orientacao>(`/orientacoes/${id}`, { metodo: "PUT", corpo: dados }),
+    update: (id: number, data: { title: string; body: string }) =>
+      request<Handout>(`/handouts/${id}`, { method: "PUT", body: data }),
 
-    remover: (id: number) => requisitar<void>(`/orientacoes/${id}`, { metodo: "DELETE" }),
+    remove: (id: number) => request<void>(`/handouts/${id}`, { method: "DELETE" }),
 
-    enviarImagem: (id: number, arquivo: File) => {
-      const dados = new FormData();
-      dados.append("arquivo", arquivo);
-      return requisitar<void>(`/orientacoes/${id}/imagem`, {
-        metodo: "POST",
-        formData: dados,
+    sendImage: (id: number, file: File) => {
+      const data = new FormData();
+      data.append("file", file);
+      return request<void>(`/handouts/${id}/image`, {
+        method: "POST",
+        formDate: data,
       });
     },
 
     /**
-     * Baixa a figura e devolve uma URL temporária para o `src`.
+     * Downloads the figure and returns a temporary URL for the `src`.
      *
-     * A rota exige credencial e a tag `img` não manda cabeçalho — por isso o
-     * arquivo vem por `fetch`. Quem chama libera a URL ao desmontar.
+     * The route requires a credential and the `img` tag sends no header — which
+     * is why the file comes by `fetch`. The caller releases the URL on unmount.
      */
-    imagem: (id: number) => baixar(`/orientacoes/${id}/imagem`),
+    image: (id: number) => download(`/handouts/${id}/image`),
 
-    imagemNoPlano: (planoId: number, anexoId: number) =>
-      baixar(`/prescricoes/${planoId}/orientacoes/${anexoId}/imagem`),
+    imageNoPlan: (planId: number, attachmentId: number) =>
+      download(`/prescriptions/${planId}/handouts/${attachmentId}/image`),
 
-    doPlano: (planoId: number) =>
-      requisitar<OrientacaoDoPlano[]>(`/prescricoes/${planoId}/orientacoes`),
+    forPlan: (planId: number) =>
+      request<PlanHandout[]>(`/prescriptions/${planId}/handouts`),
 
-    anexar: (planoId: number, dados: { orientacaoId?: number; titulo?: string; corpo?: string }) =>
-      requisitar<OrientacaoDoPlano>(`/prescricoes/${planoId}/orientacoes`, {
-        metodo: "POST",
-        corpo: dados,
+    attach: (planId: number, data: { handoutId?: number; title?: string; body?: string }) =>
+      request<PlanHandout>(`/prescriptions/${planId}/handouts`, {
+        method: "POST",
+        body: data,
       }),
 
-    editarNoPlano: (planoId: number, anexoId: number, dados: { titulo: string; corpo: string }) =>
-      requisitar<OrientacaoDoPlano>(`/prescricoes/${planoId}/orientacoes/${anexoId}`, {
-        metodo: "PUT",
-        corpo: dados,
+    editNoPlan: (planId: number, attachmentId: number, data: { title: string; body: string }) =>
+      request<PlanHandout>(`/prescriptions/${planId}/handouts/${attachmentId}`, {
+        method: "PUT",
+        body: data,
       }),
 
-    desanexar: (planoId: number, anexoId: number) =>
-      requisitar<void>(`/prescricoes/${planoId}/orientacoes/${anexoId}`, { metodo: "DELETE" }),
+    detach: (planId: number, attachmentId: number) =>
+      request<void>(`/prescriptions/${planId}/handouts/${attachmentId}`, { method: "DELETE" }),
   },
 
-  // -------------------------------------------------------------- antropometria
-  antropometria: {
-    protocolos: () => requisitar<ProtocoloInfo[]>("/antropometria/protocolos"),
+  // -------------------------------------------------------------- anthropometry
+  anthropometry: {
+    protocols: () => request<ProtocolInfo[]>("/anthropometry/protocols"),
 
-    listar: (pacienteId: number) =>
-      requisitar<Avaliacao[]>(`/pacientes/${pacienteId}/avaliacoes`),
+    list: (patientId: number) =>
+      request<Assessment[]>(`/patients/${patientId}/assessments`),
 
-    evolucao: (pacienteId: number) =>
-      requisitar<Evolucao>(`/pacientes/${pacienteId}/evolucao`),
+    progress: (patientId: number) =>
+      request<Progress>(`/patients/${patientId}/progress`),
 
-    criar: (pacienteId: number, dados: AvaliacaoRequest) =>
-      requisitar<Avaliacao>(`/pacientes/${pacienteId}/avaliacoes`, {
-        metodo: "POST",
-        corpo: dados,
+    create: (patientId: number, data: AssessmentRequest) =>
+      request<Assessment>(`/patients/${patientId}/assessments`, {
+        method: "POST",
+        body: data,
       }),
 
-    detalhar: (id: number) => requisitar<Avaliacao>(`/avaliacoes/${id}`),
+    detail: (id: number) => request<Assessment>(`/assessments/${id}`),
 
-    atualizar: (id: number, dados: AvaliacaoRequest) =>
-      requisitar<Avaliacao>(`/avaliacoes/${id}`, { metodo: "PUT", corpo: dados }),
+    update: (id: number, data: AssessmentRequest) =>
+      request<Assessment>(`/assessments/${id}`, { method: "PUT", body: data }),
 
-    remover: (id: number) => requisitar<void>(`/avaliacoes/${id}`, { metodo: "DELETE" }),
+    remove: (id: number) => request<void>(`/assessments/${id}`, { method: "DELETE" }),
   },
 
-  // --------------------------------------------------------------------- agenda
-  agenda: {
-    tipos: () => requisitar<TipoAtendimentoInfo[]>("/agenda/tipos"),
+  // ------------------------------------------------------------------- schedule
+  schedule: {
+    types: () => request<TypeAppointmentInfo[]>("/schedule/types"),
 
-    doDia: (data: string) => requisitar<DiaDaAgenda>(`/agenda/dia${query({ data })}`),
+    forDay: (date: string) => request<ScheduleDay>(`/schedule/day${query({ date })}`),
 
-    naFaixa: (de: string, ate: string, situacao?: SituacaoAtendimento) =>
-      requisitar<Agendamento[]>(`/agenda${query({ de, ate, situacao })}`),
+    inRange: (from: string, to: string, status?: AppointmentStatus) =>
+      request<Appointment[]>(`/schedule${query({ from, to, status })}`),
 
-    doPaciente: (pacienteId: number) =>
-      requisitar<Agendamento[]>(`/agenda/paciente/${pacienteId}`),
+    forPatient: (patientId: number) =>
+      request<Appointment[]>(`/schedule/patient/${patientId}`),
 
-    agendar: (dados: AgendamentoRequest) =>
-      requisitar<Agendamento>("/agenda", { metodo: "POST", corpo: dados }),
+    schedule: (data: AppointmentRequest) =>
+      request<Appointment>("/schedule", { method: "POST", body: data }),
 
-    remarcar: (id: number, dados: AgendamentoRequest) =>
-      requisitar<Agendamento>(`/agenda/${id}`, { metodo: "PUT", corpo: dados }),
+    reschedule: (id: number, data: AppointmentRequest) =>
+      request<Appointment>(`/schedule/${id}`, { method: "PUT", body: data }),
 
-    mudarSituacao: (id: number, situacao: SituacaoAtendimento, motivo?: string) =>
-      requisitar<Agendamento>(`/agenda/${id}/situacao`, {
-        metodo: "POST",
-        corpo: { situacao, motivo },
+    changeStatus: (id: number, status: AppointmentStatus, reason?: string) =>
+      request<Appointment>(`/schedule/${id}/status`, {
+        method: "POST",
+        body: { status, reason },
       }),
 
-    remover: (id: number) => requisitar<void>(`/agenda/${id}`, { metodo: "DELETE" }),
+    remove: (id: number) => request<void>(`/schedule/${id}`, { method: "DELETE" }),
 
     /**
-     * Assinatura da agenda em calendário externo.
+     * Subscription to the schedule from an external calendar.
      *
-     * `token` ausente quer dizer que o endereço ainda não foi criado — não é
-     * erro, é o estado inicial.
+     * A missing `token` means the address has not been created yet — it is not
+     * an error, it is the initial state.
      */
-    assinatura: () => requisitar<{ token?: string }>("/agenda/assinatura"),
+    subscription: () => request<{ token?: string }>("/schedule/subscription"),
 
-    gerarAssinatura: () =>
-      requisitar<{ token: string }>("/agenda/assinatura", { metodo: "POST" }),
+    generateSubscription: () =>
+      request<{ token: string }>("/schedule/subscription", { method: "POST" }),
 
-    revogarAssinatura: () =>
-      requisitar<void>("/agenda/assinatura", { metodo: "DELETE" }),
+    revokeSubscription: () =>
+      request<void>("/schedule/subscription", { method: "DELETE" }),
   },
 
-  // ----------------------------------------------------------------- financeiro
-  financeiro: {
-    listar: (params: {
-      de?: string;
-      ate?: string;
-      tipo?: TipoLancamento;
-      situacao?: SituacaoLancamento;
-      pacienteId?: number;
+  // -------------------------------------------------------------------- finance
+  finance: {
+    list: (params: {
+      from?: string;
+      to?: string;
+      type?: TransactionType;
+      status?: TransactionStatus;
+      patientId?: number;
       page?: number;
       size?: number;
-    }) => requisitar<Pagina<Lancamento>>(`/financeiro/lancamentos${query(params)}`),
+    }) => request<Page<Transaction>>(`/finance/transactions${query(params)}`),
 
-    vencidos: (referencia?: string) =>
-      requisitar<Lancamento[]>(`/financeiro/vencidos${query({ referencia })}`),
+    overdue: (reference?: string) =>
+      request<Transaction[]>(`/finance/overdue${query({ reference })}`),
 
-    apurar: (de: string, ate: string) =>
-      requisitar<Apuracao>(`/financeiro/apuracao${query({ de, ate })}`),
+    settle: (from: string, to: string) =>
+      request<Summary>(`/finance/summary${query({ from, to })}`),
 
-    criar: (dados: LancamentoRequest) =>
-      requisitar<Lancamento>("/financeiro/lancamentos", { metodo: "POST", corpo: dados }),
+    create: (data: TransactionRequest) =>
+      request<Transaction>("/finance/transactions", { method: "POST", body: data }),
 
-    atualizar: (id: number, dados: LancamentoRequest) =>
-      requisitar<Lancamento>(`/financeiro/lancamentos/${id}`, { metodo: "PUT", corpo: dados }),
+    update: (id: number, data: TransactionRequest) =>
+      request<Transaction>(`/finance/transactions/${id}`, { method: "PUT", body: data }),
 
-    pagar: (id: number, dataPagamento?: string) =>
-      requisitar<Lancamento>(`/financeiro/lancamentos/${id}/pagar`, {
-        metodo: "POST",
-        corpo: { dataPagamento },
+    pay: (id: number, datePayment?: string) =>
+      request<Transaction>(`/finance/transactions/${id}/pay`, {
+        method: "POST",
+        body: { datePayment },
       }),
 
-    estornar: (id: number) =>
-      requisitar<Lancamento>(`/financeiro/lancamentos/${id}/estornar`, { metodo: "POST" }),
+    refund: (id: number) =>
+      request<Transaction>(`/finance/transactions/${id}/refund`, { method: "POST" }),
 
-    cancelar: (id: number) =>
-      requisitar<Lancamento>(`/financeiro/lancamentos/${id}/cancelar`, { metodo: "POST" }),
+    cancel: (id: number) =>
+      request<Transaction>(`/finance/transactions/${id}/cancel`, { method: "POST" }),
 
-    recibo: (id: number) => requisitar<Recibo>(`/financeiro/lancamentos/${id}/recibo`),
+    receipt: (id: number) => request<Receipt>(`/finance/transactions/${id}/receipt`),
 
-    remover: (id: number) =>
-      requisitar<void>(`/financeiro/lancamentos/${id}`, { metodo: "DELETE" }),
+    remove: (id: number) =>
+      request<void>(`/finance/transactions/${id}`, { method: "DELETE" }),
   },
 
-  /** Plano aberto pelo paciente: sem credencial. */
-  planoPublico: (identificador: string) =>
-    requisitar<PlanoPublico>(`/publico/planos/${identificador}`, { semAutenticacao: true }),
+  /** A plan opened by the patient: with no credential. */
+  publicPlan: (identifier: string) =>
+    request<PublicPlan>(`/public/plans/${identifier}`, { withoutAuthentication: true }),
 };

@@ -80,8 +80,8 @@ erDiagram
     }
 ```
 
-Toda tabela carrega ainda quatro colunas de auditoria — `criado_em`,
-`atualizado_em`, `criado_por`, `atualizado_por` — preenchidas automaticamente com
+Toda tabela carrega ainda quatro colunas de auditoria — `created_at`,
+`updated_at`, `created_by`, `updated_by` — preenchidas automaticamente com
 o instante e o e-mail do usuário autenticado. Foram omitidas do diagrama por
 repetição.
 
@@ -89,18 +89,18 @@ repetição.
 
 ## 2. As duas colunas que estruturam o modelo
 
-### 2.1 `conta_id` — o eixo de isolamento
+### 2.1 `account_id` — o eixo de isolamento
 
-Toda tabela de dado clínico tem `conta_id`, e toda consulta filtra por ela. É o
+Toda tabela de dado clínico tem `account_id`, e toda consulta filtra por ela. É o
 mecanismo que impede um consultório de alcançar dados de outro.
 
 O comportamento muda conforme a coluna aceite nulo:
 
-| Tabela | `conta_id` | Significado |
+| Tabela | `account_id` | Significado |
 |---|---|---|
-| `paciente` | **obrigatório** | Paciente pertence a exatamente um consultório. Não existe paciente compartilhado. |
-| `alimento` | **opcional** | Nulo = acervo comum, visível a todos. Preenchido = cadastro do consultório. |
-| `medida_caseira` | **opcional** | Nulo = porção que acompanha o sistema. Preenchido = porção do consultório. |
+| `patient` | **obrigatório** | Paciente pertence a exatamente um consultório. Não existe paciente compartilhado. |
+| `food` | **opcional** | Nulo = acervo comum, visível a todos. Preenchido = cadastro do consultório. |
+| `household_measure` | **opcional** | Nulo = porção que acompanha o sistema. Preenchido = porção do consultório. |
 
 A consulta que combina os dois casos:
 
@@ -112,7 +112,7 @@ Essa distinção não é detalhe de implementação: é o que permite compartilh
 tabelas de composição — idênticas para todos — sem impedir que cada profissional
 cadastre o que é seu.
 
-### 2.2 `descricao_busca` — busca previsível
+### 2.2 `search_description` — busca previsível
 
 O alimento guarda a descrição duas vezes: como foi cadastrada e em forma
 normalizada, sem acentos e em minúsculas, gravada a cada escrita.
@@ -131,7 +131,7 @@ de configuração de ambiente.
 
 ## 3. Composição nutricional
 
-Os 32 nutrientes são colunas da própria tabela `alimento`, mapeados como objeto
+Os 32 nutrientes são colunas da própria tabela `food`, mapeados como objeto
 embutido — não há tabela separada de nutrientes.
 
 ```mermaid
@@ -204,7 +204,7 @@ classDiagram
 
 ### 3.1 Por que colunas, e não tabela de nutrientes
 
-A modelagem alternativa — uma tabela `alimento_nutriente` com pares
+A modelagem alternativa — uma tabela `food_nutrient` com pares
 chave-valor — seria mais flexível para nutrientes que surjam depois.
 
 Optou-se por colunas porque a operação dominante do sistema é **somar a
@@ -214,7 +214,7 @@ um plano de 40 itens passaria a percorrer mais de mil registros — com agregaç
 pivotagem a cada totalização.
 
 O custo dessa escolha é que incluir um nutriente exige migration. Mitigado pelo
-catálogo `Nutriente`: a inclusão é uma linha no catálogo, uma coluna na migration
+catálogo `Nutrient`: a inclusão é uma linha no catálogo, uma coluna na migration
 e um par de acessores, e o nutriente novo passa a funcionar automaticamente no
 cálculo, na API e na importação.
 
@@ -246,10 +246,10 @@ essa ressalva.
 
 | Restrição | Tabela | Propósito |
 |---|---|---|
-| `uk_usuario_email` | `usuario` | E-mail é a identidade de login, única no sistema |
-| `uk_alimento_fonte_codigo` | `alimento` | Impede importar a mesma tabela duas vezes |
-| `uk_alimento_fonte_barras` | `alimento` | Impede o mesmo produto duplicado na mesma fonte |
-| `ck_medida_gramas` | `medida_caseira` | Peso de porção deve ser maior que zero |
+| `uk_user_email` | `app_user` | E-mail é a identidade de login, única no sistema |
+| `uk_food_source_code` | `food` | Impede importar a mesma tabela duas vezes |
+| `uk_food_source_barcode` | `food` | Impede o mesmo produto duplicado na mesma fonte |
+| `ck_measure_grams` | `household_measure` | Peso de porção deve ser maior que zero |
 
 As duas restrições de alimento incluem a fonte no escopo, e não apenas o código.
 O mesmo código de barras pode legitimamente existir no acervo comum e como cópia
@@ -259,13 +259,13 @@ ajustada de um consultório — são registros distintos, com procedências dist
 
 | Índice | Consulta que atende |
 |---|---|
-| `ix_paciente_conta_nome` | Listagem de pacientes, ordenada por nome |
-| `ix_alimento_descricao` | Busca por texto, sobre a coluna normalizada |
-| `ix_alimento_conta` | Recorte do acervo por consultório |
-| `ix_alimento_codigo_barras` | Localizar produto pelo código de barras |
-| `ix_medida_alimento_conta` | Porções visíveis de um alimento |
+| `ix_patient_account_name` | Listagem de pacientes, ordenada por nome |
+| `ix_food_description` | Busca por texto, sobre a coluna normalizada |
+| `ix_food_account` | Recorte do acervo por consultório |
+| `ix_food_code_barcode` | Localizar produto pelo código de barras |
+| `ix_measure_food_account` | Porções visíveis de um alimento |
 
-Todos os índices de dado clínico começam por `conta_id` ou o acompanham, porque o
+Todos os índices de dado clínico começam por `account_id` ou o acompanham, porque o
 filtro por consultório está presente em toda consulta.
 
 ---
@@ -278,25 +278,25 @@ aplicação de subir.
 
 | Versão | Conteúdo |
 |---|---|
-| `V1` | `conta`, `usuario` |
-| `V2` | `paciente` |
-| `V3` | `alimento`, `medida_caseira` |
-| `V4` | `conta_id` em `medida_caseira` — porção por consultório |
-| `V5` | Nutrientes de rótulo e código de barras em `alimento` |
-| `V6` | `plano_alimentar`, `refeicao`, `item_refeicao`, `equivalente_item` |
-| `V7` | `avaliacao_antropometrica` |
-| `V8` | `agendamento` |
-| `V9` | `lancamento_financeiro` |
-| `V10` | Selênio, B12, folato, vitamina D e vitamina E em `alimento` |
-| `V11` | `ingrediente_receita`, e as colunas de receita em `alimento` |
-| `V12` | `orientacao` e `orientacao_do_plano`, com cinco modelos do sistema |
+| `V1` | `account`, `app_user` |
+| `V2` | `patient` |
+| `V3` | `food`, `household_measure` |
+| `V4` | `account_id` em `household_measure` — porção por consultório |
+| `V5` | Nutrientes de rótulo e código de barras em `food` |
+| `V6` | `meal_plan`, `meal`, `meal_item`, `item_substitution` |
+| `V7` | `anthropometric_assessment` |
+| `V8` | `appointment` |
+| `V9` | `finance_transaction` |
+| `V10` | Selênio, B12, folato, vitamina D e vitamina E em `food` |
+| `V11` | `recipe_ingredient`, e as colunas de receita em `food` |
+| `V12` | `handout` e `plan_handout`, com cinco modelos do sistema |
 | `V13` | Acentuação dos modelos de orientação |
-| `V14` | `parametro_exame`, `faixa_referencia`, `exame`, `laudo_exame`, `solicitacao_exame`, com catálogo de 30 parâmetros |
-| `V15` | `curva_crescimento` e as colunas de gestação em `avaliacao_antropometrica` |
-| `V16` | `token_recuperacao` e `senha_versao` em `usuario` |
-| `V17` | `questionario`, `pergunta`, `resposta_questionario`, `item_resposta`, com o modelo de pré-consulta |
-| `V18` | `imagem_orientacao` e `imagem_do_plano` |
-| `V19` | `token_agenda` em `conta` — assinatura do calendário externo |
+| `V14` | `labtest_parameter`, `reference_range`, `labtest`, `labtest_report`, `labtest_order`, com catálogo de 30 parâmetros |
+| `V15` | `growth_chart` e as colunas de gestação em `anthropometric_assessment` |
+| `V16` | `recovery_token` e `password_version` em `app_user` |
+| `V17` | `questionnaire`, `question`, `questionnaire_answer`, `item_answer`, com o modelo de pré-consulta |
+| `V18` | `handout_image` e `plan_image` |
+| `V19` | `schedule_token` em `account` — assinatura do calendário externo |
 
 Duas dessas migrations existem por necessidade descoberta durante a construção, e
 vale registrar por quê:
@@ -369,14 +369,14 @@ erDiagram
 
 ### 6.1 As três colunas redundantes do item
 
-O item guarda `quantidade`, `descricao_medida` e `gramas` — informação que
+O item guarda `quantity`, `measure_description` e `grams` — informação que
 parece derivável e não é:
 
 | Coluna | Por que existe |
 |---|---|
-| `quantidade` + `descricao_medida` | É como o paciente lê: "4 colheres de sopa cheias". |
-| `gramas` | É sobre o que o cálculo roda. **Gravado, não derivado** — ver AD-14. |
-| `descricao` | Copiada do alimento e editável, para o profissional escrever "arroz do almoço" sem alterar o cadastro. |
+| `quantity` + `measure_description` | É como o paciente lê: "4 colheres de sopa cheias". |
+| `grams` | É sobre o que o cálculo roda. **Gravado, não derivado** — ver AD-14. |
+| `description` | Copiada do alimento e editável, para o profissional escrever "arroz do almoço" sem alterar o cadastro. |
 
 A redundância protege o documento já entregue: corrigir depois quanto pesa a
 "colher de sopa" do consultório não pode reescrever plano que o paciente tem em
@@ -402,8 +402,8 @@ quando presentes, e unicidade do identificador público.
 
 ## 7. Antropometria, agenda e financeiro — implementado
 
-Construído nas migrações V7, V8 e V9, e verificado por `AntropometriaTest`,
-`AgendaTest` e `FinanceiroTest`. As decisões de modelagem explicadas nas
+Construído nas migrações V7, V8 e V9, e verificado por `AnthropometryTest`,
+`ScheduleTest` e `FinanceTest`. As decisões de modelagem explicadas nas
 subseções seguintes são as que sobreviveram à implementação — o texto foi
 escrito como especificação e revisado depois que o código existiu.
 
@@ -477,7 +477,7 @@ A mesma lógica vale para o gasto energético: a equação usada fica registrada
 Registrar dobras sem estimar composição é uso legítimo: o profissional pode
 acompanhar as dobras isoladamente, ou não ter todas as exigidas pelo protocolo.
 
-O modelo aceita isso: `protocolo_composicao` nulo significa "medidas registradas,
+O modelo aceita isso: `composition_protocol` nulo significa "medidas registradas,
 composição não estimada". O que o sistema **não** faz é estimar com dobra
 faltando — completar a conta inventaria composição corporal.
 
@@ -506,9 +506,9 @@ O lançamento tem três datas, e a distinção é contábil, não decorativa:
 
 | Data | Significado |
 |---|---|
-| `competencia` | A que mês o lançamento pertence |
-| `vencimento` | Quando deveria ser pago |
-| `data_pagamento` | Quando efetivamente entrou — nulo enquanto pendente |
+| `accrual` | A que mês o lançamento pertence |
+| `due` | Quando deveria ser pago |
+| `payment_date` | Quando efetivamente entrou — nulo enquanto pendente |
 
 A apuração separa **efetivado** de **previsto** justamente por isso. Somar o que
 ainda não entrou faria o consultório parecer ter dinheiro que não tem.
@@ -517,8 +517,8 @@ ainda não entrou faria o consultório parecer ter dinheiro que não tem.
 
 ## 8. Receita — implementado
 
-Construída na migração V11 e verificada por `ReceitaTest`. Não há entidade
-`Receita`: a receita é um `alimento` com `fonte = RECEITA`, pelas razões da
+Construída na migração V11 e verificada por `RecipeTest`. Não há entidade
+`Recipe`: a receita é um `food` com `fonte = RECEITA`, pelas razões da
 [AD-20](02-arquitetura.md). O que ela acrescenta são três colunas esparsas e a
 lista de ingredientes.
 
@@ -539,13 +539,13 @@ erDiagram
     }
 ```
 
-Colunas acrescentadas a `alimento`, nulas em tudo que não é receita:
+Colunas acrescentadas a `food`, nulas em tudo que não é receita:
 
 | Coluna | Para quê |
 |---|---|
-| `modo_preparo` | O texto que o nutricionista escreve |
-| `rendimento_gramas` | Peso da preparação pronta. Nulo = não informado |
-| `porcoes` | Em quantas porções rende, para derivar a medida "1 porção" |
+| `instructions_mode` | O texto que o nutricionista escreve |
+| `grams_yield` | Peso da preparação pronta. Nulo = não informado |
+| `servings` | Em quantas porções rende, para derivar a medida "1 porção" |
 
 ### 8.1 Por que o rendimento é campo, e não a soma dos ingredientes
 
@@ -560,13 +560,13 @@ denominador — e o peso da preparação pronta não é a soma do que entrou nel
 
 Dividir pela soma faria o arroz aparecer duas vezes e meia mais calórico por
 100 g do que é. Como nem sempre o nutricionista pesa, o campo é opcional — mas
-quando fica vazio a resposta marca `rendimentoEstimado`, e a tela diz que
+quando fica vazio a resposta marca `estimatedYield`, e a tela diz que
 aquele número é presumido. O sistema não tem como saber o rendimento; tem como
 não fingir que sabe.
 
 ### 8.2 Por que o peso do ingrediente é gravado
 
-`gramas` repete o que daria para derivar de `medida_id × quantidade`. É a mesma
+`grams` repete o que daria para derivar de `medida_id × quantidade`. É a mesma
 redundância deliberada do item de refeição (seção 6.1): corrigir depois o peso
 de uma colher de sopa não pode alterar em silêncio a composição de uma receita
 que o nutricionista já conferiu e prescreveu.
@@ -583,7 +583,7 @@ tem, e evita percorrer um grafo torto até o fim.
 
 ## 9. Orientações nutricionais — implementado
 
-Construídas nas migrações V12 e V13, verificadas por `OrientacaoTest`.
+Construídas nas migrações V12 e V13, verificadas por `HandoutTest`.
 
 ```mermaid
 erDiagram
@@ -637,7 +637,7 @@ anexo, o nutricionista ainda pode adaptar o texto àquele paciente sem sujar o
 modelo. Se a cópia esperasse a publicação, editar o texto do plano editaria a
 biblioteca inteira.
 
-`orientacao_id` fica só como procedência, e pode ser nulo — quando o texto foi
+`handout_id` fica só como procedência, e pode ser nulo — quando o texto foi
 escrito na hora, ou quando o modelo de origem foi removido depois.
 
 ### 9.2 Por que os modelos do sistema não são editáveis
@@ -651,14 +651,14 @@ biblioteca própria.
 
 Blob na mesma tabela faz toda listagem de orientações arrastar as figuras junto,
 mesmo quando ninguém vai vê-las — e a listagem é a tela mais usada do módulo.
-Separada, ela lê `titulo`, `corpo` e o booleano derivado de `imagem_tipo`, e o
+Separada, ela lê `title`, `body` e o booleano derivado de `image_type`, e o
 arquivo só sai do banco quando alguém pede a figura.
 
 A chave primária da tabela de imagem **é** a chave da entidade dona, e não uma
 sequência própria: a relação é de no máximo um para um, e uma chave própria
 permitiria duas figuras para a mesma orientação sem que nada reclamasse.
 
-`imagem_do_plano` guarda os bytes de novo, e não uma referência à figura da
+`plan_image` guarda os bytes de novo, e não uma referência à figura da
 biblioteca. É a regra da seção 9.1 aplicada a arquivo: trocar o desenho no
 modelo não pode mudar o que o paciente já recebeu. O raciocínio completo, com o
 que foi descartado, está em [02-arquitetura.md](02-arquitetura.md) (AD-22).
@@ -763,13 +763,13 @@ erDiagram
 
 ### 10.1 Por que a resposta guarda o texto da pergunta
 
-`RESPOSTA_ITEM.pergunta_texto` repete o que está em `PERGUNTA`. A redundância é
+`RESPOSTA_ITEM.pergunta_texto` repete o que está em `QUESTION`. A redundância é
 deliberada, e é a mesma do item de refeição (seção 6.1): a resposta é o registro
 de uma consulta que aconteceu numa data. Se o nutricionista remover uma pergunta
 do modelo depois, a resposta antiga não pode perder o enunciado — o paciente
 respondeu àquela pergunta, e não à versão atual do formulário.
 
-`versao_modelo` serve ao mesmo fim num nível acima: identifica qual edição do
+`version_template` serve ao mesmo fim num nível acima: identifica qual edição do
 questionário foi aplicada, sem precisar reconstruir o formulário inteiro.
 
 ### 10.2 Por que o exame grava a faixa que usou
@@ -780,7 +780,7 @@ com o tempo. Se a classificação fosse calculada na leitura, alterar a faixa
 cadastrada reclassificaria exames antigos — um resultado que era normal
 apareceria alterado, sem que nada tivesse acontecido com o paciente.
 
-Por isso `EXAME` guarda `referencia_min` e `referencia_max` junto do valor, e a
+Por isso `LABTEST` guarda `reference_min` e `reference_max` junto do valor, e a
 classificação é decidida uma vez, na entrada.
 
 ### 10.3 O que ainda não está decidido
@@ -793,9 +793,9 @@ implementação que ainda não foi feita:
   volume de um consultório; não serve a milhares de arquivos por conta. O ponto
   em aberto é o gatilho da migração para objeto remoto, que depende de uso real
   e não de estimativa.
-- **Catálogo de parâmetros de exame.** `PARAMETRO_EXAME` é apresentado como
+- **Catálogo de parâmetros de exame.** `LABTEST_PARAMETER` é apresentado como
   tabela do sistema, mas o consultório precisa poder acrescentar parâmetros
-  próprios. Provavelmente segue o padrão de `conta_id` nulo do acervo de
+  próprios. Provavelmente segue o padrão de `account_id` nulo do acervo de
   alimentos (seção 2.1), o que ainda não foi verificado contra o caso real.
 - **Antropometria pediátrica e gestacional** (RF69–RF69b) não aparece neste
   diagrama. As curvas da OMS são tabelas de referência com volume próprio, e
@@ -807,8 +807,8 @@ implementação que ainda não foi feita:
 
 | Tabela | Registros | Origem |
 |---|---|---|
-| `alimento` | **23.945** | TACO (597), IBGE/POF (1.971) e Open Food Facts Brasil (21.377) |
-| `medida_caseira` | **12.918 +** porções de embalagem | IBGE (11.801), acervo curado da TACO (1.117) e peso declarado em rótulo |
+| `food` | **23.945** | TACO (597), IBGE/POF (1.971) e Open Food Facts Brasil (21.377) |
+| `household_measure` | **12.918 +** porções de embalagem | IBGE (11.801), acervo curado da TACO (1.117) e peso declarado em rótulo |
 
 ### 11.1 As três fontes se completam
 
@@ -836,8 +836,8 @@ As porções vêm de três origens, e a diferença importa para a defesa:
 Só a primeira é citável como fonte primária. As outras duas são pontos de
 partida que o nutricionista sobrescreve.
 
-Tabelas do consultório — `paciente`, `plano_alimentar`, `refeicao`,
-`item_refeicao`, `equivalente_item` — nascem vazias e crescem com o uso.
+Tabelas do consultório — `patient`, `meal_plan`, `meal`,
+`meal_item`, `item_substitution` — nascem vazias e crescem com o uso.
 
 As cargas iniciais são idempotentes: verificam a existência de registros da fonte
 antes de importar, e não fazem nada se já houver.

@@ -7,79 +7,80 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { api, definirTratamentoDeSessaoExpirada, gravarToken, lerToken } from "../api/client";
-import type { UsuarioResumo } from "../api/types";
+import { api, defineSessionExpiredHandling, storeToken, readToken } from "../api/client";
+import type { UserSummary } from "../api/types";
 
-interface Contexto {
-  usuario: UsuarioResumo | null;
-  carregando: boolean;
-  entrar: (email: string, senha: string) => Promise<void>;
-  cadastrar: (dados: {
-    nome: string;
+interface Context {
+  user: UserSummary | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: {
+    name: string;
     email: string;
-    senha: string;
+    password: string;
     crn?: string;
-    telefone?: string;
+    phone?: string;
   }) => Promise<void>;
-  sair: () => void;
+  logout: () => void;
 }
 
-const AuthContext = createContext<Contexto | null>(null);
+const AuthContext = createContext<Context | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<UsuarioResumo | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const [user, setUser] = useState<UserSummary | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const sair = useCallback(() => {
-    gravarToken(null);
-    setUsuario(null);
+  const logout = useCallback(() => {
+    storeToken(null);
+    setUser(null);
   }, []);
 
   /**
-   * Restaura a sessão a partir do token guardado.
+   * Restores the session from the stored token.
    *
-   * O usuário é reconsultado no servidor em vez de lido do token: se a conta
-   * foi desativada ou o perfil mudou desde o último acesso, a interface precisa
-   * refletir isso já na abertura, e não só na primeira ação bloqueada.
+   * The user is queried again on the server instead of being read from the
+   * token: if the account was deactivated or the role changed since the last
+   * visit, the interface has to reflect that already at opening, and not only
+   * at the first blocked action.
    */
   useEffect(() => {
-    definirTratamentoDeSessaoExpirada(sair);
+    defineSessionExpiredHandling(logout);
 
-    if (!lerToken()) {
-      setCarregando(false);
+    if (!readToken()) {
+      setLoading(false);
       return;
     }
     api
       .eu()
-      .then(setUsuario)
-      .catch(() => gravarToken(null))
-      .finally(() => setCarregando(false));
-  }, [sair]);
+      .then(setUser)
+      .catch(() => storeToken(null))
+      .finally(() => setLoading(false));
+  }, [logout]);
 
-  const entrar = useCallback(async (email: string, senha: string) => {
-    const resposta = await api.login(email, senha);
-    gravarToken(resposta.token);
-    setUsuario(resposta.usuario);
+  const login = useCallback(async (email: string, password: string) => {
+    const answer = await api.login(email, password);
+    storeToken(answer.token);
+    setUser(answer.user);
   }, []);
 
-  const cadastrar = useCallback<Contexto["cadastrar"]>(async (dados) => {
-    const resposta = await api.cadastrar(dados);
-    gravarToken(resposta.token);
-    setUsuario(resposta.usuario);
+  const register = useCallback<Context["register"]>(async (data) => {
+    const answer = await api.register(data);
+    storeToken(answer.token);
+    setUser(answer.user);
   }, []);
 
-  const valor = useMemo(
-    () => ({ usuario, carregando, entrar, cadastrar, sair }),
-    [usuario, carregando, entrar, cadastrar, sair],
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout }),
+    [user, loading, login, register, logout],
   );
 
-  return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const contexto = useContext(AuthContext);
-  if (!contexto) {
+  const context = useContext(AuthContext);
+  if (!context) {
     throw new Error("useAuth precisa estar dentro de AuthProvider");
   }
-  return contexto;
+  return context;
 }

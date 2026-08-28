@@ -22,54 +22,54 @@ import java.util.Optional;
 @Slf4j
 public class JwtService {
 
-    /** Nome curto: a claim viaja em toda requisicao. */
-    public static final String CLAIM_VERSAO_DA_SENHA = "sv";
+    /** A short name: the claim travels in every request. */
+    public static final String CLAIM_PASSWORD_VERSION = "sv";
 
-    private final SecretKey chave;
-    private final Duration validade;
+    private final SecretKey key;
+    private final Duration expiry;
 
-    public JwtService(@Value("${nutriplan.jwt.secret}") String segredo,
-                      @Value("${nutriplan.jwt.expiration-minutes}") long minutos) {
-        // Aceita o segredo em base64 (producao) ou como texto puro (dev).
+    public JwtService(@Value("${nutriplan.jwt.secret}") String secret,
+                      @Value("${nutriplan.jwt.expiration-minutes}") long minutes) {
+        // It accepts the secret in base64 (production) or as plain text (dev).
         byte[] bytes;
         try {
-            bytes = Decoders.BASE64.decode(segredo);
-        } catch (DecodingException | IllegalArgumentException naoEhBase64) {
-            bytes = segredo.getBytes(StandardCharsets.UTF_8);
+            bytes = Decoders.BASE64.decode(secret);
+        } catch (DecodingException | IllegalArgumentException notEhBase64) {
+            bytes = secret.getBytes(StandardCharsets.UTF_8);
         }
         if (bytes.length < 32) {
             throw new IllegalStateException(
                     "nutriplan.jwt.secret precisa ter ao menos 32 bytes para HS256");
         }
-        this.chave = Keys.hmacShaKeyFor(bytes);
-        this.validade = Duration.ofMinutes(minutos);
+        this.key = Keys.hmacShaKeyFor(bytes);
+        this.expiry = Duration.ofMinutes(minutes);
     }
 
-    public String gerar(UsuarioAutenticado u) {
-        Instant agora = Instant.now();
+    public String generate(AuthenticatedUser u) {
+        Instant now = Instant.now();
         return Jwts.builder()
-                .subject(u.getUsuarioId().toString())
+                .subject(u.getUserId().toString())
                 .claims(Map.of(
                         "email", u.getEmail(),
-                        "nome", u.getNome(),
-                        "perfil", u.getPerfil().name(),
-                        "contaId", u.getContaId(),
-                        // Versao da senha vigente na emissao. Trocar a senha
-                        // incrementa o numero e faz todo token anterior deixar
-                        // de casar — e o que derruba as sessoes abertas num
-                        // sistema que nao guarda sessao.
-                        CLAIM_VERSAO_DA_SENHA, u.getSenhaVersao()))
-                .issuedAt(Date.from(agora))
-                .expiration(Date.from(agora.plus(validade)))
-                .signWith(chave)
+                        "name", u.getName(),
+                        "role", u.getRole().name(),
+                        "accountId", u.getAccountId(),
+                        // The password version in force at issue. Changing the
+                        // password increments the number and makes every
+                        // earlier token stop matching — which is what drops the
+                        // open sessions in a system that keeps no session.
+                        CLAIM_PASSWORD_VERSION, u.getPasswordVersion()))
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(expiry)))
+                .signWith(key)
                 .compact();
     }
 
-    /** Devolve as claims se o token for valido e nao expirado; vazio caso contrario. */
-    public Optional<Claims> validar(String token) {
+    /** Returns the claims if the token is valid and not expired; empty otherwise. */
+    public Optional<Claims> validate(String token) {
         try {
             return Optional.of(Jwts.parser()
-                    .verifyWith(chave)
+                    .verifyWith(key)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload());
@@ -79,7 +79,7 @@ public class JwtService {
         }
     }
 
-    public long validadeEmSegundos() {
-        return validade.toSeconds();
+    public long expiryAtSeconds() {
+        return expiry.toSeconds();
     }
 }

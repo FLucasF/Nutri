@@ -1,38 +1,38 @@
-/** Contratos da API, espelhando os DTOs do backend. */
+/** API contracts, mirroring the backend DTOs. */
 
-export type Perfil = "NUTRICIONISTA" | "SECRETARIA" | "PACIENTE" | "ADMIN";
-export type Plano = "EXPERIMENTAL" | "GRADUACAO" | "PREMIUM" | "BLACK";
-export type Sexo = "FEMININO" | "MASCULINO";
+export type Role = "NUTRITIONIST" | "ASSISTANT" | "PATIENT" | "ADMIN";
+export type Plan = "EXPERIMENTAL" | "UNDERGRADUATE" | "PREMIUM" | "BLACK";
+export type Sex = "FEMALE" | "MALE";
 
-export type FonteDeDados =
+export type DataSource =
   | "TACO"
   | "TBCA"
   | "IBGE"
   | "OPEN_FOOD_FACTS"
-  | "FABRICANTE"
-  | "PERSONALIZADO"
-  | "RECEITA";
+  | "MANUFACTURER"
+  | "CUSTOM"
+  | "RECIPE";
 
-export type MetodoPrescricao = "ALIMENTOS" | "EQUIVALENTES" | "QUALITATIVO";
-export type StatusPlano = "RASCUNHO" | "ATIVO" | "ENCERRADO";
+export type PrescriptionMethod = "FOODS" | "SUBSTITUTIONS" | "QUALITATIVE";
+export type PlanStatus = "DRAFT" | "ACTIVE" | "CLOSED";
 
-export interface UsuarioResumo {
+export interface UserSummary {
   id: number;
-  nome: string;
+  name: string;
   email: string;
-  perfil: Perfil;
-  contaId: number;
-  plano: Plano;
+  role: Role;
+  accountId: number;
+  plan: Plan;
 }
 
 export interface TokenResponse {
   token: string;
-  tipo: string;
-  expiraEmSegundos: number;
-  usuario: UsuarioResumo;
+  type: string;
+  expiresAtSeconds: number;
+  user: UserSummary;
 }
 
-export interface Pagina<T> {
+export interface Page<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
@@ -40,760 +40,761 @@ export interface Pagina<T> {
   size: number;
 }
 
-export interface PacienteResumo {
+export interface PatientSummary {
   id: number;
-  nome: string;
+  name: string;
   email?: string;
-  idade?: number;
-  ativo: boolean;
+  age?: number;
+  active: boolean;
 }
 
-export interface Paciente {
+export interface Patient {
   id: number;
-  nome: string;
+  name: string;
   email?: string;
-  telefone?: string;
-  dataNascimento?: string;
-  idade?: number;
-  sexo?: Sexo;
+  phone?: string;
+  dateBirth?: string;
+  age?: number;
+  sex?: Sex;
   cpf?: string;
-  profissao?: string;
-  objetivo?: string;
-  observacoes?: string;
-  ativo: boolean;
-  temAcessoAoApp: boolean;
-  criadoEm: string;
+  occupation?: string;
+  goal?: string;
+  notes?: string;
+  active: boolean;
+  hasAccessAoApp: boolean;
+  createdAt: string;
 }
 
 /**
- * Composição nutricional. Chave ausente significa nutriente não determinado
- * na fonte — deve aparecer como "não informado", nunca como zero.
+ * Nutritional composition. An absent key means a nutrient not determined in the
+ * source — it should appear as "não informado", never as zero.
  */
-export type Composicao = Record<string, number | undefined>;
+export type Composition = Record<string, number | undefined>;
 
-export interface AlimentoResumo {
+export interface FoodSummary {
   id: number;
-  descricao: string;
-  grupo?: string;
-  fonte: FonteDeDados;
-  marca?: string;
-  energiaKcal?: number;
-  proteinaG?: number;
-  carboidratoG?: number;
-  lipideosG?: number;
-  basePublica: boolean;
+  description: string;
+  group?: string;
+  source: DataSource;
+  brand?: string;
+  energyKcal?: number;
+  proteinG?: number;
+  carbohydrateG?: number;
+  fatG?: number;
+  publicBase: boolean;
 }
 
-export interface Medida {
+export interface Measure {
   id: number;
-  descricao: string;
-  gramas: number;
-  padrao: boolean;
-  doAcervoBase: boolean;
-  editavel: boolean;
+  description: string;
+  grams: number;
+  standard: boolean;
+  forCatalogBase: boolean;
+  editable: boolean;
 }
 
-export interface AlimentoDetalhe {
+export interface FoodDetail {
   id: number;
-  descricao: string;
-  grupo?: string;
-  fonte: FonteDeDados;
-  fonteDescricao: string;
-  codigoFonte?: string;
-  /** EAN do produto industrializado. Ausente nas tabelas de referência. */
-  codigoBarras?: string;
-  marca?: string;
-  basePublica: boolean;
-  editavel: boolean;
-  composicao: Composicao;
-  medidas: Medida[];
+  description: string;
+  group?: string;
+  source: DataSource;
+  sourceDescription: string;
+  codeSource?: string;
+  /** EAN of the processed product. Absent in the reference tables. */
+  codeBarcode?: string;
+  brand?: string;
+  publicBase: boolean;
+  editable: boolean;
+  composition: Composition;
+  measures: Measure[];
 }
 
-export interface PorcaoCalculada {
-  alimentoId: number;
-  descricao: string;
-  gramas: number;
-  medidaUsada: string;
-  composicao: Composicao;
+export interface CalculatedServing {
+  foodId: number;
+  description: string;
+  grams: number;
+  measureUsed: string;
+  composition: Composition;
 }
 
-export interface ResultadoImportacao {
-  importados: number;
-  ignorados: number;
-  avisos: string[];
+export interface ResultImport {
+  imported: number;
+  ignored: number;
+  warnings: string[];
 }
 
-export interface Distribuicao {
-  proteinaPct: number;
-  carboidratoPct: number;
-  lipideoPct: number;
-  energiaCalculadaKcal: number;
+export interface Distribution {
+  proteinPct: number;
+  carbohydratePct: number;
+  lipidPct: number;
+  calculatedEnergyKcal: number;
 }
 
 export interface Total {
-  composicao: Composicao;
-  itensNoCalculo: number;
-  itensForaDoCalculo: number;
-  nutrientesIncompletos: string[];
-  nutrientesSemDado: string[];
-  confiavel: boolean;
-  distribuicao?: Distribuicao;
-  adequacaoEnergeticaPct?: number;
+  composition: Composition;
+  itemsInCalculation: number;
+  itemsOutsideCalculation: number;
+  nutrientsIncomplete: string[];
+  nutrientsWithoutDatum: string[];
+  reliable: boolean;
+  distribution?: Distribution;
+  adequacyEnergyPct?: number;
 }
 
-export interface Equivalente {
+export interface Substitution {
   id?: number;
-  alimentoId?: number;
-  descricao: string;
-  porcao: string;
-  gramas?: number;
+  foodId?: number;
+  description: string;
+  serving: string;
+  grams?: number;
 }
 
 export interface Item {
   id?: number;
-  alimentoId?: number;
-  medidaId?: number;
-  descricao: string;
-  porcao: string;
-  quantidade?: number;
-  gramas?: number;
-  ordem?: number;
-  observacao?: string;
-  equivalentes: Equivalente[];
+  foodId?: number;
+  measureId?: number;
+  description: string;
+  serving: string;
+  quantity?: number;
+  grams?: number;
+  order?: number;
+  notes?: string;
+  substitutions: Substitution[];
 }
 
-export interface RefeicaoResponse {
+export interface MealResponse {
   id?: number;
-  nome: string;
-  horario?: string;
-  ordem?: number;
-  observacao?: string;
-  itens: Item[];
+  name: string;
+  time?: string;
+  order?: number;
+  notes?: string;
+  items: Item[];
   total: Total;
 }
 
-export interface PlanoResponse {
+export interface PlanResponse {
   id: number;
-  titulo: string;
-  pacienteId?: number;
-  pacienteNome?: string;
-  metodo: MetodoPrescricao;
-  metodoDescricao: string;
-  status: StatusPlano;
-  statusDescricao: string;
-  identificadorPublico: string;
-  vigenciaInicio?: string;
-  vigenciaFim?: string;
-  orientacoes?: string;
-  observacoesInternas?: string;
-  metaEnergiaKcal?: number;
-  modelo: boolean;
-  refeicoes: RefeicaoResponse[];
-  totalDoDia: Total;
-  criadoEm: string;
-  atualizadoEm?: string;
+  title: string;
+  patientId?: number;
+  patientName?: string;
+  method: PrescriptionMethod;
+  methodDescription: string;
+  status: PlanStatus;
+  statusDescription: string;
+  publicIdentifier: string;
+  validityStart?: string;
+  validityEnd?: string;
+  handouts?: string;
+  internalNotes?: string;
+  targetEnergyKcal?: number;
+  template: boolean;
+  meals: MealResponse[];
+  dayTotal: Total;
+  createdAt: string;
+  updatedAt?: string;
 }
 
-export interface PlanoResumo {
+export interface PlanSummary {
   id: number;
-  titulo: string;
-  pacienteId?: number;
-  pacienteNome?: string;
-  metodo: MetodoPrescricao;
-  status: StatusPlano;
-  vigenciaInicio?: string;
-  vigenciaFim?: string;
-  modelo: boolean;
-  refeicoes: number;
-  itens: number;
-  energiaKcal?: number;
-  atualizadoEm?: string;
+  title: string;
+  patientId?: number;
+  patientName?: string;
+  method: PrescriptionMethod;
+  status: PlanStatus;
+  validityStart?: string;
+  validityEnd?: string;
+  template: boolean;
+  meals: number;
+  items: number;
+  energyKcal?: number;
+  updatedAt?: string;
 }
 
-// ---- corpo de escrita ----
+// -------- writing side ----
 
-export interface EquivalenteRequest {
-  alimentoId?: number;
-  medidaId?: number;
-  descricao: string;
-  quantidade?: number;
+export interface SubstitutionRequest {
+  foodId?: number;
+  measureId?: number;
+  description: string;
+  quantity?: number;
 }
 
 export interface ItemRequest {
-  alimentoId?: number;
-  medidaId?: number;
-  descricao?: string;
-  quantidade?: number;
-  observacao?: string;
-  equivalentes?: EquivalenteRequest[];
+  foodId?: number;
+  measureId?: number;
+  description?: string;
+  quantity?: number;
+  notes?: string;
+  substitutions?: SubstitutionRequest[];
 }
 
-export interface RefeicaoRequest {
-  nome: string;
-  horario?: string;
-  observacao?: string;
-  itens: ItemRequest[];
+export interface MealRequest {
+  name: string;
+  time?: string;
+  notes?: string;
+  items: ItemRequest[];
 }
 
-export interface PlanoRequest {
-  titulo: string;
-  pacienteId?: number;
-  metodo: MetodoPrescricao;
-  vigenciaInicio?: string;
-  vigenciaFim?: string;
-  orientacoes?: string;
-  observacoesInternas?: string;
-  metaEnergiaKcal?: number;
-  modelo: boolean;
-  refeicoes: RefeicaoRequest[];
+export interface PlanRequest {
+  title: string;
+  patientId?: number;
+  method: PrescriptionMethod;
+  validityStart?: string;
+  validityEnd?: string;
+  handouts?: string;
+  internalNotes?: string;
+  targetEnergyKcal?: number;
+  template: boolean;
+  meals: MealRequest[];
 }
 
-// ---- visão do paciente ----
+// --------- patient side ----
 
-export interface ItemPublico {
-  descricao: string;
-  /** Texto pronto da medida caseira, ex.: "4 colher de sopa". */
-  porcao: string;
-  /** Peso da porção. Ausente quando o item foi prescrito sem peso definido. */
-  pesoGramas?: number;
-  observacao?: string;
-  substituicoes: { descricao: string; porcao: string }[];
+export interface PublicItem {
+  description: string;
+  /** Ready-made text of the household measure, e.g. "4 colheres de sopa". */
+  serving: string;
+  /** Weight of the portion. Absent when the item was prescribed without a defined weight. */
+  weightGrams?: number;
+  notes?: string;
+  substitutions: { description: string; serving: string }[];
 }
 
-export interface RefeicaoPublica {
-  nome: string;
-  horario?: string;
-  observacao?: string;
-  itens: ItemPublico[];
+export interface PublicMeal {
+  name: string;
+  time?: string;
+  notes?: string;
+  items: PublicItem[];
 }
 
-export interface OrientacaoPublica {
+export interface PublicHandout {
   id: number;
-  titulo: string;
-  corpo: string;
-  /** Endereço da figura, já pronto para o `src`. Ausente quando não há figura. */
-  imagem?: string;
+  title: string;
+  body: string;
+  /** Address of the figure, ready for the `src`. Absent when there is no figure. */
+  image?: string;
 }
 
-export interface PlanoPublico {
-  titulo: string;
-  pacienteNome?: string;
-  nutricionistaNome?: string;
-  nutricionistaCrn?: string;
-  consultorioNome?: string;
-  corPrimaria?: string;
+export interface PublicPlan {
+  title: string;
+  patientName?: string;
+  nutritionistName?: string;
+  nutritionistCrn?: string;
+  practiceName?: string;
+  primaryColor?: string;
   logoUrl?: string;
-  metodo: MetodoPrescricao;
-  vigente: boolean;
-  encerrado: boolean;
-  vigenciaInicio?: string;
-  vigenciaFim?: string;
-  orientacoes?: string;
-  /** Orientações anexadas, no texto congelado no momento do anexo. */
-  orientacoesAnexadas: OrientacaoPublica[];
-  refeicoes: RefeicaoPublica[];
-  resumo: {
-    energiaKcal?: number;
-    proteinaG?: number;
-    carboidratoG?: number;
-    lipideosG?: number;
-    refeicoes: number;
+  method: PrescriptionMethod;
+  current: boolean;
+  closed: boolean;
+  validityStart?: string;
+  validityEnd?: string;
+  handouts?: string;
+  /** Handouts attached, in the text frozen at the moment of attaching. */
+  handoutsAttached: PublicHandout[];
+  meals: PublicMeal[];
+  summary: {
+    energyKcal?: number;
+    proteinG?: number;
+    carbohydrateG?: number;
+    fatG?: number;
+    meals: number;
   };
 }
 
-// ============================================================ antropometria
+// ============================================================ anthropometry
 
-export type ProtocoloComposicao =
+export type CompositionProtocol =
   | "FAULKNER"
   | "POLLOCK_3"
   | "POLLOCK_7"
   | "DURNIN_WOMERSLEY";
 
-export type EquacaoGasto = "MIFFLIN_ST_JEOR" | "HARRIS_BENEDICT";
+export type EquationExpenditure = "MIFFLIN_ST_JEOR" | "HARRIS_BENEDICT";
 
-export type ClassificacaoImc =
-  | "BAIXO_PESO"
-  | "EUTROFIA"
-  | "SOBREPESO"
-  | "OBESIDADE_I"
-  | "OBESIDADE_II"
-  | "OBESIDADE_III";
+export type BmiClassification =
+  | "LOW_WEIGHT"
+  | "NORMAL"
+  | "OVERWEIGHT"
+  | "OBESITY_I"
+  | "OBESITY_II"
+  | "OBESITY_III";
 
-export type RiscoCardiometabolico = "BAIXO" | "MODERADO" | "ALTO";
+export type CardiometabolicRisk = "LOW" | "MODERATE" | "HIGH";
 
 /**
- * Valor derivado com o motivo quando não pôde ser calculado.
- * Só o nulo obrigaria a interface a adivinhar se o dado falta porque a medida
- * não foi feita ou porque a regra impede o cálculo.
+ * A derived value with the reason when it could not be calculated.
+ * Null alone would force the interface to guess whether the datum is missing
+ * because the measurement was not taken or because the rule prevents the
+ * calculation.
  */
-export interface Derivado<T> {
-  valor?: T;
-  indisponivelPorque?: string;
+export interface Derived<T> {
+  value?: T;
+  unavailableBecause?: string;
 }
 
-export interface ComposicaoCorporal {
-  protocolo: ProtocoloComposicao;
-  protocoloDescricao: string;
-  percentualGordura?: number;
-  massaGordaKg?: number;
-  massaMagraKg?: number;
+export interface CompositionBody {
+  protocol: CompositionProtocol;
+  protocolDescription: string;
+  percentageFat?: number;
+  massFatKg?: number;
+  massLeanKg?: number;
 }
 
-export interface GastoEnergetico {
-  equacao: EquacaoGasto;
-  equacaoDescricao: string;
-  fatorAtividade?: number;
+export interface ExpenditureEnergy {
+  equation: EquationExpenditure;
+  equationDescription: string;
+  factorActivity?: number;
   basalKcal?: number;
   totalKcal?: number;
 }
 
-export interface Avaliacao {
+export interface Assessment {
   id: number;
-  pacienteId: number;
-  pacienteNome: string;
-  data: string;
-  pesoKg?: number;
-  alturaCm?: number;
-  dobras: Record<string, number>;
-  circunferencias: Record<string, number>;
-  imc?: number;
-  classificacaoImc: Derivado<ClassificacaoImc>;
-  relacaoCinturaQuadril?: number;
-  riscoCardiometabolico: Derivado<RiscoCardiometabolico>;
-  composicao?: ComposicaoCorporal;
-  gastoEnergetico?: GastoEnergetico;
-  /** Presente quando o paciente tem até 19 anos. */
-  crescimentoInfantil?: Derivado<CrescimentoInfantil>;
-  /** Presente quando a avaliação informa semana gestacional. */
-  gestacao?: Derivado<Gestacao>;
-  observacoes?: string;
-  criadoEm: string;
+  patientId: number;
+  patientName: string;
+  date: string;
+  weightKg?: number;
+  heightCm?: number;
+  skinfolds: Record<string, number>;
+  circumferences: Record<string, number>;
+  bmi?: number;
+  classificationBmi: Derived<BmiClassification>;
+  ratioWaistHip?: number;
+  riskCardiometabolico: Derived<CardiometabolicRisk>;
+  composition?: CompositionBody;
+  expenditureEnergy?: ExpenditureEnergy;
+  /** Present when the patient is 19 or younger. */
+  childGrowth?: Derived<ChildGrowth>;
+  /** Present when the assessment reports a gestational week. */
+  pregnancy?: Derived<Pregnancy>;
+  notes?: string;
+  createdAt: string;
 }
 
-export type IndicadorDeCrescimento = "IMC_PARA_IDADE" | "ESTATURA_PARA_IDADE";
+export type GrowthIndicator = "BMI_TO_AGE" | "HEIGHT_TO_AGE";
 
-export interface IndicadorInfantil {
-  indicador: IndicadorDeCrescimento;
-  indicadorDescricao: string;
-  escoreZ?: number;
-  classificacao?: string;
-  classificacaoDescricao?: string;
-  exigeAtencao: boolean;
-  /** Qual curva da OMS foi usada: são referências distintas. */
-  referencia: string;
+export interface ChildIndicator {
+  indicator: GrowthIndicator;
+  indicatorDescription: string;
+  scoreZ?: number;
+  classification?: string;
+  classificationDescription?: string;
+  requiresAttention: boolean;
+  /** Which WHO curve was used: they are distinct references. */
+  reference: string;
 }
 
-export interface CrescimentoInfantil {
-  idadeEmMeses: number;
-  indicadores: IndicadorInfantil[];
+export interface ChildGrowth {
+  ageAtMonths: number;
+  indicators: ChildIndicator[];
 }
 
-export interface Gestacao {
-  semanaGestacional: number;
-  pesoPreGestacionalKg: number;
-  imcPreGestacional: number;
-  faixa: string;
-  faixaDescricao: string;
-  ganhoAteAgora: number;
-  esperadoMin: number;
-  esperadoMax: number;
-  situacao?: "ABAIXO" | "ADEQUADO" | "ACIMA";
-  situacaoDescricao?: string;
-  ganhoTotalRecomendadoMin: number;
-  ganhoTotalRecomendadoMax: number;
+export interface Pregnancy {
+  gestationalWeek: number;
+  weightGestationalPreKg: number;
+  bmiGestationalPre: number;
+  range: string;
+  rangeDescription: string;
+  gainAteNow: number;
+  expectedMin: number;
+  expectedMax: number;
+  status?: "BELOW" | "ADEQUATE" | "ABOVE";
+  statusDescription?: string;
+  totalGainRecommendedMin: number;
+  totalGainRecommendedMax: number;
 }
 
-export interface AvaliacaoRequest {
-  data: string;
-  pesoKg?: number;
-  alturaCm?: number;
-  dobras?: Record<string, number>;
-  circunferencias?: Record<string, number>;
-  protocoloComposicao?: ProtocoloComposicao;
-  equacaoGasto?: EquacaoGasto;
-  fatorAtividade?: number;
-  observacoes?: string;
-  semanaGestacional?: number;
-  pesoPreGestacionalKg?: number;
+export interface AssessmentRequest {
+  date: string;
+  weightKg?: number;
+  heightCm?: number;
+  skinfolds?: Record<string, number>;
+  circumferences?: Record<string, number>;
+  protocolComposition?: CompositionProtocol;
+  equationExpenditure?: EquationExpenditure;
+  factorActivity?: number;
+  notes?: string;
+  gestationalWeek?: number;
+  weightGestationalPreKg?: number;
 }
 
-export interface Variacao {
-  medida: string;
-  rotulo: string;
-  atual?: number;
-  anterior?: number;
-  diferenca?: number;
-  comparavel: boolean;
-  observacao?: string;
+export interface Change {
+  measure: string;
+  label: string;
+  current?: number;
+  previous?: number;
+  difference?: number;
+  comparable: boolean;
+  notes?: string;
 }
 
-export interface PontoDaEvolucao {
-  avaliacaoId: number;
-  data: string;
-  pesoKg?: number;
-  imc?: number;
-  percentualGordura?: number;
-  protocolo?: ProtocoloComposicao;
-  variacoesFrenteAAnterior: Variacao[];
-  variacoesFrenteAPrimeira: Variacao[];
+export interface ProgressPoint {
+  assessmentId: number;
+  date: string;
+  weightKg?: number;
+  bmi?: number;
+  percentageFat?: number;
+  protocol?: CompositionProtocol;
+  changesPreviousFront: Change[];
+  changesFrontFirst: Change[];
 }
 
-export interface Evolucao {
-  pacienteId: number;
-  pacienteNome: string;
-  totalDeAvaliacoes: number;
-  pontos: PontoDaEvolucao[];
+export interface Progress {
+  patientId: number;
+  patientName: string;
+  assessmentsTotal: number;
+  points: ProgressPoint[];
 }
 
-export interface ProtocoloInfo {
-  protocolo: ProtocoloComposicao;
-  descricao: string;
-  exigeSexo: boolean;
-  exigeIdade: boolean;
-  dobrasFemininas: string[];
-  dobrasMasculinas: string[];
+export interface ProtocolInfo {
+  protocol: CompositionProtocol;
+  description: string;
+  requiresSex: boolean;
+  requiresAge: boolean;
+  skinfoldsFemale: string[];
+  skinfoldsMale: string[];
 }
 
-// ==================================================================== agenda
+// ================================================================== schedule
 
-export type TipoAtendimento =
-  | "PRIMEIRA_CONSULTA"
-  | "RETORNO"
-  | "AVALIACAO"
-  | "ORIENTACAO"
-  | "OUTRO";
+export type AppointmentType =
+  | "FIRST_CONSULTATION"
+  | "FOLLOWUP"
+  | "ASSESSMENT"
+  | "COUNSELING"
+  | "OTHER";
 
-export type SituacaoAtendimento =
-  | "AGENDADO"
-  | "CONFIRMADO"
-  | "REALIZADO"
-  | "FALTOU"
-  | "CANCELADO";
+export type AppointmentStatus =
+  | "SCHEDULED"
+  | "CONFIRMED"
+  | "COMPLETED"
+  | "NOSHOW"
+  | "CANCELED";
 
-export interface Agendamento {
+export interface Appointment {
   id: number;
-  pacienteId: number;
-  pacienteNome?: string;
-  inicio: string;
-  fim: string;
-  duracaoMinutos: number;
-  tipo: TipoAtendimento;
-  tipoDescricao: string;
-  situacao: SituacaoAtendimento;
-  situacaoDescricao: string;
-  transicoesPermitidas: SituacaoAtendimento[];
-  observacao?: string;
-  motivoDesfecho?: string;
+  patientId: number;
+  patientName?: string;
+  start: string;
+  end: string;
+  durationMinutes: number;
+  type: AppointmentType;
+  typeDescription: string;
+  status: AppointmentStatus;
+  statusDescription: string;
+  transitionsAllowed: AppointmentStatus[];
+  notes?: string;
+  reasonOutcome?: string;
 }
 
-export interface AgendamentoRequest {
-  pacienteId: number;
-  inicio: string;
-  duracaoMinutos: number;
-  tipo: TipoAtendimento;
-  observacao?: string;
+export interface AppointmentRequest {
+  patientId: number;
+  start: string;
+  durationMinutes: number;
+  type: AppointmentType;
+  notes?: string;
 }
 
-export interface DiaDaAgenda {
-  data: string;
-  totalDeAtendimentos: number;
-  realizados: number;
-  faltas: number;
-  atendimentos: Agendamento[];
+export interface ScheduleDay {
+  date: string;
+  appointmentsTotal: number;
+  completed: number;
+  noshows: number;
+  appointments: Appointment[];
 }
 
-export interface TipoAtendimentoInfo {
-  tipo: TipoAtendimento;
-  descricao: string;
-  duracaoSugeridaMinutos: number;
+export interface TypeAppointmentInfo {
+  type: AppointmentType;
+  description: string;
+  durationSuggestedMinutes: number;
 }
 
-// ================================================================ financeiro
+// =================================================================== finance
 
-export type TipoLancamento = "RECEITA" | "DESPESA";
-export type SituacaoLancamento = "PENDENTE" | "PAGO" | "CANCELADO";
+export type TransactionType = "INCOME" | "EXPENSE";
+export type TransactionStatus = "PENDING" | "PAID" | "CANCELED";
 
-export interface Lancamento {
+export interface Transaction {
   id: number;
-  tipo: TipoLancamento;
-  tipoDescricao: string;
-  situacao: SituacaoLancamento;
-  situacaoDescricao: string;
-  valor: number;
-  competencia: string;
-  vencimento?: string;
-  dataPagamento?: string;
-  categoria: string;
-  formaPagamento?: string;
-  descricao?: string;
-  pacienteId?: number;
-  pacienteNome?: string;
-  agendamentoId?: number;
-  vencido: boolean;
+  type: TransactionType;
+  typeDescription: string;
+  status: TransactionStatus;
+  statusDescription: string;
+  value: number;
+  accrual: string;
+  due?: string;
+  datePayment?: string;
+  category: string;
+  paymentMethod?: string;
+  description?: string;
+  patientId?: number;
+  patientName?: string;
+  appointmentId?: number;
+  overdue: boolean;
 }
 
-export interface LancamentoRequest {
-  tipo: TipoLancamento;
-  valor: number;
-  competencia: string;
-  vencimento?: string;
-  categoria: string;
-  formaPagamento?: string;
-  descricao?: string;
-  pacienteId?: number;
-  agendamentoId?: number;
+export interface TransactionRequest {
+  type: TransactionType;
+  value: number;
+  accrual: string;
+  due?: string;
+  category: string;
+  paymentMethod?: string;
+  description?: string;
+  patientId?: number;
+  appointmentId?: number;
 }
 
-export interface TotalPorCategoria {
-  categoria: string;
-  tipo: TipoLancamento;
+export interface TotalByCategory {
+  category: string;
+  type: TransactionType;
   total: number;
-  lancamentos: number;
+  transactions: number;
 }
 
-export interface Apuracao {
-  de: string;
-  ate: string;
-  totalRecebido: number;
-  totalAReceber: number;
-  despesasPagas: number;
-  despesasAPagar: number;
-  resultadoEfetivado: number;
-  resultadoPrevisto: number;
-  lancamentos: number;
-  porCategoria: TotalPorCategoria[];
+export interface Summary {
+  from: string;
+  to: string;
+  totalReceived: number;
+  totalReceive: number;
+  expensesPaid: number;
+  expensesPay: number;
+  resultEfetivado: number;
+  resultExpected: number;
+  transactions: number;
+  byCategory: TotalByCategory[];
 }
 
-export interface Recibo {
-  lancamentoId: number;
-  consultorioNome?: string;
-  profissionalNome?: string;
+export interface Receipt {
+  transactionId: number;
+  practiceName?: string;
+  profissionalName?: string;
   profissionalCrn?: string;
-  pagadorNome?: string;
-  valor: number;
-  valorPorExtenso: string;
-  dataPagamento: string;
-  referente: string;
-  emitidoEm: string;
+  payerName?: string;
+  value: number;
+  valueByWords: string;
+  datePayment: string;
+  related: string;
+  emitidoAt: string;
 }
 
-// ---- receitas ----
+// ----- recipes ----
 
-export interface IngredienteReceita {
+export interface RecipeIngredient {
   id?: number;
-  alimentoId: number;
-  descricao: string;
-  fonteDescricao: string;
-  medidaId?: number;
-  /** Texto pronto: "2 colheres de sopa" ou "150 g". */
-  quantidade: string;
-  gramas: number;
+  foodId: number;
+  description: string;
+  sourceDescription: string;
+  measureId?: number;
+  /** Ready-made text: "2 tablespoons" or "150 g". */
+  quantity: string;
+  grams: number;
 }
 
-export interface Receita {
+export interface Recipe {
   id: number;
-  nome: string;
-  grupo?: string;
-  modoPreparo?: string;
-  /** Peso final usado no cálculo. */
-  rendimentoGramas: number;
-  /** Verdadeiro quando o peso final não foi informado e a soma foi presumida. */
-  rendimentoEstimado: boolean;
-  pesoDosIngredientes: number;
-  porcoes?: number;
-  gramasPorPorcao?: number;
-  composicaoPor100g: Composicao;
-  composicaoDaPorcao?: Composicao;
-  /** Nutrientes somados de apenas parte dos ingredientes: são piso, não total. */
-  nutrientesIncompletos: string[];
-  ingredientes: IngredienteReceita[];
+  name: string;
+  group?: string;
+  modeInstructions?: string;
+  /** Final weight used in the calculation. */
+  yieldGrams: number;
+  /** True when the final weight was not reported and the sum was presumed. */
+  estimatedYield: boolean;
+  ingredientsWeight: number;
+  servings?: number;
+  gramsByServing?: number;
+  compositionPor100g: Composition;
+  servingComposition?: Composition;
+  /** Nutrients summed from only part of the ingredients: they are a floor, not a total. */
+  nutrientsIncomplete: string[];
+  ingredients: RecipeIngredient[];
 }
 
-export interface ReceitaResumo {
+export interface RecipeSummary {
   id: number;
-  nome: string;
-  grupo?: string;
-  totalDeIngredientes: number;
-  rendimentoGramas?: number;
-  porcoes?: number;
-  energiaKcalPor100g?: number;
+  name: string;
+  group?: string;
+  ingredientsTotal: number;
+  yieldGrams?: number;
+  servings?: number;
+  energyKcalPor100g?: number;
 }
 
-export interface IngredienteRequest {
-  alimentoId: number;
-  medidaId?: number;
-  quantidade: number;
+export interface IngredientRequest {
+  foodId: number;
+  measureId?: number;
+  quantity: number;
 }
 
-export interface ReceitaRequest {
-  nome: string;
-  grupo?: string;
-  rendimentoGramas?: number;
-  porcoes?: number;
-  modoPreparo?: string;
-  ingredientes: IngredienteRequest[];
+export interface RecipeRequest {
+  name: string;
+  group?: string;
+  yieldGrams?: number;
+  servings?: number;
+  modeInstructions?: string;
+  ingredients: IngredientRequest[];
 }
 
-// ---- orientações nutricionais ----
+// ---------- nutrition handouts ----
 
-export interface Orientacao {
+export interface Handout {
   id: number;
-  titulo: string;
-  corpo: string;
-  /** Modelo que acompanha o sistema: ponto de partida, não editável. */
-  modeloDoSistema: boolean;
-  editavel: boolean;
-  temImagem: boolean;
-  imagemNome?: string;
+  title: string;
+  body: string;
+  /** A template that ships with the system: a starting point, not editable. */
+  systemTemplate: boolean;
+  editable: boolean;
+  hasImage: boolean;
+  imageName?: string;
 }
 
-export interface OrientacaoDoPlano {
+export interface PlanHandout {
   id: number;
-  /** Procedência na biblioteca. Ausente quando o texto foi escrito na hora. */
-  orientacaoId?: number;
-  titulo: string;
-  corpo: string;
-  ordem: number;
-  /** A cópia entregue neste plano, e não a figura da biblioteca. */
-  temImagem: boolean;
+  /** Provenance in the library. Absent when the text was written on the spot. */
+  handoutId?: number;
+  title: string;
+  body: string;
+  order: number;
+  /** The copy delivered in this plan, and not the library's figure. */
+  hasImage: boolean;
 }
 
-// ---- exames laboratoriais ----
+// --------------- lab tests ----
 
-export type ClassificacaoDoExame = "ABAIXO" | "NORMAL" | "ACIMA";
+export type LabtestClassification = "BELOW" | "NORMAL" | "ABOVE";
 
-export interface FaixaDeReferencia {
-  sexo?: Sexo;
-  idadeMin?: number;
-  idadeMax?: number;
-  minimo?: number;
-  maximo?: number;
-  texto: string;
+export interface ReferenceRange {
+  sex?: Sex;
+  ageMin?: number;
+  ageMax?: number;
+  minimum?: number;
+  maximum?: number;
+  text: string;
 }
 
-export interface ParametroExame {
+export interface LabtestParameter {
   id: number;
-  nome: string;
-  unidadePadrao: string;
-  grupo?: string;
-  doCatalogoDoSistema: boolean;
-  editavel: boolean;
-  faixas: FaixaDeReferencia[];
+  name: string;
+  unitStandard: string;
+  group?: string;
+  doSystemCatalog: boolean;
+  editable: boolean;
+  ranges: ReferenceRange[];
 }
 
-export interface ExameResultado {
+export interface LabtestResult {
   id: number;
-  parametroId: number;
-  parametro: string;
-  grupo?: string;
-  dataColeta: string;
-  /** Ausente significa pedido e ainda não determinado — nunca zero. */
-  valor?: number;
-  unidade: string;
-  classificacao?: ClassificacaoDoExame;
-  classificacaoDescricao?: string;
-  /** A faixa usada na entrada, e não a cadastrada hoje. */
-  referencia?: string;
-  observacao?: string;
-  temLaudo: boolean;
-  laudoNome?: string;
+  parameterId: number;
+  parameter: string;
+  group?: string;
+  dateCollection: string;
+  /** Absent means ordered and not yet determined — never zero. */
+  value?: number;
+  unit: string;
+  classification?: LabtestClassification;
+  classificationDescription?: string;
+  /** The range used at entry, and not the one registered today. */
+  reference?: string;
+  notes?: string;
+  hasReport: boolean;
+  reportName?: string;
 }
 
-export interface PontoDaSerie {
-  dataColeta: string;
-  valor?: number;
-  unidade: string;
-  classificacao?: ClassificacaoDoExame;
-  variacao?: number;
+export interface SeriesPoint {
+  dateCollection: string;
+  value?: number;
+  unit: string;
+  classification?: LabtestClassification;
+  change?: number;
 }
 
-export interface SerieDeExame {
-  parametroId: number;
-  parametro: string;
-  unidade: string;
-  pontos: PontoDaSerie[];
-  /** Verdadeiro quando há coletas em unidades diferentes: não são comparáveis. */
-  unidadesMisturadas: boolean;
+export interface LabtestSeries {
+  parameterId: number;
+  parameter: string;
+  unit: string;
+  points: SeriesPoint[];
+  /** True when there are collections in different units: they are not comparable. */
+  unitsMixed: boolean;
 }
 
-export interface SolicitacaoDeExame {
+export interface LabtestOrder {
   id: number;
-  data: string;
-  observacao?: string;
-  exames: string[];
+  date: string;
+  notes?: string;
+  labtests: string[];
 }
 
-// ---- equipe do consultório ----
+// ------------ practice team ----
 
-export interface UsuarioDaConta {
+export interface AccountUser {
   id: number;
-  nome: string;
+  name: string;
   email: string;
-  perfil: Perfil;
-  perfilDescricao: string;
-  ativo: boolean;
-  criadoEm?: string;
+  role: Role;
+  roleDescription: string;
+  active: boolean;
+  createdAt?: string;
 }
 
-// ---- questionários ----
+// --- questionnaires ----
 
-export type TipoDePergunta = "TEXTO" | "NUMERO" | "ESCOLHA_UNICA" | "MULTIPLA";
+export type QuestionType = "TEXT" | "NUMBER" | "CHOICE_SINGLE" | "MULTIPLE";
 
-export interface OpcaoDeResposta {
-  rotulo: string;
-  pontos?: number;
+export interface AnswerOption {
+  label: string;
+  points?: number;
 }
 
-export interface PerguntaDoQuestionario {
+export interface QuestionnaireQuestion {
   id: number;
-  enunciado: string;
-  tipo: TipoDePergunta;
-  tipoDescricao: string;
-  obrigatoria: boolean;
-  ordem: number;
+  statement: string;
+  type: QuestionType;
+  typeDescription: string;
+  required: boolean;
+  order: number;
   ajuda?: string;
-  opcoes: OpcaoDeResposta[];
+  options: AnswerOption[];
 }
 
-export interface Questionario {
+export interface Questionnaire {
   id: number;
-  nome: string;
-  descricao?: string;
-  instrumento?: string;
-  versao?: string;
-  pontuavel: boolean;
-  faixaDeCorte?: string;
-  versaoModelo: number;
-  modeloDoSistema: boolean;
-  editavel: boolean;
-  perguntas: PerguntaDoQuestionario[];
+  name: string;
+  description?: string;
+  instrument?: string;
+  version?: string;
+  scorable: boolean;
+  cutoffRange?: string;
+  templateVersion: number;
+  systemTemplate: boolean;
+  editable: boolean;
+  questions: QuestionnaireQuestion[];
 }
 
-export interface ItemRespondido {
-  pergunta: string;
-  valor?: string;
-  pontos?: number;
+export interface ItemAnswered {
+  question: string;
+  value?: string;
+  points?: number;
 }
 
-export interface RespostaDeQuestionario {
+export interface QuestionnaireAnswer {
   id: number;
-  questionarioId: number;
-  questionario: string;
-  /** A edição do formulário que o paciente viu. */
-  versaoModelo: number;
-  identificadorPublico: string;
-  enviadoEm: string;
-  respondidoEm?: string;
-  pendente: boolean;
-  escore?: number;
-  classificacao?: string;
-  itens: ItemRespondido[];
+  questionnaireId: number;
+  questionnaire: string;
+  /** The edition of the form the patient saw. */
+  templateVersion: number;
+  publicIdentifier: string;
+  sentAt: string;
+  answeredAt?: string;
+  pending: boolean;
+  score?: number;
+  classification?: string;
+  items: ItemAnswered[];
 }
 
-export interface FormularioPublico {
-  consultorio?: string;
-  titulo: string;
-  descricao?: string;
-  jaRespondido: boolean;
-  perguntas: PerguntaDoQuestionario[];
+export interface PublicForm {
+  practice?: string;
+  title: string;
+  description?: string;
+  alreadyAnswered: boolean;
+  questions: QuestionnaireQuestion[];
 }

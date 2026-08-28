@@ -1,19 +1,19 @@
 package br.com.nutriplan.auth.dto;
 
-import br.com.nutriplan.auth.domain.Perfil;
-import br.com.nutriplan.auth.domain.Plano;
+import br.com.nutriplan.auth.domain.Role;
+import br.com.nutriplan.auth.domain.Plan;
 
 public record TokenResponse(
         String token,
-        String tipo,
-        long expiraEmSegundos,
-        UsuarioResumo usuario
+        String type,
+        long expiresAtSeconds,
+        UserSummary user
 ) {
-    public record UsuarioResumo(Long id, String nome, String email, Perfil perfil, Long contaId, Plano plano) {}
+    public record UserSummary(Long id, String name, String email, Role role, Long accountId, Plan plan) {}
 
-    public static TokenResponse de(String token, long expiraEm,
-                                   br.com.nutriplan.auth.service.UsuarioAutenticado u) {
-        return new TokenResponse(token, "Bearer", expiraEm, new UsuarioResumo(
-                u.getUsuarioId(), u.getNome(), u.getEmail(), u.getPerfil(), u.getContaId(), u.getPlano()));
+    public static TokenResponse from(String token, long expiresAt,
+                                   br.com.nutriplan.auth.service.AuthenticatedUser u) {
+        return new TokenResponse(token, "Bearer", expiresAt, new UserSummary(
+                u.getUserId(), u.getName(), u.getEmail(), u.getRole(), u.getAccountId(), u.getPlan()));
     }
 }

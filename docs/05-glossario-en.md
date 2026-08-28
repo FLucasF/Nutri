@@ -118,8 +118,9 @@ porque reverter agora é barato:
 
 1. **`mealPlan` e não `prescription`.** Em software de nutrição, *meal plan* é
    o termo de mercado; *prescription* leva a medicamento.
-2. **`labTest` e não `exam`.** Em inglês, *exam* é prova; *lab test* é o exame
-   laboratorial.
+2. **`labtest` e não `exam`.** Em inglês, *exam* é prova; *lab test* é o exame
+   laboratorial. No código ficou como uma palavra só — `Labtest`,
+   `labtestId` —, para não haver duas grafias do mesmo termo.
 3. **`handout` e não `guideline`.** *Guideline* é diretriz clínica (o que a
    sociedade de nutrição publica), e não o texto que se entrega ao paciente.
 4. **`assistant` e não `secretary`.** Descreve o papel sem a conotação de
@@ -130,3 +131,39 @@ porque reverter agora é barato:
 Nomes próprios e siglas de fonte não se traduzem: `TACO`, `IBGE`, `POF`,
 `OpenFoodFacts`, `CRN`, `CPF`, `IMC` (que vira `bmi`, por ser sigla técnica
 consagrada em inglês), `OMS` (que vira `who`, pelo mesmo motivo).
+
+## O que a migração encontrou
+
+A renomeação em si foi mecânica. O que ela custou de verdade foram os pontos em
+que **o mesmo contrato está escrito em dois lugares**, sem nada que obrigue os
+dois a concordarem. Traduzir um lado e não o outro compila, passa nos testes, e
+quebra em execução.
+
+Quatro casos apareceram, e cada um virou uma verificação automática:
+
+| O que quebrou | Como aparecia | O que verifica agora |
+|---|---|---|
+| Cliente chamando rota que o servidor não serve mais | 404 em tudo; os 284 testes de backend passavam | `verificar_api` compara os caminhos do cliente com as rotas do servidor |
+| Seletor de CSS apontando para valor que o TypeScript deixou de escrever | O tema escuro simplesmente não existia | `verificar_estilos` cruza `[data-theme="…"]` com a união `Theme` |
+| Enum do servidor divergindo da união de strings do cliente | Dois dos cinco tipos de atendimento não casavam | `verificar_enums` compara os enums compartilhados |
+| Passe de tradução encostando na prosa | `"sem"` virou `"without"` dentro de uma frase em português | `verificar_comentarios` exige que todo comentário seja o original ou uma tradução declarada |
+
+Há ainda `verificar_texto`, que prova que **nenhum texto de tela mudou**: os
+trechos soltos de JSX são comparados byte a byte com o commit anterior. Foi ele
+que revelou o pior estrago do caminho — 161 frases traduzidas pela metade, do
+tipo *"Este plan foi closed"*, na página que o paciente abre. Texto entre tags
+não tem aspas, e por isso nenhum dos mascaramentos o protegia.
+
+### Defeitos que já existiam
+
+Três não vieram da tradução; ela só os expôs:
+
+- `AppointmentType` tinha duas constantes escritas em português **com acento** —
+  `Avaliação` e `Orientação` — no meio de um enum em SCREAMING_CASE. O passe de
+  identificadores não as alcançava, porque `ç` e `ã` não são caracteres de
+  identificador para ele.
+- `Plan` documentava que os limites eram aplicados por um `LimitePlanoService`
+  que não existe. Quem aplica é `PatientService.checkPlanLimit`.
+- O documento de modelo de dados citava `imagem_orientacao` e
+  `token_recuperacao`; o esquema tem `imagem_de_orientacao` e
+  `token_de_recuperacao`.

@@ -56,7 +56,7 @@ Contorno tracejado indica módulo previsto e ainda não implementado.
 
 | Camada | Estado |
 |---|---|
-| Módulos implementados | `auth`, `paciente`, `alimento`, `prescricao`, `antropometria`, `agenda`, `financeiro`, `shared`, `config` |
+| Módulos implementados | `auth`, `patient`, `food`, `prescription`, `anthropometry`, `schedule`, `finance`, `shared`, `config` |
 
 | Tabelas | 12 |
 | Endpoints | 48 |
@@ -94,7 +94,7 @@ alimento/
 `repositories` no topo — agrupa o que muda por motivos diferentes e separa o que
 muda junto. Ao alterar a regra de prescrição, o desenvolvedor navega três pastas.
 Organizando por domínio, uma mudança de regra fica contida em uma pasta, e a
-fronteira entre módulos permanece visível: se `agenda` passar a importar
+fronteira entre módulos permanece visível: se `schedule` passar a importar
 `prescricao.repository`, o acoplamento salta aos olhos na revisão.
 
 Essa organização também prepara uma eventual extração de serviços, sem exigi-la:
@@ -150,7 +150,7 @@ paciente de outro, e a falha aqui é a mais grave que o sistema pode ter.
 **Alternativas.** Um banco por consultório; um esquema por consultório; uma
 coluna discriminadora compartilhada.
 
-**Decisão.** Coluna `conta_id` em toda tabela de dado clínico, com o filtro
+**Decisão.** Coluna `account_id` em toda tabela de dado clínico, com o filtro
 aplicado em **todo método de repositório**, sem exceção.
 
 ```java
@@ -248,7 +248,7 @@ duplicá-las por conta desperdiçaria espaço e tornaria impossível corrigir um
 uma única vez. Mas o nutricionista precisa cadastrar alimentos próprios e ajustar
 porções à sua prática.
 
-**Decisão.** `conta_id` **nulo** identifica registro do acervo comum, visível a
+**Decisão.** `account_id` **nulo** identifica registro do acervo comum, visível a
 todos; preenchido, registro do consultório. A consulta combina os dois:
 
 ```sql
@@ -286,7 +286,7 @@ multiplicaria código de parsing quase idêntico, e amarraria o sistema às font
 previstas em tempo de desenvolvimento.
 
 **Decisão.** Um leitor único casa as colunas do arquivo contra o catálogo de
-nutrientes, tolerando variações de grafia — `energiaKcal`, `energia_kcal` e
+nutrientes, tolerando variações de grafia — `energyKcal`, `energy_kcal` e
 `Energia (kcal)` chegam ao mesmo campo. Ele atende as cargas iniciais e também o
 endpoint pelo qual o nutricionista envia a própria planilha.
 
@@ -360,7 +360,7 @@ correção. Mas o paciente não tem conta no sistema, e exigir cadastro para ler
 própria dieta seria atrito onde não cabe atrito.
 
 **Decisão.** O plano é **uma entidade só**. O que muda é o caminho de acesso: o
-profissional entra autenticado, o paciente abre por um `identificador_publico`,
+profissional entra autenticado, o paciente abre por um `public_identifier`,
 um UUID que funciona como endereço do plano.
 
 O identificador é opaco de propósito. Com id sequencial, somar 1 ao link abriria
@@ -388,7 +388,7 @@ correção reescreveria retroativamente planos já entregues a pacientes.
 **Decisão.** O peso é calculado na edição e **gravado no item**. Corrigir a porção
 no cadastro do alimento não altera plano já prescrito.
 
-**Consequência.** Há redundância entre `quantidade × medida` e `gramas`, e ela é
+**Consequência.** Há redundância entre `quantidade × medida` e `grams`, e ela é
 intencional: o que o paciente recebeu naquele dia é um documento, não uma consulta
 viva ao cadastro atual.
 
@@ -437,7 +437,7 @@ campo interno ao plano não cria risco de vazamento, porque ele não tem por ond
 chegar ao contrato público.
 
 **Verificação.** Um teste abre o link e afirma que o corpo não contém o texto da
-anotação interna nem a palavra `contaId`, e que contém a orientação ao paciente.
+anotação interna nem a palavra `accountId`, e que contém a orientação ao paciente.
 
 ---
 
@@ -560,7 +560,7 @@ caseira é o maior texto da tela**, acima do peso em gramas, que fica como nota
 discreta. O paciente já sabe o que é arroz; o que ele não sabe é quanto. Isso
 tornou a concordância da medida um problema de produto — "2 unidade" passa
 despercebido numa tabela e salta aos olhos em corpo 22 —, resolvido em
-`MedidaNoPlural`.
+`PluralMeasure`.
 
 **Custo.** Duas telas passaram a depender de um mesmo componente visual que não
 existe como componente de código, só como convenção de CSS (`.regua-dia`).
@@ -629,15 +629,15 @@ aceitável, e o motivo de cada par vir precedido do valor simples.
 prescrever arroz e brócolis separados, não "arroz com brócolis" — e o
 nutricionista repete a mesma montagem em toda consulta.
 
-O caminho óbvio seria uma entidade `Receita` ao lado de `Alimento`, com
+O caminho óbvio seria uma entidade `Recipe` ao lado de `food`, com
 ingredientes próprios. Mas então tudo que existe precisaria aprender a lidar
 com duas coisas: a busca, a medida caseira, o item de refeição, o cálculo da
 refeição, a procedência na prescrição. Cada um desses pontos ganharia um `if`.
 
-**Decisão.** A receita **é** um `Alimento`, com fonte `RECEITA` e composição
+**Decisão.** A receita **é** um `food`, com fonte `RECIPE` e composição
 calculada em vez de tabelada. O que ela acrescenta são três colunas esparsas —
-`modo_preparo`, `rendimento_gramas`, `porcoes`, nulas nos 23.945 registros das
-tabelas de referência — e a tabela `ingrediente_receita`.
+`instructions_mode`, `grams_yield`, `servings`, nulas nos 23.945 registros das
+tabelas de referência — e a tabela `recipe_ingredient`.
 
 A consequência é que nada precisou mudar: a receita aparece na busca, aceita
 medida caseira, entra numa refeição e carrega "Receita calculada" na prescrição
@@ -650,9 +650,9 @@ alimento é sempre por 100 g, e o peso final da preparação não é a soma dos
 ingredientes: 100 g de arroz cru viram cerca de 250 g cozido. Dividir pela soma
 produziria uma composição duas vezes e meia mais concentrada que a realidade.
 Por isso o rendimento é campo do nutricionista, e quando ele não informa, a
-resposta marca `rendimentoEstimado` em vez de apresentar o número como medido.
+resposta marca `estimatedYield` em vez de apresentar o número como medido.
 
-**Custo.** Colunas nulas na tabela maior do sistema, e um `Alimento` que agora
+**Custo.** Colunas nulas na tabela maior do sistema, e um `food` que agora
 tem dois modos de existir. O limite de profundidade de dez níveis na detecção
 de ciclo é arbitrário — é grande o bastante para qualquer receita real e
 pequeno o bastante para não percorrer um grafo torto.
@@ -723,15 +723,15 @@ local traz o problema de backup: o dump do banco deixa de ser a cópia completa
 do sistema.
 
 **Decisão.** O binário vai em coluna `BYTEA`, numa **tabela própria** com chave
-igual à da entidade dona — `imagem_orientacao` e `imagem_do_plano`. Limite de
+igual à da entidade dona — `handout_image` e `plan_image`. Limite de
 2 MB, verificado no envio.
 
 A tabela separada é o ponto. Blob na mesma tabela faz toda listagem de
 orientações arrastar as figuras junto, mesmo quando ninguém vai vê-las; o custo
-aparece na tela mais usada. Separado, a listagem lê `titulo`, `corpo` e um
+aparece na tela mais usada. Separado, a listagem lê `title`, `body` e um
 booleano, e o arquivo só sai do banco quando alguém pede a figura.
 
-**A cópia entregue é outra cópia.** `imagem_do_plano` guarda os bytes de novo,
+**A cópia entregue é outra cópia.** `plan_image` guarda os bytes de novo,
 e não uma referência à figura da biblioteca — mesma regra do texto (AD-14
 aplicado a arquivo): trocar o desenho no modelo não pode mudar o que dezenas de
 pacientes já receberam. O custo são algumas centenas de KB por plano.
@@ -743,7 +743,7 @@ rodar inteiro.
 **Quando revisar.** Se a figura virar rotina em escala — dezenas por
 consultório, milhares de planos — o volume passa a pesar no dump e na memória
 do servidor de banco. O caminho então é objeto remoto guardando a referência que
-`arquivo_laudo` já antecipa, e não coluna maior.
+`labtest_report` já antecipa, e não coluna maior.
 
 ---
 
@@ -840,7 +840,7 @@ não descuido.
 | Dívida | Impacto | Encaminhamento |
 |---|---|---|
 | Isolamento depende de disciplina no repositório | Um método novo sem filtro fura o isolamento | Row-Level Security ao adotar PostgreSQL também em desenvolvimento |
-| Perfis `SECRETARIA` e `PACIENTE` modelados sem fluxo | Só o nutricionista usa o sistema hoje | `SECRETARIA` tem fluxo previsto (RF05). `PACIENTE` não terá: o paciente acessa o plano pelo link público, sem conta — o enum permanece por já estar no esquema |
+| Perfis `ASSISTANT` e `PATIENT` modelados sem fluxo | Só o nutricionista usa o sistema hoje | `ASSISTANT` tem fluxo previsto (RF05). `PATIENT` não terá: o paciente acessa o plano pelo link público, sem conta — o enum permanece por já estar no esquema |
 | Cargas iniciais rodam no start da aplicação | Primeiro start mais lento | Mover para comando administrativo separado |
 | Suíte sobe o contexto completo | Tempo de build cresce com o número de testes | Separar testes de unidade dos de integração |
 | Sem cache na busca de alimentos | Consulta ao banco a cada digitação | Avaliar após medir, não antes |
