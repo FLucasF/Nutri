@@ -14,6 +14,10 @@ dist/
 .vite/
 *.local
 
+# Cache incremental do compilador do TypeScript: e derivado, muda a cada
+# build e nao diz nada a quem le o historico.
+*.tsbuildinfo
+
 # --------------------------------------------------------------- ambiente
 .env
 .env.*
