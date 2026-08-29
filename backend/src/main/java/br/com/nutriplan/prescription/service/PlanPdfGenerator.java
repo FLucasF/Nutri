@@ -241,7 +241,7 @@ public class PlanPdfGenerator {
     private PdfPCell hourCell(PrescriptionDtos.PublicMealResponse meal) {
         String text = meal.time() != null
                 ? meal.time().toString().substring(0, 5)
-                : "FREE";
+                : "LIVRE";
         var cell = new PdfPCell(new Phrase(text,
                 meal.time() != null ? HOUR : TAG));
         cell.setBorder(0);
@@ -292,10 +292,10 @@ public class PlanPdfGenerator {
     private Element summary(PrescriptionDtos.PublicSummaryResponse summary) {
         var table = new PdfPTable(4);
         table.setWidthPercentage(100);
-        table.addCell(summaryCell("ENERGY", summary.energyKcal(), "kcal"));
+        table.addCell(summaryCell("ENERGIA", summary.energyKcal(), "kcal"));
         table.addCell(summaryCell("PROTEÍNAS", summary.proteinG(), "g"));
-        table.addCell(summaryCell("CARBOHYDRATE", summary.carbohydrateG(), "g"));
-        table.addCell(summaryCell("FAT", summary.fatG(), "g"));
+        table.addCell(summaryCell("CARBOIDRATOS", summary.carbohydrateG(), "g"));
+        table.addCell(summaryCell("GORDURAS", summary.fatG(), "g"));
 
         var wrapper = new PdfPTable(1);
         wrapper.setWidthPercentage(100);

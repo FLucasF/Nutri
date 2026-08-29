@@ -275,7 +275,7 @@ public class AnthropometricAssessmentService {
 
         changes.add(changeSimple("weightKg", "Peso (kg)",
                 current.getWeightKg(), reference.getWeightKg()));
-        changes.add(changeSimple("bmi", "BMI",
+        changes.add(changeSimple("bmi", "IMC",
                 current.getBmi(), reference.getBmi()));
         changes.add(changeSimple("circumferenceWaist", "Cintura (cm)",
                 current.getCircumferenceWaist(), reference.getCircumferenceWaist()));
