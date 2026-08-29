@@ -151,7 +151,7 @@ export default function PatientPlan() {
                 </time>
               ) : (
                 // A meal with no prescribed time does not get an invented hour.
-                <span className="ruler-hour without-hour">free</span>
+                <span className="ruler-hour without-hour">livre</span>
               )}
 
               <div className="ruler-body">

@@ -62,7 +62,7 @@ export default function PatientDetail() {
     }
   }
 
-  if (loading) return <p className="loading">Loading…</p>;
+  if (loading) return <p className="loading">Carregando…</p>;
   if (error && !patient) return <div className="warning error">{error}</div>;
   if (!patient) return null;
 
@@ -71,7 +71,7 @@ export default function PatientDetail() {
       <div className="header-page">
         <div>
           <Link to="/patients" className="minusculo">
-            ← Patients
+            ← Pacientes
           </Link>
           <h1 style={{ marginTop: "0.2rem" }}>{patient.name}</h1>
           <p>
@@ -80,15 +80,15 @@ export default function PatientDetail() {
           </p>
         </div>
         <div className="row">
-          {!patient.active && <span className="tag">inactive</span>}
+          {!patient.active && <span className="tag">inativo</span>}
           <button className="button secundario" onClick={() => setEditing((v) => !v)}>
             {editing ? "Cancelar edição" : "Editar"}
           </button>
           <Link className="button secundario" to={`/patients/${patient.id}/anthropometry`}>
-            Anthropometry
+            Antropometria
           </Link>
           <Link className="button secundario" to={`/patients/${patient.id}/labtests`}>
-            Labtests
+            Exames
           </Link>
           <button
             className="button"
@@ -156,7 +156,7 @@ export default function PatientDetail() {
           <table>
             <thead>
               <tr>
-                <th>Plan</th>
+                <th>Plano</th>
                 <th>Método</th>
                 <th>Situação</th>
                 <th className="num">Refeições</th>
@@ -193,7 +193,7 @@ export default function PatientDetail() {
 
 export function TagStatus({ status }: { status: string }) {
   const classe = status === "ACTIVE" ? "verde" : status === "CLOSED" ? "" : "ambar";
-  const text = status === "ACTIVE" ? "published" : status === "CLOSED" ? "closed" : "draft";
+  const text = status === "ACTIVE" ? "publicado" : status === "CLOSED" ? "encerrado" : "rascunho";
   return <span className={`tag ${classe}`}>{text}</span>;
 }
 
@@ -277,7 +277,7 @@ function QuestionnairesSection({ patientId }: { patientId: number }) {
               value={chosen}
               onChange={(e) => setChosen(e.target.value)}
             >
-              <option value="">Choose…</option>
+              <option value="">Escolher…</option>
               {templates.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
@@ -306,11 +306,11 @@ function QuestionnairesSection({ patientId }: { patientId: number }) {
               <div className="row" style={{ gap: "0.5rem" }}>
                 <strong style={{ fontSize: "0.92rem" }}>{e.questionnaire}</strong>
                 <span className={`tag ${e.pending ? "ambar" : "verde"}`}>
-                  {e.pending ? "aguardando resposta" : "answered"}
+                  {e.pending ? "aguardando resposta" : "respondido"}
                 </span>
                 {e.classification && <span className="tag">{e.classification}</span>}
                 {e.score !== undefined && (
-                  <span className="minusculo">score {e.score}</span>
+                  <span className="minusculo">escore {e.score}</span>
                 )}
                 <span style={{ flex: 1 }} />
                 {e.pending ? (
@@ -319,7 +319,7 @@ function QuestionnairesSection({ patientId }: { patientId: number }) {
                       {copied === e.id ? "Copiado!" : "Copiar link"}
                     </button>
                     <button className="button perigo pequeno" onClick={() => cancel(e)}>
-                      Cancel
+                      Cancelar
                     </button>
                   </>
                 ) : (
@@ -426,7 +426,7 @@ function FormEdit({
       )}
       <div className="grid two">
         <div className="field">
-          <label htmlFor="ed-nome">Name</label>
+          <label htmlFor="ed-nome">Nome</label>
           <input id="ed-nome" value={data.name} onChange={(e) => change("name", e.target.value)} required name="name" {...fields.props("name")} />
           <FieldError field="name" errors={fields.errors} />
         </div>
@@ -436,12 +436,12 @@ function FormEdit({
           <FieldError field="email" errors={fields.errors} />
         </div>
         <div className="field">
-          <label htmlFor="ed-tel">Phone</label>
+          <label htmlFor="ed-tel">Telefone</label>
           <input id="ed-tel" value={data.phone} onChange={(e) => change("phone", e.target.value)} name="phone" {...fields.props("phone")} />
           <FieldError field="phone" errors={fields.errors} />
         </div>
         <div className="field">
-          <label htmlFor="ed-nasc">Birth</label>
+          <label htmlFor="ed-nasc">Nascimento</label>
           <input
             id="ed-nasc"
             type="date"
@@ -451,11 +451,11 @@ function FormEdit({
           />
         </div>
         <div className="field">
-          <label htmlFor="ed-sexo">Sex</label>
+          <label htmlFor="ed-sexo">Sexo</label>
           <select id="ed-sexo" value={data.sex} onChange={(e) => change("sex", e.target.value)}>
             <option value="">Não informado</option>
-            <option value="FEMALE">Female</option>
-            <option value="MALE">Male</option>
+            <option value="FEMALE">Feminino</option>
+            <option value="MALE">Masculino</option>
           </select>
         </div>
         <div className="field">
@@ -469,7 +469,7 @@ function FormEdit({
           <FieldError field="occupation" errors={fields.errors} />
         </div>
         <div className="field">
-          <label htmlFor="ed-obj">Goal</label>
+          <label htmlFor="ed-obj">Objetivo</label>
           <input id="ed-obj" value={data.goal} onChange={(e) => change("goal", e.target.value)} name="goal" {...fields.props("goal")} />
           <FieldError field="goal" errors={fields.errors} />
         </div>

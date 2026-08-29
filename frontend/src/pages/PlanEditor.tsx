@@ -364,7 +364,7 @@ export default function PlanEditor() {
     return map;
   }, [plan]);
 
-  if (loading) return <p className="loading">Loading…</p>;
+  if (loading) return <p className="loading">Carregando…</p>;
 
   const podeEdit = !plan || plan.status !== "CLOSED";
 
@@ -433,7 +433,7 @@ export default function PlanEditor() {
               </div>
 
               <div className="field">
-                <label htmlFor="pl-paciente">Patient</label>
+                <label htmlFor="pl-paciente">Paciente</label>
                 <select
                   id="pl-paciente"
                   value={patientId}
@@ -443,7 +443,7 @@ export default function PlanEditor() {
                     setDirty(true);
                   }}
                 >
-                  <option value="">Select…</option>
+                  <option value="">Selecione…</option>
                   {patients.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -464,13 +464,13 @@ export default function PlanEditor() {
                   }}
                 >
                   <option value="FOODS">Por alimentos</option>
-                  <option value="SUBSTITUTIONS">By substitutions (com substituições)</option>
-                  <option value="QUALITATIVE">Qualitative (without quantify)</option>
+                  <option value="SUBSTITUTIONS">Por equivalentes (com substituições)</option>
+                  <option value="QUALITATIVE">Qualitativo (sem quantificar)</option>
                 </select>
               </div>
 
               <div className="field">
-                <label htmlFor="pl-meta">Target energética (kcal/day)</label>
+                <label htmlFor="pl-meta">Meta energética (kcal/dia)</label>
                 <input
                   id="pl-meta"
                   inputMode="decimal"
@@ -519,7 +519,7 @@ export default function PlanEditor() {
                 style={{ width: "auto" }}
               />
               <span className="discreto">
-                Save like template reaproveitável (without patient linked)
+                Salvar como modelo reaproveitável (sem paciente vinculado)
               </span>
             </label>
 
@@ -600,7 +600,7 @@ export default function PlanEditor() {
 
           {meals.length > 0 && podeEdit && (
             <button className="button secundario" onClick={() => addMeal()}>
-              + Add refeição
+              + Adicionar refeição
             </button>
           )}
         </div>
@@ -623,7 +623,7 @@ export default function PlanEditor() {
                     ).then(() => navigate("/prescriptions"))
                   }
                 >
-                  Duplicate
+                  Duplicar
                 </button>
                 <button
                   className="button perigo pequeno"
@@ -633,7 +633,7 @@ export default function PlanEditor() {
                     navigate("/prescriptions");
                   }}
                 >
-                  Remove
+                  Remover
                 </button>
               </div>
             </div>
@@ -693,7 +693,7 @@ function BlockMeal({
         )}
         {!onlyRead && (
           <button className="button perigo pequeno" onClick={onRemove}>
-            Remove
+            Remover
           </button>
         )}
       </div>
@@ -720,7 +720,7 @@ function BlockMeal({
       {!onlyRead && (
         <div style={{ padding: "0.6rem 0.9rem" }}>
           <button className="button secundario pequeno" onClick={onAddItem}>
-            + Add item
+            + Adicionar item
           </button>
         </div>
       )}
@@ -800,7 +800,7 @@ function RowItem({
             disabled={onlyRead || item.measures.length === 0}
             aria-label="Medida"
           >
-            <option value="">grams</option>
+            <option value="">gramas</option>
             {item.measures.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.description}
@@ -814,7 +814,7 @@ function RowItem({
       ) : (
         <>
           <span className="discreto" style={{ gridColumn: "span 3" }}>
-            à vontade / without quantify
+            à vontade / sem quantificar
           </span>
         </>
       )}
@@ -1120,7 +1120,7 @@ function PanelHandouts({ planId }: { planId: number }) {
           onClick={attach}
           disabled={!escolhida}
         >
-          Attach
+          Anexar
         </button>
       </div>
     </div>
@@ -1210,7 +1210,7 @@ function PanelPublication({
               target="_blank"
               rel="noreferrer"
             >
-              Open
+              Abrir
             </a>
           </div>
 
@@ -1222,7 +1222,7 @@ function PanelPublication({
                   onRun(() => api.prescriptions.close(plan.id), "Plano encerrado.")
                 }
               >
-                Close
+                Encerrar
               </button>
             )}
             <button

@@ -56,13 +56,13 @@ export default function Prescriptions() {
               className={`button ${tab === "plans" ? "" : "secundario"} pequeno`}
               onClick={() => setTab("plans")}
             >
-              Plans
+              Planos
             </button>
             <button
               className={`button ${tab === "templates" ? "" : "secundario"} pequeno`}
               onClick={() => setTab("templates")}
             >
-              Templates
+              Modelos
             </button>
           </div>
           <div className="field" style={{ flex: 1, minWidth: 200 }}>
@@ -79,7 +79,7 @@ export default function Prescriptions() {
       {error && <div className="warning error" style={{ marginBottom: "0.9rem" }}>{error}</div>}
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : plans.length === 0 ? (
         <div className="card empty">
           {tab === "templates"
@@ -91,12 +91,12 @@ export default function Prescriptions() {
           <table>
             <thead>
               <tr>
-                <th>Plan</th>
-                {tab === "plans" && <th>Patient</th>}
+                <th>Plano</th>
+                {tab === "plans" && <th>Paciente</th>}
                 <th>Método</th>
                 <th>Situação</th>
-                <th className="num">Items</th>
-                <th className="num">kcal/day</th>
+                <th className="num">Itens</th>
+                <th className="num">kcal/dia</th>
               </tr>
             </thead>
             <tbody>
@@ -116,7 +116,7 @@ export default function Prescriptions() {
                   <td className="discreto">{labelMethod(plan.method)}</td>
                   <td>
                     {plan.template ? (
-                      <span className="tag">template</span>
+                      <span className="tag">modelo</span>
                     ) : (
                       <TagStatus status={plan.status} />
                     )}

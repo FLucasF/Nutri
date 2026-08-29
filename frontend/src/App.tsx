@@ -26,7 +26,7 @@ function Protected({ children }: { children: React.ReactNode }) {
   const local = useLocation();
 
   if (loading) {
-    return <p className="loading">Loading…</p>;
+    return <p className="loading">Carregando…</p>;
   }
   if (!user) {
     return <Navigate to="/access" replace state={{ from: local.pathname }} />;
@@ -48,10 +48,10 @@ function Layout({ children }: { children: React.ReactNode }) {
 
         <nav>
           <NavLink to="/patients" className={({ isActive }) => (isActive ? "active" : "")}>
-            Patients
+            Pacientes
           </NavLink>
           <NavLink to="/schedule" className={({ isActive }) => (isActive ? "active" : "")}>
-            Schedule
+            Agenda
           </NavLink>
           {/* The receptionist runs the front desk. Showing what they cannot
               open would only produce an error screen at the end of the click. */}
@@ -61,7 +61,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             Prescrições
           </NavLink>
           <NavLink to="/foods" className={({ isActive }) => (isActive ? "active" : "")}>
-            Foods
+            Alimentos
           </NavLink>
           <NavLink to="/handouts" className={({ isActive }) => (isActive ? "active" : "")}>
             Orientações
@@ -70,7 +70,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             Questionários
           </NavLink>
           <NavLink to="/finance" className={({ isActive }) => (isActive ? "active" : "")}>
-            Finance
+            Financeiro
           </NavLink>
             </>
           )}
@@ -80,7 +80,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
         <div className="footer-side">
           <b>{user?.name}</b>
-          <span className="minusculo">Plan {user?.plan.toLowerCase()}</span>
+          <span className="minusculo">Plano {user?.plan.toLowerCase()}</span>
           {!isAssistant && (
             <NavLink to="/team" className="minusculo" style={{ display: "block" }}>
               Equipe do consultório
@@ -92,7 +92,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             style={{ marginTop: "0.6rem", width: "100%", justifyContent: "center" }}
             onClick={logout}
           >
-            Logout
+            Sair
           </button>
         </div>
       </aside>

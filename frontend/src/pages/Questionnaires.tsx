@@ -80,7 +80,7 @@ export default function Questionnaires() {
       )}
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : (
         <div className="list-handouts">
           {[...meus, ...templates].map((q) => (
@@ -103,7 +103,7 @@ export default function Questionnaires() {
               </header>
 
               <p className="body-handout open">
-                {q.description ?? `${count(q.questions.length, "question", "questions")}.`}
+                {q.description ?? `${count(q.questions.length, "pergunta", "perguntas")}.`}
               </p>
 
               {open === q.id && (
@@ -137,7 +137,7 @@ export default function Questionnaires() {
                   className="button secundario pequeno"
                   onClick={() => duplicate(q)}
                 >
-                  Duplicate
+                  Duplicar
                 </button>
                 {q.editable && (
                   <button
@@ -145,7 +145,7 @@ export default function Questionnaires() {
                     className="button perigo pequeno"
                     onClick={() => remove(q)}
                   >
-                    Remove
+                    Remover
                   </button>
                 )}
               </div>

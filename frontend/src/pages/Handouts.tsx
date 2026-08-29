@@ -98,7 +98,7 @@ export default function Handouts() {
 
       <div className="card" style={{ marginBottom: "0.9rem" }}>
         <div className="field">
-          <label htmlFor="busca-orientacao">Find</label>
+          <label htmlFor="busca-orientacao">Buscar</label>
           <input
             id="busca-orientacao"
             value={term}
@@ -109,7 +109,7 @@ export default function Handouts() {
       </div>
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : handouts.length === 0 ? (
         <div className="card empty">
           Nenhuma orientação com esse termo. Use <strong>Nova orientação</strong> para escrever a
@@ -177,16 +177,16 @@ function Card({
           {open ? "Recolher" : "Ler tudo"}
         </button>
         <button type="button" className="button secundario pequeno" onClick={onDuplicate}>
-          Duplicate
+          Duplicar
         </button>
         {onEdit && (
           <button type="button" className="button secundario pequeno" onClick={onEdit}>
-            Edit
+            Editar
           </button>
         )}
         {onRemove && (
           <button type="button" className="button perigo pequeno" onClick={onRemove}>
-            Remove
+            Remover
           </button>
         )}
       </div>
@@ -255,7 +255,7 @@ function Editor({
       </div>
 
       <div className="field" style={{ marginTop: "0.7rem" }}>
-        <label htmlFor="or-corpo">Text</label>
+        <label htmlFor="or-corpo">Texto</label>
         <textarea
           id="or-corpo"
           rows={10}
@@ -271,7 +271,7 @@ function Editor({
       </div>
 
       <div className="field" style={{ marginTop: "0.7rem" }}>
-        <label htmlFor="or-figura">Figure</label>
+        <label htmlFor="or-figura">Figura</label>
         <input
           id="or-figura"
           type="file"
@@ -287,7 +287,7 @@ function Editor({
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button type="button" className="button secundario" onClick={onClose}>
-          Cancel
+          Cancelar
         </button>
         <button className="button" type="submit" disabled={saving}>
           {saving ? "Salvando…" : "Salvar"}

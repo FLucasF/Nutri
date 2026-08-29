@@ -69,7 +69,7 @@ export default function PatientForm() {
   if (loading) {
     return (
       <div className="page-patient">
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       </div>
     );
   }
@@ -129,7 +129,7 @@ export default function PatientForm() {
                     }
                     required={p.required}
                   >
-                    <option value="">Select…</option>
+                    <option value="">Selecione…</option>
                     {p.options.map((o) => (
                       <option key={o.label} value={o.label}>
                         {o.label}

@@ -93,16 +93,16 @@ export default function Schedule() {
     <>
       <div className="header-page">
         <div>
-          <h1>Schedule</h1>
+          <h1>Agenda</h1>
           <p>
             {view === "week"
-              ? `${count(week.length, "appointment", "appointments")} · ${formatBr(weekFirst)} a ${formatBr(weekLast)}`
+              ? `${count(week.length, "atendimento", "atendimentos")} · ${formatBr(weekFirst)} a ${formatBr(weekLast)}`
               : schedule
                 ? [
-                    count(schedule.appointmentsTotal, "appointment", "appointments"),
-                    `${schedule.completed} ${plural(schedule.completed, "completed", "completed")}`,
+                    count(schedule.appointmentsTotal, "atendimento", "atendimentos"),
+                    `${schedule.completed} ${plural(schedule.completed, "realizado", "realizados")}`,
                     ...(schedule.noshows > 0
-                      ? [count(schedule.noshows, "noshow", "noshows")]
+                      ? [count(schedule.noshows, "falta", "faltas")]
                       : []),
                   ].join(" · ")
                 : "—"}
@@ -146,14 +146,14 @@ export default function Schedule() {
               aria-pressed={view === "day"}
               onClick={() => setView("day")}
             >
-              Day
+              Dia
             </button>
             <button
               type="button"
               aria-pressed={view === "week"}
               onClick={() => setView("week")}
             >
-              Week
+              Semana
             </button>
           </div>
           <button className="button secundario pequeno" onClick={() => move(view === "week" ? -7 : -1)}>
@@ -174,7 +174,7 @@ export default function Schedule() {
             className="button secundario pequeno"
             onClick={() => setDay(todayIso())}
           >
-            Today
+            Hoje
           </button>
           <span className="discreto">
             {view === "week"
@@ -185,7 +185,7 @@ export default function Schedule() {
       </div>
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : view === "week" ? (
         <ScheduleWeek
           start={weekFirst}
@@ -288,7 +288,7 @@ function ScheduleSubscription({ onClose }: { onClose: () => void }) {
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2>Ver a agenda no meu calendário</h2>
         <button type="button" className="button secundario pequeno" onClick={onClose}>
-          Close
+          Fechar
         </button>
       </div>
 
@@ -299,7 +299,7 @@ function ScheduleSubscription({ onClose }: { onClose: () => void }) {
       )}
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : !address ? (
         <>
           <p className="minusculo" style={{ marginTop: "0.5rem" }}>
@@ -347,7 +347,7 @@ function ScheduleSubscription({ onClose }: { onClose: () => void }) {
               Gerar outro endereço
             </button>
             <button type="button" className="button perigo pequeno" onClick={turnOff}>
-              TurnOff
+              Desligar
             </button>
           </div>
         </>
@@ -436,7 +436,7 @@ function ScheduleWeek({
                 <span className="date-day">{formatBr(d).slice(0, 5)}</span>
               </button>
               <span className="minusculo">
-                {forDay.length === 0 ? "free" : count(forDay.length, "appointment", "appointments")}
+                {forDay.length === 0 ? "livre" : count(forDay.length, "atendimento", "atendimentos")}
               </span>
             </header>
             {forDay.length > 0 && (
@@ -545,7 +545,7 @@ function FormAppointment({
 
       <div className="grid three" style={{ marginTop: "0.8rem" }}>
         <div className="field" style={{ gridColumn: "span 2" }}>
-          <label htmlFor="ag-paciente">Patient</label>
+          <label htmlFor="ag-paciente">Paciente</label>
           <select
             id="ag-paciente"
             name="patientId"
@@ -554,7 +554,7 @@ function FormAppointment({
             required
             {...fields.props("patientId")}
           >
-            <option value="">Select…</option>
+            <option value="">Selecione…</option>
             {patients.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -564,7 +564,7 @@ function FormAppointment({
           <FieldError field="patientId" errors={fields.errors} />
         </div>
         <div className="field">
-          <label htmlFor="ag-tipo">Type</label>
+          <label htmlFor="ag-tipo">Tipo</label>
           <select
             id="ag-tipo"
             value={type}
@@ -578,7 +578,7 @@ function FormAppointment({
           </select>
         </div>
         <div className="field">
-          <label htmlFor="ag-data">Date</label>
+          <label htmlFor="ag-data">Data</label>
           <input
             id="ag-data"
             name="start"

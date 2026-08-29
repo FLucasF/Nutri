@@ -87,9 +87,9 @@ export default function Foods() {
     <>
       <div className="header-page">
         <div>
-          <h1>Foods</h1>
+          <h1>Alimentos</h1>
           <p>
-            {total.toLocaleString("pt-BR")} {total === 1 ? "food" : "foods"} no acervo
+            {total.toLocaleString("pt-BR")} {total === 1 ? "alimento" : "alimentos"} no acervo
             visível
           </p>
         </div>
@@ -117,7 +117,7 @@ export default function Foods() {
       <div className="card" style={{ marginBottom: "0.9rem" }}>
         <div className="row">
           <div className="field" style={{ flex: 2, minWidth: 220 }}>
-            <label htmlFor="busca-alimento">Find</label>
+            <label htmlFor="busca-alimento">Buscar</label>
             <input
               id="busca-alimento"
               value={term}
@@ -126,7 +126,7 @@ export default function Foods() {
             />
           </div>
           <div className="field" style={{ flex: 1, minWidth: 170 }}>
-            <label htmlFor="filtro-grupo">Group</label>
+            <label htmlFor="filtro-grupo">Grupo</label>
             <select id="filtro-grupo" value={group} onChange={(e) => setGroup(e.target.value)}>
               <option value="">Todos os grupos</option>
               {groups.map((g) => (
@@ -137,7 +137,7 @@ export default function Foods() {
             </select>
           </div>
           <div className="field" style={{ flex: 1, minWidth: 170 }}>
-            <label htmlFor="filtro-fonte">Source</label>
+            <label htmlFor="filtro-fonte">Fonte</label>
             <select
               id="filtro-fonte"
               value={source}
@@ -160,7 +160,7 @@ export default function Foods() {
       )}
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : foods.length === 0 ? (
         <div className="card empty">
           {byCode
@@ -172,13 +172,13 @@ export default function Foods() {
           <table>
             <thead>
               <tr>
-                <th>Food</th>
-                <th>Group</th>
+                <th>Alimento</th>
+                <th>Grupo</th>
                 <th className="num">kcal</th>
                 <th className="num">Prot.</th>
                 <th className="num">Carb.</th>
                 <th className="num">Gord.</th>
-                <th>Source</th>
+                <th>Fonte</th>
               </tr>
             </thead>
             <tbody>
@@ -262,8 +262,8 @@ function PanelImport({
     <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
       <h2>Importar tabela de alimentos</h2>
       <p className="discreto" style={{ margin: "0.3rem 0 0.9rem" }}>
-        As colunas de nutriente são reconhecidas pelo nome: <code>energyKcal</code>,{" "}
-        <code>energia_kcal</code> ou <code>Energy (kcal)</code> chegam todas ao mesmo campo.
+        As colunas de nutriente são reconhecidas pelo nome: <code>energiaKcal</code>,{" "}
+        <code>energia_kcal</code> ou <code>Energia (kcal)</code> chegam todas ao mesmo campo.
         Os alimentos ficam vinculados ao seu consultório e não entram na base comum.
       </p>
 
@@ -307,7 +307,7 @@ function PanelImport({
           </select>
         </div>
         <div className="field">
-          <label htmlFor="imp-sep">Separator</label>
+          <label htmlFor="imp-sep">Separador</label>
           <select id="imp-sep" value={separator} onChange={(e) => setSeparator(e.target.value)}>
             <option value=",">Vírgula ( , )</option>
             <option value=";">Point e vírgula ( ; )</option>
@@ -318,7 +318,7 @@ function PanelImport({
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button type="button" className="button secundario" onClick={onClose}>
-          Close
+          Fechar
         </button>
         <button className="button" type="submit" disabled={sending}>
           {sending ? "Importando…" : "Importar"}
@@ -425,7 +425,7 @@ function FormNovoFood({
           <FieldError field="description" errors={fieldErrors.errors} />
         </div>
         <div className="field">
-          <label htmlFor="na-grupo">Group</label>
+          <label htmlFor="na-grupo">Grupo</label>
           <input
             id="na-grupo"
             name="group"
@@ -436,7 +436,7 @@ function FormNovoFood({
           <FieldError field="group" errors={fieldErrors.errors} />
         </div>
         <div className="field">
-          <label htmlFor="na-marca">Brand</label>
+          <label htmlFor="na-marca">Marca</label>
           <input
             id="na-marca"
             name="brand"
@@ -463,7 +463,7 @@ function FormNovoFood({
         ))}
       </div>
 
-      <h3 style={{ margin: "1rem 0 0.5rem" }}>Porção usual (optional)</h3>
+      <h3 style={{ margin: "1rem 0 0.5rem" }}>Porção usual (opcional)</h3>
       <div className="grid two">
         <div className="field">
           <label htmlFor="na-med">Descrição da porção</label>
@@ -475,7 +475,7 @@ function FormNovoFood({
           />
         </div>
         <div className="field">
-          <label htmlFor="na-med-g">Weight (g)</label>
+          <label htmlFor="na-med-g">Peso (g)</label>
           <input
             id="na-med-g"
             inputMode="decimal"
@@ -487,7 +487,7 @@ function FormNovoFood({
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button type="button" className="button secundario" onClick={onClose}>
-          Cancel
+          Cancelar
         </button>
         <button className="button" type="submit" disabled={sending}>
           {sending ? "Salvando…" : "Cadastrar alimento"}

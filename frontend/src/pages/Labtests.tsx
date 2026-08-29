@@ -114,9 +114,9 @@ export default function Labtests() {
           <Link to={`/patients/${patientId}`} className="minusculo">
             ← {patient?.name ?? "Paciente"}
           </Link>
-          <h1>Labtests</h1>
+          <h1>Exames</h1>
           <p>
-            {count(labtests.length, "result", "results")}
+            {count(labtests.length, "resultado", "resultados")}
             {changed.length > 0 ? ` · ${changed.length} fora da referência` : ""}
           </p>
         </div>
@@ -169,7 +169,7 @@ export default function Labtests() {
       {series && <PanelSeries series={series} onClose={() => setSeries(null)} />}
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : labtests.length === 0 ? (
         <div className="card empty">
           Nenhum exame registrado. Use <strong>Registrar resultado</strong> quando o laudo chegar.
@@ -179,11 +179,11 @@ export default function Labtests() {
           <table>
             <thead>
               <tr>
-                <th>Labtest</th>
-                <th>Collection</th>
-                <th className="num">Result</th>
+                <th>Exame</th>
+                <th>Coleta</th>
+                <th className="num">Resultado</th>
                 <th>Referência usada</th>
-                <th>Report</th>
+                <th>Laudo</th>
                 <th></th>
               </tr>
             </thead>
@@ -230,7 +230,7 @@ export default function Labtests() {
                   </td>
                   <td>
                     <button className="button perigo pequeno" onClick={() => remove(e)}>
-                      Remove
+                      Remover
                     </button>
                   </td>
                 </tr>
@@ -271,11 +271,11 @@ function ButtonReport({
     <>
       {labtest.hasReport ? (
         <button className="button secundario pequeno" onClick={onOpen}>
-          Open
+          Abrir
         </button>
       ) : (
         <button className="button secundario pequeno" onClick={() => input.current?.click()}>
-          Attach
+          Anexar
         </button>
       )}
       <input
@@ -299,7 +299,7 @@ function PanelSeries({ series, onClose }: { series: LabtestSeries; onClose: () =
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2>{series.parameter} ao longo do tempo</h2>
         <button className="button secundario pequeno" onClick={onClose}>
-          Close
+          Fechar
         </button>
       </div>
 
@@ -392,7 +392,7 @@ function FormResult({
 
       <div className="grid three" style={{ marginTop: "0.8rem" }}>
         <div className="field" style={{ gridColumn: "span 2" }}>
-          <label htmlFor="ex-parametro">Labtest</label>
+          <label htmlFor="ex-parametro">Exame</label>
           <select
             id="ex-parametro"
             value={parameterId}
@@ -402,7 +402,7 @@ function FormResult({
             }}
             required
           >
-            <option value="">Select…</option>
+            <option value="">Selecione…</option>
             {parameters.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.group ? `${p.group} · ` : ""}
@@ -428,7 +428,7 @@ function FormResult({
           />
         </div>
         <div className="field">
-          <label htmlFor="ex-valor">Result</label>
+          <label htmlFor="ex-valor">Resultado</label>
           <input
             id="ex-valor"
             inputMode="decimal"
@@ -441,7 +441,7 @@ function FormResult({
           </span>
         </div>
         <div className="field">
-          <label htmlFor="ex-unidade">Unit</label>
+          <label htmlFor="ex-unidade">Unidade</label>
           <input
             id="ex-unidade"
             value={unit}
@@ -460,7 +460,7 @@ function FormResult({
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button type="button" className="button secundario" onClick={onClose}>
-          Cancel
+          Cancelar
         </button>
         <button className="button" type="submit" disabled={saving}>
           {saving ? "Salvando…" : "Registrar"}
@@ -554,7 +554,7 @@ function FormOrder({
 
       <div className="row" style={{ marginTop: "0.9rem" }}>
         <div className="field" style={{ width: 170 }}>
-          <label htmlFor="sol-data">Date</label>
+          <label htmlFor="sol-data">Data</label>
           <input
             id="sol-data"
             type="date"
@@ -577,10 +577,10 @@ function FormOrder({
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button type="button" className="button secundario" onClick={onClose}>
-          Cancel
+          Cancelar
         </button>
         <button className="button" type="submit" disabled={saving}>
-          {saving ? "Salvando…" : `Solicitar ${count(chosen.length, "labtest", "labtests")}`}
+          {saving ? "Salvando…" : `Solicitar ${count(chosen.length, "exame", "exames")}`}
         </button>
       </div>
     </form>

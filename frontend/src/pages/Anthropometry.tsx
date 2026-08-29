@@ -100,7 +100,7 @@ export default function Anthropometry() {
     }
   }
 
-  if (loading) return <p className="loading">Loading…</p>;
+  if (loading) return <p className="loading">Carregando…</p>;
 
   const moreRecent = assessments[assessments.length - 1];
 
@@ -111,7 +111,7 @@ export default function Anthropometry() {
           <Link to={`/patients/${patientId}`} className="minusculo">
             ← {progress?.patientName ?? "Paciente"}
           </Link>
-          <h1 style={{ marginTop: "0.2rem" }}>Anthropometry</h1>
+          <h1 style={{ marginTop: "0.2rem" }}>Antropometria</h1>
           <p>
             {assessments.length === 0
               ? "Nenhuma avaliação registrada."
@@ -148,12 +148,12 @@ export default function Anthropometry() {
             <table>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th className="num">Weight</th>
-                  <th className="num">BMI</th>
+                  <th>Data</th>
+                  <th className="num">Peso</th>
+                  <th className="num">IMC</th>
                   <th>Classificação</th>
-                  <th className="num">% fat</th>
-                  <th>Protocol</th>
+                  <th className="num">% gordura</th>
+                  <th>Protocolo</th>
                   <th />
                 </tr>
               </thead>
@@ -178,7 +178,7 @@ export default function Anthropometry() {
                     <td className="discreto">{a.composition?.protocolDescription ?? "—"}</td>
                     <td style={{ textAlign: "right" }}>
                       <button className="button perigo pequeno" onClick={() => remove(a.id)}>
-                        Remove
+                        Remover
                       </button>
                     </td>
                   </tr>
@@ -211,7 +211,7 @@ function AssessmentSummary({
       <div className="grid three" style={{ marginTop: "0.8rem" }}>
         <Indicator label="Peso" value={assessment.weightKg} unit="kg" />
         <Indicator label="Altura" value={assessment.heightCm} unit="cm" />
-        <Indicator label="BMI" value={assessment.bmi} />
+        <Indicator label="IMC" value={assessment.bmi} />
         <Derived label="Classificação" derived={assessment.classificationBmi} map={CLASSIFICATIONS} />
         <Indicator label="Cintura/quadril" value={assessment.ratioWaistHip} />
         <Derived
@@ -244,9 +244,9 @@ function AssessmentSummary({
       {assessment.childGrowth?.value && (
         <>
           <h3 style={{ margin: "1rem 0 0.4rem" }}>
-            Growth
+            Crescimento
             <span className="tag" style={{ marginLeft: "0.5rem" }}>
-              {assessment.childGrowth.value.ageAtMonths} months
+              {assessment.childGrowth.value.ageAtMonths} meses
             </span>
           </h3>
           {assessment.childGrowth.value.indicators.map((i) => (
@@ -256,7 +256,7 @@ function AssessmentSummary({
                 <div className="minusculo">{i.reference}</div>
               </span>
               <span style={{ textAlign: "right" }}>
-                score-z {i.scoreZ?.toFixed(2).replace(".", ",")}
+                escore-z {i.scoreZ?.toFixed(2).replace(".", ",")}
                 <div>
                   <span className={`tag ${i.requiresAttention ? "ambar" : "verde"}`}>
                     {i.classificationDescription}
@@ -350,7 +350,7 @@ function BlockPregnancy({ pregnancy }: { pregnancy: Pregnancy }) {
       <h3 style={{ margin: "1rem 0 0.4rem" }}>
         Gestação
         <span className="tag" style={{ marginLeft: "0.5rem" }}>
-          {pregnancy.gestationalWeek}ª week
+          {pregnancy.gestationalWeek}ª semana
         </span>
       </h3>
 
@@ -366,10 +366,10 @@ function BlockPregnancy({ pregnancy }: { pregnancy: Pregnancy }) {
       </div>
 
       <p className="minusculo" style={{ marginTop: "0.6rem", marginBottom: 0 }}>
-        Range {pregnancy.rangeDescription.toLowerCase()}: expected{" "}
+        Faixa {pregnancy.rangeDescription.toLowerCase()}: esperado{" "}
         {pregnancy.expectedMin.toLocaleString("pt-BR")} a{" "}
         {pregnancy.expectedMax.toLocaleString("pt-BR")} kg até a {pregnancy.gestationalWeek}ª
-        week, e {pregnancy.totalGainRecommendedMin.toLocaleString("pt-BR")} a{" "}
+        semana, e {pregnancy.totalGainRecommendedMin.toLocaleString("pt-BR")} a{" "}
         {pregnancy.totalGainRecommendedMax.toLocaleString("pt-BR")} kg na gestação whole
         (IOM, 2009).
       </p>
@@ -447,7 +447,7 @@ function ProgressTable({ progress }: { progress: Progress }) {
         <table>
           <thead>
             <tr>
-              <th>Date</th>
+              <th>Data</th>
               {measures.map((m) => (
                 <th key={m} className="num">
                   {measureLabel(progress, m)}
@@ -499,7 +499,7 @@ function ValueComChange({
       <span title={change.notes}>
         {num(current)}{" "}
         <span className="minusculo" style={{ cursor: "help" }}>
-          (without comparação)
+          (sem comparação)
         </span>
       </span>
     );
@@ -603,7 +603,7 @@ function FormAssessment({
 
       <div className="grid three" style={{ marginTop: "0.8rem" }}>
         <div className="field">
-          <label htmlFor="av-data">Date</label>
+          <label htmlFor="av-data">Data</label>
           <input
             id="av-data"
             name="date"
@@ -617,7 +617,7 @@ function FormAssessment({
           <FieldError field="date" errors={fields.errors} />
         </div>
         <div className="field">
-          <label htmlFor="av-peso">Weight (kg)</label>
+          <label htmlFor="av-peso">Peso (kg)</label>
           <input
             id="av-peso"
             name="weightKg"
@@ -629,7 +629,7 @@ function FormAssessment({
           <FieldError field="weightKg" errors={fields.errors} />
         </div>
         <div className="field">
-          <label htmlFor="av-altura">Height (cm)</label>
+          <label htmlFor="av-altura">Altura (cm)</label>
           <input
             id="av-altura"
             name="heightCm"
@@ -659,7 +659,7 @@ function FormAssessment({
         ))}
       </div>
 
-      <h3 style={{ margin: "1.1rem 0 0.4rem" }}>Skinfolds cutâneas (mm)</h3>
+      <h3 style={{ margin: "1.1rem 0 0.4rem" }}>Dobras cutâneas (mm)</h3>
       <div className="grid three">
         {SKINFOLDS.map((d) => {
           const mandatory = required.has(d.key);
@@ -669,7 +669,7 @@ function FormAssessment({
                 {d.label}
                 {mandatory && (
                   <span className="tag verde" style={{ marginLeft: "0.35rem" }}>
-                    mandatory
+                    exigida
                   </span>
                 )}
               </label>
@@ -701,7 +701,7 @@ function FormAssessment({
           </select>
           {chosen && (
             <span className="minusculo">
-              Requires {count(required.size, "skinfold", "skinfolds")}. Faltando alguma, o sistema recusa
+              Exige {count(required.size, "dobra", "dobras")}. Faltando alguma, o sistema recusa
               e diz qual.
             </span>
           )}
@@ -744,7 +744,7 @@ function FormAssessment({
           onChange={(e) => setPregnant(e.target.checked)}
           style={{ width: "auto" }}
         />
-        <span className="discreto">Pregnant</span>
+        <span className="discreto">Gestante</span>
       </label>
 
       {pregnant && (
@@ -763,7 +763,7 @@ function FormAssessment({
             <FieldError field="gestationalWeek" errors={fields.errors} />
           </div>
           <div className="field">
-            <label htmlFor="av-peso-pre">Weight before da gestação (kg)</label>
+            <label htmlFor="av-peso-pre">Peso antes da gestação (kg)</label>
             <input
               id="av-peso-pre"
               name="weightGestationalPreKg"

@@ -55,7 +55,7 @@ export default function Team() {
     <>
       <div className="header-page">
         <div>
-          <h1>Team</h1>
+          <h1>Equipe</h1>
           <p>{count(users.length, "pessoa com acesso", "pessoas com acesso")}</p>
         </div>
         <button className="button" onClick={() => setCreating((v) => !v)}>
@@ -80,16 +80,16 @@ export default function Team() {
       )}
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : (
         <div className="rolagem">
           <table>
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Nome</th>
                 <th>E-mail</th>
-                <th>Access</th>
-                <th>Since</th>
+                <th>Acesso</th>
+                <th>Desde</th>
                 <th></th>
               </tr>
             </thead>
@@ -104,7 +104,7 @@ export default function Team() {
                     <span className={`tag ${u.role === "NUTRITIONIST" ? "verde" : ""}`}>
                       {u.roleDescription}
                     </span>
-                    {!u.active && <span className="tag vermelha">inactive</span>}
+                    {!u.active && <span className="tag vermelha">inativo</span>}
                   </td>
                   <td className="mono">{formatBr(u.createdAt?.slice(0, 10))}</td>
                   <td>
@@ -187,7 +187,7 @@ function Form({
 
       <div className="grid two" style={{ marginTop: "0.8rem" }}>
         <div className="field">
-          <label htmlFor="eq-nome">Name</label>
+          <label htmlFor="eq-nome">Nome</label>
           <input
             id="eq-nome"
             name="name"
@@ -229,7 +229,7 @@ function Form({
           </span>
         </div>
         <div className="field">
-          <label htmlFor="eq-tel">Phone</label>
+          <label htmlFor="eq-tel">Telefone</label>
           <input
             id="eq-tel"
             name="phone"
@@ -243,7 +243,7 @@ function Form({
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button type="button" className="button secundario" onClick={onClose}>
-          Cancel
+          Cancelar
         </button>
         <button className="button" type="submit" disabled={sending}>
           {sending ? "Salvando…" : "Cadastrar"}

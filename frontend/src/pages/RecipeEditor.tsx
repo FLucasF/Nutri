@@ -139,7 +139,7 @@ export default function RecipeEditor() {
   }
 
   if (loading) {
-    return <p className="loading">Loading…</p>;
+    return <p className="loading">Carregando…</p>;
   }
 
   const ingredientsWeight = ingredients.reduce((sums, i) => sums + estimateGrams(i), 0);
@@ -150,13 +150,13 @@ export default function RecipeEditor() {
         <div>
           <h1>{editing ? name || "Receita" : "Nova receita"}</h1>
           <p>
-            {count(ingredients.length, "ingredient", "ingredients")}
+            {count(ingredients.length, "ingrediente", "ingredientes")}
             {calculated ? ` · rende ${formatGrams(calculated.yieldGrams)}` : ""}
           </p>
         </div>
         <div className="row">
           <Link className="button secundario" to="/foods?source=RECEITA">
-            Back
+            Voltar
           </Link>
           <button className="button" type="submit" disabled={saving}>
             {saving ? "Salvando…" : "Salvar receita"}
@@ -188,7 +188,7 @@ export default function RecipeEditor() {
                 <FieldError field="name" errors={fields.errors} />
               </div>
               <div className="field">
-                <label htmlFor="rc-grupo">Group</label>
+                <label htmlFor="rc-grupo">Grupo</label>
                 <input
                   id="rc-grupo"
                   name="group"
@@ -200,7 +200,7 @@ export default function RecipeEditor() {
                 <FieldError field="group" errors={fields.errors} />
               </div>
               <div className="field">
-                <label htmlFor="rc-rendimento">Weight ready (g)</label>
+                <label htmlFor="rc-rendimento">Peso pronto (g)</label>
                 <input
                   id="rc-rendimento"
                   name="yieldGrams"
@@ -237,9 +237,9 @@ export default function RecipeEditor() {
 
           <div className="meal">
             <div className="meal-top">
-              <strong style={{ flex: 1 }}>Ingredients</strong>
+              <strong style={{ flex: 1 }}>Ingredientes</strong>
               <span className="tag">
-                raw: {formatGrams(ingredientsWeight)}
+                cru: {formatGrams(ingredientsWeight)}
               </span>
             </div>
 
@@ -267,7 +267,7 @@ export default function RecipeEditor() {
                     }
                     aria-label={`Medida de ${i.description}`}
                   >
-                    <option value="">grams</option>
+                    <option value="">gramas</option>
                     {i.measures.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.description}
@@ -280,7 +280,7 @@ export default function RecipeEditor() {
                     className="button perigo pequeno"
                     onClick={() => setIngredients((a) => a.filter((_, x) => x !== n))}
                   >
-                    Remove
+                    Remover
                   </button>
                 </div>
               ))
@@ -347,9 +347,9 @@ function RecipeSummary({ recipe }: { recipe: Recipe }) {
   return (
     <>
       <div className="card">
-        <h2>Yield</h2>
+        <h2>Rendimento</h2>
         <div className="nutrient-row">
-          <span>Ingredients</span>
+          <span>Ingredientes</span>
           <span>{formatGrams(recipe.ingredientsWeight)}</span>
         </div>
         <div className="nutrient-row">
@@ -371,7 +371,7 @@ function RecipeSummary({ recipe }: { recipe: Recipe }) {
       </div>
 
       <div className="card">
-        <h2>By 100 g</h2>
+        <h2>Por 100 g</h2>
         {MACROS_PRINCIPAIS.map((key) => (
           <div
             className={`nutrient-row ${incomplete.has(key) ? "missing" : ""}`}

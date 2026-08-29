@@ -54,7 +54,7 @@ export default function Access() {
   const fields = useFieldErrors();
 
   if (loading) {
-    return <p className="loading">Loading…</p>;
+    return <p className="loading">Carregando…</p>;
   }
   if (user) {
     return <Navigate to={local.state?.from ?? "/patients"} replace />;
@@ -202,7 +202,7 @@ export default function Access() {
 
         {mode === "register" && (
           <div className="field">
-            <label htmlFor="crn">CRN (optional)</label>
+            <label htmlFor="crn">CRN (opcional)</label>
             <input
               id="crn"
               name="crn"

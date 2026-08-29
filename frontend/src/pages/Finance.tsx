@@ -88,7 +88,7 @@ export default function Finance() {
     <>
       <div className="header-page">
         <div>
-          <h1>Finance</h1>
+          <h1>Financeiro</h1>
           <p>Lançamentos, inadimplência e apuração do período.</p>
         </div>
         <button className="button" onClick={() => setCreating((v) => !v)}>
@@ -127,10 +127,10 @@ export default function Finance() {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as TransactionStatus | "")}
             >
-              <option value="">All</option>
-              <option value="PENDING">Pending</option>
-              <option value="PAID">Paid</option>
-              <option value="CANCELED">Canceled</option>
+              <option value="">Todas</option>
+              <option value="PENDING">Pendente</option>
+              <option value="PAID">Pago</option>
+              <option value="CANCELED">Cancelado</option>
             </select>
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function Finance() {
       {overdue.length > 0 && (
         <div className="warning attention" style={{ marginBottom: "0.9rem" }}>
           <strong>
-            {count(overdue.length, "lançamento vencido", "lançamentos vencidos")}, summing {currency(
+            {count(overdue.length, "lançamento vencido", "lançamentos vencidos")}, somando {currency(
               overdue.reduce((sums, l) => sums + l.value, 0),
             )}
             .
@@ -155,7 +155,7 @@ export default function Finance() {
       )}
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : transactions.length === 0 ? (
         <div className="card empty">
           Nenhum lançamento nesta competência. Registre uma cobrança para acompanhar o caixa do mês.
@@ -167,8 +167,8 @@ export default function Finance() {
               <tr>
                 <th>Competência</th>
                 <th>Descrição</th>
-                <th>Patient</th>
-                <th className="num">Value</th>
+                <th>Paciente</th>
+                <th className="num">Valor</th>
                 <th>Situação</th>
                 <th>Ações</th>
               </tr>
@@ -214,7 +214,7 @@ export default function Finance() {
                             className="button secundario pequeno"
                             onClick={() => action(() => api.finance.cancel(l.id))}
                           >
-                            Cancel
+                            Cancelar
                           </button>
                         </>
                       )}
@@ -225,14 +225,14 @@ export default function Finance() {
                               className="button secundario pequeno"
                               onClick={() => openReceipt(l.id)}
                             >
-                              Receipt
+                              Recibo
                             </button>
                           )}
                           <button
                             className="button secundario pequeno"
                             onClick={() => action(() => api.finance.refund(l.id))}
                           >
-                            Refund
+                            Estornar
                           </button>
                         </>
                       )}
@@ -311,9 +311,9 @@ function PanelReceipt({ receipt, onClose }: { receipt: Receipt; onClose: () => v
   return (
     <div className="card" style={{ marginBottom: "0.9rem", borderColor: "var(--accent)" }}>
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2>Receipt</h2>
+        <h2>Recibo</h2>
         <button className="button secundario pequeno" onClick={onClose}>
-          Close
+          Fechar
         </button>
       </div>
 
@@ -333,7 +333,7 @@ function PanelReceipt({ receipt, onClose }: { receipt: Receipt; onClose: () => v
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button className="button secundario pequeno" onClick={() => window.print()}>
-          Print
+          Imprimir
         </button>
       </div>
     </div>
@@ -414,20 +414,20 @@ function FormTransaction({
           className={`button ${type === "INCOME" ? "" : "secundario"} pequeno`}
           onClick={() => changeType("INCOME")}
         >
-          Recipe
+          Receita
         </button>
         <button
           type="button"
           className={`button ${type === "EXPENSE" ? "" : "secundario"} pequeno`}
           onClick={() => changeType("EXPENSE")}
         >
-          Expense
+          Despesa
         </button>
       </div>
 
       <div className="grid three" style={{ marginTop: "0.8rem" }}>
         <div className="field">
-          <label htmlFor="fl-valor">Value (R$)</label>
+          <label htmlFor="fl-valor">Valor (R$)</label>
           <input
             id="fl-valor"
             name="value"
@@ -440,7 +440,7 @@ function FormTransaction({
           <FieldError field="value" errors={fields.errors} />
         </div>
         <div className="field">
-          <label htmlFor="fl-cat">Category</label>
+          <label htmlFor="fl-cat">Categoria</label>
           <select
             id="fl-cat"
             name="category"
@@ -482,7 +482,7 @@ function FormTransaction({
           <FieldError field="accrual" errors={fields.errors} />
         </div>
         <div className="field">
-          <label htmlFor="fl-venc">Due</label>
+          <label htmlFor="fl-venc">Vencimento</label>
           <input
             id="fl-venc"
             name="due"
@@ -495,13 +495,13 @@ function FormTransaction({
         </div>
         {type === "INCOME" && (
           <div className="field">
-            <label htmlFor="fl-paciente">Patient</label>
+            <label htmlFor="fl-paciente">Paciente</label>
             <select
               id="fl-paciente"
               value={patientId}
               onChange={(e) => setPatientId(e.target.value)}
             >
-              <option value="">None</option>
+              <option value="">Nenhum</option>
               {patients.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}

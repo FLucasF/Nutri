@@ -46,9 +46,9 @@ export default function Patients() {
     <>
       <div className="header-page">
         <div>
-          <h1>Patients</h1>
+          <h1>Pacientes</h1>
           <p>
-            {count(total, "patient", "patients")}
+            {count(total, "paciente", "pacientes")}
             {activeOnly ? plural(total, " ativo", " ativos") : " no total"}
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function Patients() {
       <div className="card" style={{ marginBottom: "0.9rem" }}>
         <div className="row">
           <div className="field" style={{ flex: 1, minWidth: 220 }}>
-            <label htmlFor="search">Find</label>
+            <label htmlFor="search">Buscar</label>
             <input
               id="search"
               value={term}
@@ -108,7 +108,7 @@ export default function Patients() {
       )}
 
       {loading ? (
-        <p className="loading">Loading…</p>
+        <p className="loading">Carregando…</p>
       ) : patients.length === 0 ? (
         <div className="card empty">
           {term
@@ -120,9 +120,9 @@ export default function Patients() {
           <table>
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Nome</th>
                 <th>E-mail</th>
-                <th className="num">Age</th>
+                <th className="num">Idade</th>
                 <th>Situação</th>
               </tr>
             </thead>
@@ -140,7 +140,7 @@ export default function Patients() {
                   <td className="num">{p.age ?? "—"}</td>
                   <td>
                     <span className={`tag ${p.active ? "verde" : ""}`}>
-                      {p.active ? "active" : "inactive"}
+                      {p.active ? "ativo" : "inativo"}
                     </span>
                   </td>
                 </tr>
@@ -199,10 +199,10 @@ function PanelImport({
     <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
       <h2>Importar planilha de pacientes</h2>
       <p className="discreto" style={{ margin: "0.3rem 0 0.9rem" }}>
-        Só a coluna <code>name</code> é obrigatória. São reconhecidas também{" "}
-        <code>email</code>, <code>phone</code>, <code>birth</code>, <code>sex</code>,{" "}
-        <code>cpf</code>, <code>occupation</code>, <code>goal</code> e{" "}
-        <code>notes</code> — sem diferenciar acento nem maiúscula. Uma linha com problema
+        Só a coluna <code>nome</code> é obrigatória. São reconhecidas também{" "}
+        <code>email</code>, <code>telefone</code>, <code>nascimento</code>, <code>sexo</code>,{" "}
+        <code>cpf</code>, <code>profissao</code>, <code>objetivo</code> e{" "}
+        <code>observacoes</code> — sem diferenciar acento nem maiúscula. Uma linha com problema
         é anotada e as outras entram.
       </p>
 
@@ -240,7 +240,7 @@ function PanelImport({
           <input id="imp-pac-arquivo" type="file" accept=".csv,text/csv" ref={input} />
         </div>
         <div className="field" style={{ width: 120 }}>
-          <label htmlFor="imp-pac-sep">Separator</label>
+          <label htmlFor="imp-pac-sep">Separador</label>
           <select
             id="imp-pac-sep"
             value={separator}
@@ -255,7 +255,7 @@ function PanelImport({
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button type="button" className="button secundario" onClick={onClose}>
-          Close
+          Fechar
         </button>
         <button className="button" type="submit" disabled={sending}>
           {sending ? "Importando…" : "Importar"}
@@ -322,7 +322,7 @@ function FormNovoPatient({
 
       <div className="grid two">
         <div className="field">
-          <label htmlFor="np-nome">Name</label>
+          <label htmlFor="np-nome">Nome</label>
           <input
             id="np-nome"
             name="name"
@@ -346,7 +346,7 @@ function FormNovoPatient({
           <FieldError field="email" errors={fields.errors} />
         </div>
         <div className="field">
-          <label htmlFor="np-tel">Phone</label>
+          <label htmlFor="np-tel">Telefone</label>
           <input
             id="np-tel"
             name="phone"
@@ -367,22 +367,22 @@ function FormNovoPatient({
           />
         </div>
         <div className="field">
-          <label htmlFor="np-sexo">Sex</label>
+          <label htmlFor="np-sexo">Sexo</label>
           <select id="np-sexo" value={sex} onChange={(e) => setSex(e.target.value)}>
             <option value="">Não informado</option>
-            <option value="FEMALE">Female</option>
-            <option value="MALE">Male</option>
+            <option value="FEMALE">Feminino</option>
+            <option value="MALE">Masculino</option>
           </select>
         </div>
         <div className="field">
-          <label htmlFor="np-obj">Goal</label>
+          <label htmlFor="np-obj">Objetivo</label>
           <input id="np-obj" value={goal} onChange={(e) => setGoal(e.target.value)} />
         </div>
       </div>
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button type="button" className="button secundario" onClick={onClose}>
-          Cancel
+          Cancelar
         </button>
         <button className="button" type="submit" disabled={sending}>
           {sending ? "Salvando…" : "Cadastrar"}

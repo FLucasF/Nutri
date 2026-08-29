@@ -66,7 +66,7 @@ export default function FoodDetail() {
     };
   }, [food, quantity, measureId]);
 
-  if (loading) return <p className="loading">Loading…</p>;
+  if (loading) return <p className="loading">Carregando…</p>;
   if (error && !food) return <div className="warning error">{error}</div>;
   if (!food) return null;
 
@@ -78,12 +78,12 @@ export default function FoodDetail() {
       <div className="header-page">
         <div>
           <Link to="/foods" className="minusculo">
-            ← Foods
+            ← Alimentos
           </Link>
           <h1 style={{ marginTop: "0.2rem" }}>{food.description}</h1>
           <p>
             {food.group ?? "Sem grupo"}
-            {food.brand ? ` · ${food.brand}` : ""} · Source: {food.sourceDescription}
+            {food.brand ? ` · ${food.brand}` : ""} · Fonte: {food.sourceDescription}
           </p>
         </div>
         {food.publicBase && <span className="tag">tabela de referência</span>}
@@ -95,13 +95,13 @@ export default function FoodDetail() {
         <h2>Calcular porção</h2>
         <div className="row" style={{ marginTop: "0.7rem" }}>
           <div className="field" style={{ width: 120 }}>
-            <label htmlFor="qtd">Quantity</label>
+            <label htmlFor="qtd">Quantidade</label>
             <input id="qtd" inputMode="decimal" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </div>
           <div className="field" style={{ flex: 1, minWidth: 200 }}>
-            <label htmlFor="med">Measure</label>
+            <label htmlFor="med">Medida</label>
             <select id="med" value={measureId} onChange={(e) => setMeasureId(e.target.value)}>
-              <option value="">grams</option>
+              <option value="">gramas</option>
               {food.measures.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.description} ({formatWeight(m.grams)})
@@ -121,7 +121,7 @@ export default function FoodDetail() {
       <div className="card" style={{ marginBottom: "1.1rem" }}>
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h2>Composição</h2>
-          <span className="minusculo">by {base}</span>
+          <span className="minusculo">por {base}</span>
         </div>
 
         <div className="grid two" style={{ marginTop: "0.8rem" }}>
@@ -220,8 +220,8 @@ function Measures({ food, onChange }: { food: Food; onChange: () => void }) {
             <thead>
               <tr>
                 <th>Porção</th>
-                <th className="num">Weight</th>
-                <th>Origin</th>
+                <th className="num">Peso</th>
+                <th>Origem</th>
                 <th />
               </tr>
             </thead>
@@ -239,7 +239,7 @@ function Measures({ food, onChange }: { food: Food; onChange: () => void }) {
                   <td style={{ textAlign: "right" }}>
                     {m.editable && (
                       <button className="button perigo pequeno" onClick={() => remove(m.id)}>
-                        Remove
+                        Remover
                       </button>
                     )}
                   </td>
@@ -263,7 +263,7 @@ function Measures({ food, onChange }: { food: Food; onChange: () => void }) {
             />
           </div>
           <div className="field" style={{ width: 110 }}>
-            <label htmlFor="nova-med-g">Weight (g)</label>
+            <label htmlFor="nova-med-g">Peso (g)</label>
             <input
               id="nova-med-g"
               inputMode="decimal"
@@ -282,7 +282,7 @@ function Measures({ food, onChange }: { food: Food; onChange: () => void }) {
             <span className="discreto">Padrão</span>
           </label>
           <button className="button" type="submit" disabled={sending} style={{ marginTop: "1.1rem" }}>
-            Add
+            Adicionar
           </button>
         </div>
       </form>
