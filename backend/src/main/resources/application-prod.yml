@@ -4,6 +4,57 @@ spring:
     username: ${DB_USER:nutriplan}
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # O plano gratuito do Neon aceita poucas conexões, e este servidor é um
+      # só. Dez conexões ociosas seriam dez assentos ocupados sem ninguém
+      # sentado, e o limite estoura antes de o tráfego justificar.
+      maximum-pool-size: 5
+      minimum-idle: 1
+      # O banco hiberna depois de cinco minutos parado e leva alguns segundos
+      # para voltar. Trinta segundos cobrem esse retorno; o padrão de trinta
+      # também, mas deixar explícito evita que alguém o encurte sem saber.
+      connection-timeout: 30000
   h2:
     console:
       enabled: false
+
+  # A tela vem do JAR, como recurso estático. Cache longo nos arquivos com
+  # hash no nome — eles nunca mudam de conteúdo sem mudar de nome, e o Vite
+  # garante isso. O index.html fica de fora: é ele que aponta para os nomes
+  # novos a cada versão.
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 30d
+          cache-public: true
+
+server:
+  # Atrás do balanceador do Render, sem isto o servidor acha que está em http
+  # e monta endereços errados no redirecionamento.
+  forward-headers-strategy: framework
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,application/javascript,application/json
+    min-response-size: 2048
+
+nutriplan:
+  jwt:
+    # Sem valor padrão, de propósito.
+    #
+    # O padrão de desenvolvimento está no application.yml e serve para a
+    # máquina de quem desenvolve. Se ele valesse aqui, uma subida esquecida da
+    # variável colocaria no ar um servidor cuja chave de assinatura é pública
+    # no repositório — qualquer pessoa forjaria um token e entraria em
+    # qualquer conta. Faltando a variável, a aplicação não sobe. É o que se
+    # quer: um serviço que não sobe dá um erro no deploy, um serviço que sobe
+    # com a chave conhecida não dá aviso nenhum.
+    secret: ${NUTRIPLAN_JWT_SECRET}
+  cors:
+    # A tela é servida por este mesmo servidor, então não há outra origem para
+    # liberar. A variável fica para o caso de o front ser hospedado à parte.
+    allowed-origins: ${APP_URL:http://localhost:8080}
+
+logging:
+  level:
+    br.com.nutriplan: INFO

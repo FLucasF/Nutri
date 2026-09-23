@@ -1,0 +1,35 @@
+# O que não entra no contexto de build.
+#
+# Sem isto o Docker envia a pasta inteira para o daemon antes de começar — os
+# node_modules, o target do Maven e os 20 MB do banco H2 de desenvolvimento.
+# São centenas de megabytes copiados a cada build, para serem descartados.
+
+.git
+.gitignore
+
+# Dependências e artefatos: a imagem os reconstrói do zero, e os da máquina de
+# desenvolvimento podem até ser de outro sistema operacional.
+node_modules
+frontend/node_modules
+frontend/dist
+frontend/test-results
+frontend/playwright-report
+backend/target
+
+# O banco H2 de desenvolvimento. Em produção é PostgreSQL, e este arquivo
+# carrega dados de teste que não têm por que viajar.
+backend/data
+*.mv.db
+*.trace.db
+
+# Ambiente local e editores.
+*.local
+.vscode
+.idea
+.claude
+
+# Documentação e planilhas de origem: não fazem parte do que roda.
+docs
+dados
+*.md
+!frontend/e2e/README.md
