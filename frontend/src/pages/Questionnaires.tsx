@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ChevronDown, ChevronUp, Copy, Info, ListChecks, Trash2 } from "lucide-react";
 import { ErrorApi, api } from "../api/client";
 import { explainError } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
@@ -74,7 +75,7 @@ export default function Questionnaires() {
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
@@ -83,86 +84,110 @@ export default function Questionnaires() {
         <p className="loading">Carregando…</p>
       ) : (
         <div className="list-handouts">
-          {[...meus, ...templates].map((q) => (
-            <article
-              className={`card handout ${q.systemTemplate ? "template" : ""}`}
-              key={q.id}
-            >
-              <header>
-                <button
-                  type="button"
-                  className="title-handout"
-                  onClick={() => setOpen(open === q.id ? null : q.id)}
-                >
-                  <h2>{q.name}</h2>
-                </button>
-                <div className="row" style={{ gap: "0.3rem" }}>
-                  {q.scorable && <span className="tag ambar">pontuável</span>}
-                  {q.systemTemplate && <span className="tag">do sistema</span>}
-                </div>
-              </header>
-
-              <p className="body-handout open">
-                {q.description ?? `${count(q.questions.length, "pergunta", "perguntas")}.`}
-              </p>
-
-              {open === q.id && (
-                <ol style={{ margin: "0.7rem 0 0", paddingLeft: "1.2rem" }}>
-                  {q.questions.map((p) => (
-                    <li key={p.id} style={{ marginBottom: "0.4rem", fontSize: "0.9rem" }}>
-                      {p.statement}
-                      {p.required && <span className="minusculo"> (obrigatória)</span>}
-                      {p.options.length > 0 && (
-                        <div className="minusculo">
-                          {p.options
-                            .map((o) => (o.points !== undefined ? `${o.label} = ${o.points}` : o.label))
-                            .join(" · ")}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ol>
-              )}
-
-              <div className="row" style={{ marginTop: "0.6rem" }}>
-                <button
-                  type="button"
-                  className="button secundario pequeno"
-                  onClick={() => setOpen(open === q.id ? null : q.id)}
-                >
-                  {open === q.id ? "Recolher" : "Ver perguntas"}
-                </button>
-                <button
-                  type="button"
-                  className="button secundario pequeno"
-                  onClick={() => duplicate(q)}
-                >
-                  Duplicar
-                </button>
-                {q.editable && (
+          {[...meus, ...templates].map((q) => {
+            const aberto = open === q.id;
+            return (
+              <article
+                className={`card handout ${q.systemTemplate ? "template" : ""}`}
+                key={q.id}
+              >
+                <header className="handout-head">
                   <button
                     type="button"
-                    className="button perigo pequeno"
-                    onClick={() => remove(q)}
+                    className="title-handout"
+                    aria-expanded={aberto}
+                    onClick={() => setOpen(aberto ? null : q.id)}
                   >
-                    Remover
+                    <span className="handout-icon">
+                      <ListChecks aria-hidden="true" />
+                    </span>
+                    <span className="handout-title">
+                      <h2>{q.name}</h2>
+                      <span className="handout-meta">
+                        {count(q.questions.length, "pergunta", "perguntas")}
+                      </span>
+                    </span>
                   </button>
+                  {(q.scorable || q.systemTemplate) && (
+                    <div className="tags">
+                      {q.scorable && <span className="tag ambar">pontuável</span>}
+                      {q.systemTemplate && <span className="tag">do sistema</span>}
+                    </div>
+                  )}
+                </header>
+
+                {q.description && <p className="handout-desc">{q.description}</p>}
+
+                {aberto && (
+                  <ol className="questions">
+                    {q.questions.map((p) => (
+                      <li key={p.id}>
+                        <span className="question-statement">
+                          {p.statement}
+                          {p.required && <span className="minusculo"> (obrigatória)</span>}
+                        </span>
+                        {p.options.length > 0 && (
+                          <ul className="options">
+                            {p.options.map((o, i) => (
+                              <li key={i}>
+                                {o.points !== undefined ? `${o.label} = ${o.points}` : o.label}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
                 )}
-              </div>
-            </article>
-          ))}
+
+                <div className="handout-actions">
+                  <button
+                    type="button"
+                    className="button ghost pequeno"
+                    onClick={() => setOpen(aberto ? null : q.id)}
+                  >
+                    {aberto ? <ChevronUp aria-hidden="true" /> : <ChevronDown aria-hidden="true" />}
+                    {aberto ? "Recolher" : "Ver perguntas"}
+                  </button>
+                  <div className="handout-actions-right">
+                    <button
+                      type="button"
+                      className="button secundario pequeno"
+                      onClick={() => duplicate(q)}
+                    >
+                      <Copy aria-hidden="true" />
+                      Duplicar
+                    </button>
+                    {q.editable && (
+                      <button
+                        type="button"
+                        className="button perigo pequeno"
+                        onClick={() => remove(q)}
+                      >
+                        <Trash2 aria-hidden="true" />
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
 
-      <div className="card" style={{ marginTop: "0.9rem" }}>
-        <h2>Sobre instrumentos publicados</h2>
-        <p className="discreto" style={{ marginTop: "0.4rem", marginBottom: 0 }}>
-          O sistema traz um modelo genérico de pré-consulta, de autoria própria. Instrumentos
-          publicados — rastreamento metabólico, FINDRISC, escalas de sono — têm licença própria,
-          e cabe a você cadastrar os que tem direito de usar. É a mesma razão pela qual a TBCA
-          não está no acervo de alimentos.
-        </p>
-      </div>
+      <aside className="library-note">
+        <Info aria-hidden="true" />
+        <div>
+          <h2>Sobre instrumentos publicados</h2>
+          <p>
+            O sistema traz um modelo genérico de pré-consulta, de autoria própria. Instrumentos
+            publicados — rastreamento metabólico, FINDRISC, escalas de sono — têm licença própria,
+            e cabe a você cadastrar os que tem direito de usar. É a mesma razão pela qual a TBCA
+            não está no acervo de alimentos.
+          </p>
+        </div>
+      </aside>
     </>
   );
 }

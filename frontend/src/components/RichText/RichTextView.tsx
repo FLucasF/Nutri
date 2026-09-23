@@ -28,7 +28,11 @@ export function RichTextView({
   doc: RichDoc;
   empty?: string;
 }) {
-  if (isEmptyDoc(doc)) return <p className="empty">{empty}</p>;
+  if (isEmptyDoc(doc)) {
+    // Quem passa `empty=""` quer que nada apareça — nem um parágrafo em
+    // branco ocupando a linha de uma observação que não existe.
+    return empty ? <p className="empty">{empty}</p> : null;
+  }
 
   return (
     <div className="richtext-view">
@@ -59,18 +63,22 @@ function renderBlock(block: RichBlock): ReactNode {
       );
     }
     case "table":
+      // O envoltório rola de lado no telefone; a tabela em si mantém a classe
+      // que o PDF e as páginas conhecem.
       return (
-        <table className="richtext-table">
-          <tbody>
-            {block.content.map((row, i) => (
-              <tr key={i}>
-                {row.content.map((cell, j) => (
-                  <Fragment key={j}>{renderCell(cell)}</Fragment>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="richtext-table-wrap">
+          <table className="richtext-table">
+            <tbody>
+              {block.content.map((row, i) => (
+                <tr key={i}>
+                  {row.content.map((cell, j) => (
+                    <Fragment key={j}>{renderCell(cell)}</Fragment>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       );
   }
 }
@@ -87,12 +95,13 @@ function renderCell(cell: RichCell): ReactNode {
 }
 
 function renderParagraph(paragraph: RichParagraph): ReactNode {
+  // O alinhamento é dado do documento, não tema: fica em linha de propósito.
   const style: CSSProperties | undefined = paragraph.attrs?.textAlign
     ? { textAlign: paragraph.attrs.textAlign }
     : undefined;
 
   // Um parágrafo vazio é uma linha em branco que o autor deixou de propósito.
-  if (!paragraph.content?.length) return <p style={style}>{" "}</p>;
+  if (!paragraph.content?.length) return <p style={style}>{" "}</p>;
 
   return (
     <p style={style}>
@@ -122,6 +131,7 @@ function renderText(text: RichText): ReactNode {
         node = <s>{node}</s>;
         break;
       case "textStyle":
+        // Tamanho em pontos, absoluto: também é dado do documento.
         style = { fontSize: fontSizeStyle(mark.attrs.fontSize) };
         break;
     }

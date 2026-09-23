@@ -1,5 +1,18 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  ChevronLeft,
+  ClipboardList,
+  Copy,
+  FileText,
+  Flame,
+  FlaskConical,
+  Pencil,
+  Plus,
+  Ruler,
+  Send,
+  X,
+} from "lucide-react";
 import { ErrorApi, api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
@@ -11,6 +24,8 @@ import { PatientAppointment } from "../components/PatientAppointment";
 import { WeightChart } from "../components/WeightChart";
 import { PatientNotes, PatientTags } from "../components/PatientProfile";
 import { NotesField, NotesView } from "../components/RichText/NotesField";
+import { useIsNarrow } from "../hooks/useMediaQuery";
+import { count } from "../text";
 import type {
   Patient,
   PlanSummary,
@@ -22,6 +37,7 @@ export default function PatientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const patientId = Number(id);
+  const narrow = useIsNarrow();
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [plans, setPlans] = useState<PlanSummary[]>([]);
@@ -29,6 +45,9 @@ export default function PatientDetail() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  // The slot under the header where the appointment form opens. State, not a
+  // ref: the portal needs a render after the element exists.
+  const [appointmentSlot, setAppointmentSlot] = useState<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,17 +92,21 @@ export default function PatientDetail() {
   if (!patient) return null;
 
   return (
-    <>
-      <div className="header-page">
+    <div className="patient-page">
+      <div className="header-page patient-header">
         <div>
-          <Link to="/patients" className="minusculo">
-            ← Pacientes
+          <Link to="/patients" className="migalha">
+            <ChevronLeft aria-hidden="true" />
+            Pacientes
           </Link>
-          <div className="row" style={{ alignItems: "center", gap: "0.7rem" }}>
-            <Avatar name={patient.name} size={44} />
-            <div>
-              <h1 style={{ margin: "0.2rem 0 0" }}>{patient.name}</h1>
-              <p style={{ margin: 0 }}>
+          <div className="patient-identity">
+            <Avatar name={patient.name} size={56} />
+            <div className="patient-identity-text">
+              <div className="patient-title">
+                <h1>{patient.name}</h1>
+                {!patient.active && <span className="tag neutra">inativo</span>}
+              </div>
+              <p>
                 {patient.nickname ? `"${patient.nickname}" · ` : ""}
                 {patient.age ? `${patient.age} anos` : "Idade não informada"}
                 {patient.biologicalCondition === "PREGNANT" ? " · gestante" : ""}
@@ -94,138 +117,189 @@ export default function PatientDetail() {
           </div>
           <PatientTags patientId={patient.id} />
         </div>
-        <div className="row">
-          {!patient.active && <span className="tag">inativo</span>}
-          <button className="button secundario" onClick={() => setEditing((v) => !v)}>
-            {editing ? "Cancelar edição" : "Editar"}
-          </button>
-          <PatientAppointment patientId={patient.id} />
-          <Link className="button secundario" to={`/patients/${patient.id}/anamneses`}>
-            Anamnese
-          </Link>
-          <Link className="button secundario" to={`/patients/${patient.id}/anthropometry`}>
-            Antropometria
-          </Link>
-          <Link className="button secundario" to={`/patients/${patient.id}/energy`}>
-            Cálculo energético
-          </Link>
-          <Link className="button secundario" to={`/patients/${patient.id}/labtests`}>
-            Exames
-          </Link>
+        <div className="header-page-actions patient-actions">
+          <div className="scroll-strip">
+            <button
+              type="button"
+              className="button secundario"
+              aria-pressed={editing}
+              onClick={() => setEditing((v) => !v)}
+            >
+              {editing ? <X aria-hidden="true" /> : <Pencil aria-hidden="true" />}
+              {editing ? "Cancelar edição" : "Editar"}
+            </button>
+            <PatientAppointment patientId={patient.id} panelContainer={appointmentSlot} />
+            <Link className="button secundario" to={`/patients/${patient.id}/anamneses`}>
+              <FileText aria-hidden="true" />
+              Anamnese
+            </Link>
+            <Link className="button secundario" to={`/patients/${patient.id}/anthropometry`}>
+              <Ruler aria-hidden="true" />
+              Antropometria
+            </Link>
+            <Link className="button secundario" to={`/patients/${patient.id}/energy`}>
+              <Flame aria-hidden="true" />
+              Cálculo energético
+            </Link>
+            <Link className="button secundario" to={`/patients/${patient.id}/labtests`}>
+              <FlaskConical aria-hidden="true" />
+              Exames
+            </Link>
+          </div>
           <button
+            type="button"
             className="button"
             onClick={() => navigate(`/prescriptions/new?patientId=${patient.id}`)}
           >
+            <Plus aria-hidden="true" />
             Nova prescrição
           </button>
         </div>
       </div>
 
-      {error && (
-        <div className="warning error" style={{ marginBottom: "0.9rem" }}>
-          {error}
-        </div>
-      )}
+      <div className="patient-body">
+        <div className="patient-appointment-slot" ref={setAppointmentSlot} />
 
-      {editing ? (
-        <FormEdit
-          patient={patient}
-          onSave={async (data) => {
-            await api.patients.update(patient.id, data);
-            setEditing(false);
-            await load();
-          }}
-        />
-      ) : (
-        <div className="card" style={{ marginBottom: "1.1rem" }}>
-          <div className="grid three">
-            <Datum label="E-mail" value={patient.email} />
-            <Datum label="Telefone" value={patient.phone} />
-            <Datum label="Nascimento" value={formatDate(patient.dateBirth)} />
-            <Datum
-              label="Sexo"
-              value={patient.sex === "FEMALE" ? "Feminino" : patient.sex === "MALE" ? "Masculino" : undefined}
-            />
-            <Datum label="CPF" value={patient.cpf} />
-            <Datum label="Apelido" value={patient.nickname} />
-            <Datum label="Profissão" value={patient.occupation} />
-          </div>
-          {patient.notes && (
-            <div style={{ marginTop: "0.9rem" }}>
-              <span className="minusculo">Observações</span>
-              <div style={{ marginTop: "0.2rem", fontSize: "0.9rem" }}>
+        {error && <div className="warning error">{error}</div>}
+
+        {editing ? (
+          <FormEdit
+            patient={patient}
+            onSave={async (data) => {
+              await api.patients.update(patient.id, data);
+              setEditing(false);
+              await load();
+            }}
+          />
+        ) : (
+          <div className="card patient-info">
+            <dl className="patient-facts">
+              <Datum label="E-mail" value={patient.email} />
+              <Datum label="Telefone" value={patient.phone} />
+              <Datum label="Nascimento" value={formatDate(patient.dateBirth)} />
+              <Datum
+                label="Sexo"
+                value={patient.sex === "FEMALE" ? "Feminino" : patient.sex === "MALE" ? "Masculino" : undefined}
+              />
+              <Datum label="CPF" value={patient.cpf} />
+              <Datum label="Apelido" value={patient.nickname} />
+              <Datum label="Profissão" value={patient.occupation} />
+            </dl>
+            {patient.notes && (
+              <div className="patient-notes-view">
+                <span className="patient-fact-label">Observações</span>
                 <NotesView value={patient.notes} />
               </div>
+            )}
+            <div className="patient-info-footer">
+              <button
+                type="button"
+                className="button secundario pequeno"
+                onClick={toggleStatus}
+                disabled={saving}
+              >
+                {patient.active ? "Inativar paciente" : "Reativar paciente"}
+              </button>
+              <span className="minusculo">Inativar preserva todo o histórico e prescrições.</span>
             </div>
-          )}
-          <div className="row" style={{ marginTop: "1rem" }}>
-            <button className="button secundario pequeno" onClick={toggleStatus} disabled={saving}>
-              {patient.active ? "Inativar paciente" : "Reativar paciente"}
-            </button>
-            <span className="minusculo">
-              Inativar preserva todo o histórico e prescrições.
-            </span>
           </div>
-        </div>
-      )}
+        )}
 
-      <WeightChart patientId={patient.id} />
+        <WeightChart patientId={patient.id} />
 
-      <PatientNotes patientId={patient.id} />
+        <PatientNotes patientId={patient.id} />
 
-      <PatientAttachments patientId={patient.id} />
+        <PatientAttachments patientId={patient.id} />
 
-      <QuestionnairesSection patientId={patient.id} />
+        <QuestionnairesSection patientId={patient.id} />
 
-      <h2 style={{ marginBottom: "0.6rem" }}>Prescrições</h2>
-      {plans.length === 0 ? (
-        <div className="card empty">
-          Nenhuma prescrição para este paciente. Crie um plano para enviar o link a ele.
-        </div>
-      ) : (
-        <div className="rolagem">
-          <table>
-            <thead>
-              <tr>
-                <th>Plano</th>
-                <th>Situação</th>
-                <th className="num">Refeições</th>
-                <th className="num">kcal</th>
-              </tr>
-            </thead>
-            <tbody>
+        <section className="patient-section">
+          <h2 className="patient-section-title">Prescrições</h2>
+          {plans.length === 0 ? (
+            <div className="card empty">
+              <span className="empty-icon">
+                <ClipboardList aria-hidden="true" />
+              </span>
+              <span className="empty-hint">
+                Nenhuma prescrição para este paciente. Crie um plano para enviar o link a ele.
+              </span>
+            </div>
+          ) : narrow ? (
+            <div className="list-rows">
               {plans.map((plan) => (
-                <tr
+                <button
+                  type="button"
                   key={plan.id}
-                  className="clicavel"
+                  className="list-row"
                   onClick={() => navigate(`/prescriptions/${plan.id}`)}
                 >
-                  <td>
-                    <strong>{plan.title}</strong>
-                  </td>
-                  <td>
+                  <span className="list-row-lead">
+                    <ClipboardList aria-hidden="true" />
+                  </span>
+                  <span className="list-row-body">
+                    <span className="list-row-title">{plan.title}</span>
+                    <span className="list-row-meta">
+                      {count(plan.meals, "refeição", "refeições")}
+                      {plan.energyKcal ? ` · ${Math.round(plan.energyKcal)} kcal` : ""}
+                    </span>
+                  </span>
+                  <span className="list-row-trail">
                     <TagStatus status={plan.status} />
-                  </td>
-                  <td className="num">{plan.meals}</td>
-                  <td className="num">
-                    {plan.energyKcal ? Math.round(plan.energyKcal) : "—"}
-                  </td>
-                </tr>
+                  </span>
+                </button>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
+            </div>
+          ) : (
+            <div className="rolagem">
+              <table className="patient-plans">
+                <colgroup>
+                  <col />
+                  <col className="col-status" />
+                  <col className="col-num" />
+                  <col className="col-num" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Plano</th>
+                    <th>Situação</th>
+                    <th className="num">Refeições</th>
+                    <th className="num">kcal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {plans.map((plan) => (
+                    <tr
+                      key={plan.id}
+                      className="clicavel"
+                      onClick={() => navigate(`/prescriptions/${plan.id}`)}
+                    >
+                      <td>
+                        <strong>{plan.title}</strong>
+                      </td>
+                      <td>
+                        <TagStatus status={plan.status} />
+                      </td>
+                      <td className="num">{plan.meals}</td>
+                      <td className="num">
+                        {plan.energyKcal ? Math.round(plan.energyKcal) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
   );
 }
 
 export function TagStatus({ status }: { status: string }) {
-  const classe = status === "ACTIVE" ? "verde" : status === "CLOSED" ? "" : "ambar";
+  const classe = status === "ACTIVE" ? "verde" : status === "CLOSED" ? "neutra" : "ambar";
   const text = status === "ACTIVE" ? "publicado" : status === "CLOSED" ? "encerrado" : "rascunho";
   return <span className={`tag ${classe}`}>{text}</span>;
 }
-
 
 /**
  * Questionnaires sent to this patient.
@@ -288,18 +362,16 @@ function QuestionnairesSection({ patientId }: { patientId: number }) {
   }
 
   return (
-    <>
-      <h2 style={{ marginBottom: "0.6rem" }}>Questionários</h2>
+    <section className="card patient-questionnaires">
+      <div className="card-head">
+        <h2 className="card-title">Questionários</h2>
+      </div>
 
-      {error && (
-        <div className="warning error" style={{ marginBottom: "0.6rem" }}>
-          {error}
-        </div>
-      )}
+      <div className="stack">
+        {error && <div className="warning error">{error}</div>}
 
-      <div className="card" style={{ marginBottom: "0.9rem" }}>
-        <div className="row">
-          <div className="field" style={{ flex: 1, minWidth: 220 }}>
+        <div className="qz-form">
+          <div className="field grow">
             <label htmlFor="qz-modelo">Enviar questionário</label>
             <select
               id="qz-modelo"
@@ -314,76 +386,83 @@ function QuestionnairesSection({ patientId }: { patientId: number }) {
               ))}
             </select>
           </div>
-          <button
-            type="button"
-            className="button"
-            onClick={send}
-            disabled={!chosen}
-            style={{ marginTop: "1.1rem" }}
-          >
+          <button type="button" className="button" onClick={send} disabled={!chosen}>
+            <Send aria-hidden="true" />
             Gerar link
           </button>
         </div>
 
         {sendings.length === 0 ? (
-          <p className="minusculo" style={{ marginTop: "0.7rem", marginBottom: 0 }}>
+          <p className="minusculo qz-empty">
             Nenhum enviado. O paciente responde pelo link, sem precisar de conta.
           </p>
         ) : (
-          sendings.map((e) => (
-            <div key={e.id} style={{ marginTop: "0.8rem" }}>
-              <div className="row" style={{ gap: "0.5rem" }}>
-                <strong style={{ fontSize: "0.92rem" }}>{e.questionnaire}</strong>
-                <span className={`tag ${e.pending ? "ambar" : "verde"}`}>
-                  {e.pending ? "aguardando resposta" : "respondido"}
-                </span>
-                {e.classification && <span className="tag">{e.classification}</span>}
-                {e.score !== undefined && (
-                  <span className="minusculo">escore {e.score}</span>
-                )}
-                <span style={{ flex: 1 }} />
-                {e.pending ? (
-                  <>
-                    <button className="button secundario pequeno" onClick={() => copy(e)}>
-                      {copied === e.id ? "Copiado!" : "Copiar link"}
-                    </button>
-                    <button className="button perigo pequeno" onClick={() => cancel(e)}>
-                      Cancelar
-                    </button>
-                  </>
-                ) : (
-                  <span className="minusculo">
-                    respondido em {formatBr(e.answeredAt?.slice(0, 10))}
-                  </span>
-                )}
-              </div>
+          <ul className="qz-list">
+            {sendings.map((e) => (
+              <li key={e.id} className="qz-item">
+                <div className="qz-row">
+                  <div className="qz-meta">
+                    <strong className="qz-title">{e.questionnaire}</strong>
+                    <span className={`tag ${e.pending ? "ambar" : "verde"}`}>
+                      {e.pending ? "aguardando resposta" : "respondido"}
+                    </span>
+                    {e.classification && <span className="tag">{e.classification}</span>}
+                    {e.score !== undefined && (
+                      <span className="readout">escore {e.score}</span>
+                    )}
+                  </div>
+                  <div className="qz-actions">
+                    {e.pending ? (
+                      <>
+                        <button
+                          type="button"
+                          className="button secundario pequeno"
+                          onClick={() => copy(e)}
+                        >
+                          <Copy aria-hidden="true" />
+                          {copied === e.id ? "Copiado!" : "Copiar link"}
+                        </button>
+                        <button
+                          type="button"
+                          className="button perigo pequeno"
+                          onClick={() => cancel(e)}
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <span className="minusculo">
+                        respondido em {formatBr(e.answeredAt?.slice(0, 10))}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-              {!e.pending && (
-                <details style={{ marginTop: "0.4rem" }}>
-                  <summary className="minusculo" style={{ cursor: "pointer" }}>
-                    Ver respostas
-                  </summary>
-                  {e.items.map((i, n) => (
-                    <div key={n} className="handout-attached" style={{ marginTop: "0.6rem" }}>
-                      <h3>{i.question}</h3>
-                      <p>{i.value}</p>
-                    </div>
-                  ))}
-                </details>
-              )}
-            </div>
-          ))
+                {!e.pending && (
+                  <details className="qz-answers">
+                    <summary>Ver respostas</summary>
+                    {e.items.map((i, n) => (
+                      <div key={n} className="handout-attached">
+                        <h3>{i.question}</h3>
+                        <p>{i.value}</p>
+                      </div>
+                    ))}
+                  </details>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
       </div>
-    </>
+    </section>
   );
 }
 
 function Datum({ label, value }: { label: string; value?: string }) {
   return (
-    <div>
-      <span className="minusculo">{label}</span>
-      <div style={{ fontSize: "0.92rem" }}>{value || "—"}</div>
+    <div className="patient-fact">
+      <dt className="patient-fact-label">{label}</dt>
+      <dd className="patient-fact-value">{value || "—"}</dd>
     </div>
   );
 }
@@ -456,86 +535,82 @@ function FormEdit({
   }
 
   return (
-    <form className="card" style={{ marginBottom: "1.1rem" }} onSubmit={send}>
-      {error && (
-        <div className="warning error" style={{ marginBottom: "0.85rem" }}>
-          {error}
-        </div>
-      )}
-      <div className="grid two">
-        <div className="field">
-          <label htmlFor="ed-nome">Nome</label>
-          <input id="ed-nome" value={data.name} onChange={(e) => change("name", e.target.value)} required name="name" {...fields.props("name")} />
-          <FieldError field="name" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="ed-email">E-mail</label>
-          <input id="ed-email" type="email" value={data.email} onChange={(e) => change("email", e.target.value)} name="email" {...fields.props("email")} />
-          <FieldError field="email" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="ed-tel">Telefone</label>
-          <input id="ed-tel" value={data.phone} onChange={(e) => change("phone", e.target.value)} name="phone" {...fields.props("phone")} />
-          <FieldError field="phone" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="ed-nasc">Nascimento</label>
-          <input
-            id="ed-nasc"
-            type="date"
-            value={data.dateBirth}
-            max={new Date().toISOString().slice(0, 10)}
-            onChange={(e) => change("dateBirth", e.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="ed-sexo">Sexo</label>
-          <select id="ed-sexo" value={data.sex} onChange={(e) => change("sex", e.target.value)}>
-            <option value="">Não informado</option>
-            <option value="FEMALE">Feminino</option>
-            <option value="MALE">Masculino</option>
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="ed-cpf">CPF</label>
-          <input id="ed-cpf" value={data.cpf} onChange={(e) => change("cpf", e.target.value)} name="cpf" {...fields.props("cpf")} />
-          <FieldError field="cpf" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="ed-apelido">Apelido</label>
-          <input
-            id="ed-apelido"
-            value={data.nickname}
-            onChange={(e) => change("nickname", e.target.value)}
-            maxLength={80}
-          />
-        </div>
-        {data.sex === "FEMALE" && (
+    <form className="card patient-edit" onSubmit={send}>
+      <div className="stack">
+        {error && <div className="warning error">{error}</div>}
+        <div className="grid two">
           <div className="field">
-            <label htmlFor="ed-condicao">Condição biológica</label>
-            <select
-              id="ed-condicao"
-              value={data.biologicalCondition}
-              onChange={(e) => change("biologicalCondition", e.target.value)}
-            >
-              <option value="">Não gestante</option>
-              <option value="PREGNANT">Gestante</option>
-              <option value="LACTATING">Lactante</option>
+            <label htmlFor="ed-nome">Nome</label>
+            <input id="ed-nome" value={data.name} onChange={(e) => change("name", e.target.value)} required name="name" {...fields.props("name")} />
+            <FieldError field="name" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="ed-email">E-mail</label>
+            <input id="ed-email" type="email" value={data.email} onChange={(e) => change("email", e.target.value)} name="email" {...fields.props("email")} />
+            <FieldError field="email" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="ed-tel">Telefone</label>
+            <input id="ed-tel" value={data.phone} onChange={(e) => change("phone", e.target.value)} name="phone" {...fields.props("phone")} />
+            <FieldError field="phone" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="ed-nasc">Nascimento</label>
+            <input
+              id="ed-nasc"
+              type="date"
+              value={data.dateBirth}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => change("dateBirth", e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="ed-sexo">Sexo</label>
+            <select id="ed-sexo" value={data.sex} onChange={(e) => change("sex", e.target.value)}>
+              <option value="">Não informado</option>
+              <option value="FEMALE">Feminino</option>
+              <option value="MALE">Masculino</option>
             </select>
           </div>
-        )}
-        <div className="field">
-          <label htmlFor="ed-prof">Profissão</label>
-          <input id="ed-prof" value={data.occupation} onChange={(e) => change("occupation", e.target.value)} name="occupation" {...fields.props("occupation")} />
-          <FieldError field="occupation" errors={fields.errors} />
+          <div className="field">
+            <label htmlFor="ed-cpf">CPF</label>
+            <input id="ed-cpf" value={data.cpf} onChange={(e) => change("cpf", e.target.value)} name="cpf" {...fields.props("cpf")} />
+            <FieldError field="cpf" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="ed-apelido">Apelido</label>
+            <input
+              id="ed-apelido"
+              value={data.nickname}
+              onChange={(e) => change("nickname", e.target.value)}
+              maxLength={80}
+            />
+          </div>
+          {data.sex === "FEMALE" && (
+            <div className="field">
+              <label htmlFor="ed-condicao">Condição biológica</label>
+              <select
+                id="ed-condicao"
+                value={data.biologicalCondition}
+                onChange={(e) => change("biologicalCondition", e.target.value)}
+              >
+                <option value="">Não gestante</option>
+                <option value="PREGNANT">Gestante</option>
+                <option value="LACTATING">Lactante</option>
+              </select>
+            </div>
+          )}
+          <div className="field">
+            <label htmlFor="ed-prof">Profissão</label>
+            <input id="ed-prof" value={data.occupation} onChange={(e) => change("occupation", e.target.value)} name="occupation" {...fields.props("occupation")} />
+            <FieldError field="occupation" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="ed-obj">Objetivo</label>
+            <input id="ed-obj" value={data.goal} onChange={(e) => change("goal", e.target.value)} name="goal" {...fields.props("goal")} />
+            <FieldError field="goal" errors={fields.errors} />
+          </div>
         </div>
-        <div className="field">
-          <label htmlFor="ed-obj">Objetivo</label>
-          <input id="ed-obj" value={data.goal} onChange={(e) => change("goal", e.target.value)} name="goal" {...fields.props("goal")} />
-          <FieldError field="goal" errors={fields.errors} />
-        </div>
-      </div>
-      <div style={{ marginTop: "0.85rem" }}>
         <NotesField
           label="Observações"
           value={data.notes ?? ""}
@@ -543,11 +618,11 @@ function FormEdit({
           minHeight="7rem"
           onDemand
         />
-      </div>
-      <div className="row end" style={{ marginTop: "0.9rem" }}>
-        <button className="button" type="submit" disabled={sending}>
-          {sending ? "Salvando…" : "Salvar alterações"}
-        </button>
+        <div className="row end">
+          <button className="button" type="submit" disabled={sending}>
+            {sending ? "Salvando…" : "Salvar alterações"}
+          </button>
+        </div>
       </div>
     </form>
   );

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Eye, UserPlus, X } from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
+import { Avatar } from "../components/Avatar";
 import { formatBr } from "../api/dates";
 import type { AccountUser } from "../api/types";
 import { count } from "../text";
@@ -58,13 +60,19 @@ export default function Team() {
           <h1>Equipe</h1>
           <p>{count(users.length, "pessoa com acesso", "pessoas com acesso")}</p>
         </div>
-        <button className="button" onClick={() => setCreating((v) => !v)}>
-          {creating ? "Cancelar" : "Cadastrar secretária"}
-        </button>
+        <div className="header-page-actions">
+          <button
+            className={creating ? "button secundario" : "button"}
+            onClick={() => setCreating((v) => !v)}
+          >
+            {creating ? <X aria-hidden="true" /> : <UserPlus aria-hidden="true" />}
+            {creating ? "Cancelar" : "Cadastrar secretária"}
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
@@ -82,56 +90,47 @@ export default function Team() {
       {loading ? (
         <p className="loading">Carregando…</p>
       ) : (
-        <div className="rolagem">
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th>Acesso</th>
-                <th>Desde</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <strong>{u.name}</strong>
-                  </td>
-                  <td className="discreto">{u.email}</td>
-                  <td>
-                    <span className={`tag ${u.role === "NUTRITIONIST" ? "verde" : ""}`}>
-                      {u.roleDescription}
-                    </span>
-                    {!u.active && <span className="tag vermelha">inativo</span>}
-                  </td>
-                  <td className="mono">{formatBr(u.createdAt?.slice(0, 10))}</td>
-                  <td>
-                    {u.role !== "NUTRITIONIST" && (
-                      <button
-                        className={`button ${u.active ? "perigo" : "secundario"} pequeno`}
-                        onClick={() => toggle(u)}
-                      >
-                        {u.active ? "Desativar" : "Reativar"}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="team-rows">
+          {users.map((u) => (
+            <div className={`team-row ${u.active ? "" : "inativo"}`} key={u.id}>
+              <Avatar name={u.name} size={36} />
+              <div className="team-body">
+                <strong className="team-name">{u.name}</strong>
+                <span className="team-email discreto">{u.email}</span>
+              </div>
+              <div className="tags">
+                <span className={`tag ${u.role === "NUTRITIONIST" ? "verde" : ""}`}>
+                  {u.roleDescription}
+                </span>
+                {!u.active && <span className="tag vermelha">inativo</span>}
+              </div>
+              <span className="team-since mono">Desde {formatBr(u.createdAt?.slice(0, 10))}</span>
+              <div className="team-action">
+                {u.role !== "NUTRITIONIST" && (
+                  <button
+                    className={`button ${u.active ? "perigo" : "secundario"} pequeno`}
+                    onClick={() => toggle(u)}
+                  >
+                    {u.active ? "Desativar" : "Reativar"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      <div className="card" style={{ marginTop: "0.9rem" }}>
-        <h2>O que a secretária vê</h2>
-        <p className="discreto" style={{ marginTop: "0.4rem", marginBottom: 0 }}>
-          Agenda e cadastro de pacientes. Não vê prescrição, antropometria, exames, receitas,
-          orientações nem financeiro — prescrever é ato privativo do nutricionista, e o resto é
-          dado clínico ou do dono da conta.
-        </p>
-      </div>
+      <aside className="library-note">
+        <Eye aria-hidden="true" />
+        <div>
+          <h2>O que a secretária vê</h2>
+          <p>
+            Agenda e cadastro de pacientes. Não vê prescrição, antropometria, exames, receitas,
+            orientações nem financeiro — prescrever é ato privativo do nutricionista, e o resto é
+            dado clínico ou do dono da conta.
+          </p>
+        </div>
+      </aside>
     </>
   );
 }
@@ -176,16 +175,14 @@ function Form({
   }
 
   return (
-    <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
-      <h2>Cadastrar secretária</h2>
+    <form className="card mb-3" onSubmit={send}>
+      <div className="card-head">
+        <h2 className="card-title">Cadastrar secretária</h2>
+      </div>
 
-      {error && (
-        <div className="warning error" style={{ margin: "0.8rem 0" }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="warning error mb-3">{error}</div>}
 
-      <div className="grid two" style={{ marginTop: "0.8rem" }}>
+      <div className="grid two">
         <div className="field">
           <label htmlFor="eq-nome">Nome</label>
           <input
@@ -224,7 +221,7 @@ function Form({
             {...fields.props("initialPassword")}
           />
           <FieldError field="initialPassword" errors={fields.errors} />
-          <span className="minusculo">
+          <span className="field-hint">
             Combine pessoalmente. Ela pode trocar depois em “Esqueci minha senha”.
           </span>
         </div>
@@ -241,7 +238,7 @@ function Form({
         </div>
       </div>
 
-      <div className="row end" style={{ marginTop: "0.9rem" }}>
+      <div className="row end mt-3">
         <button type="button" className="button secundario" onClick={onClose}>
           Cancelar
         </button>

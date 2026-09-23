@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { MessageSquareText } from "lucide-react";
 
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
@@ -68,23 +69,26 @@ export function PatientTags({ patientId }: { patientId: number }) {
 
   return (
     <div className="bloco-tags">
-      <div className="row" style={{ alignItems: "center", gap: "0.4rem" }}>
-        <span className="minusculo">TAGs</span>
-        {marked.length === 0 && !open && (
-          <span className="minusculo discreto">nenhuma</span>
-        )}
+      <div className="bloco-tags-row">
+        <span className="eyebrow">TAGs</span>
+        {marked.length === 0 && !open && <span className="minusculo">nenhuma</span>}
         {marked.map((tag) => (
-          <span className="tag-paciente" key={tag.id}>
+          <span className="tag tag-paciente" key={tag.id}>
             {tag.name}
           </span>
         ))}
-        <button className="link-voltar minusculo" onClick={() => setOpen((v) => !v)}>
+        <button
+          type="button"
+          className="button link pequeno"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
           {open ? "fechar" : "alterar"}
         </button>
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ marginTop: "0.5rem" }}>
+        <div className="warning error mt-2" role="alert">
           {error}
         </div>
       )}
@@ -95,6 +99,7 @@ export function PatientTags({ patientId }: { patientId: number }) {
             const on = chosen.includes(tag.id);
             return (
               <button
+                type="button"
                 key={tag.id}
                 className={`tag-escolha${on ? " ativa" : ""}`}
                 disabled={saving}
@@ -113,7 +118,7 @@ export function PatientTags({ patientId }: { patientId: number }) {
               </button>
             );
           })}
-          <button className="tag-escolha nova" onClick={() => void createTag()}>
+          <button type="button" className="tag-escolha nova" onClick={() => void createTag()}>
             + nova TAG
           </button>
         </div>
@@ -165,66 +170,81 @@ export function PatientNotes({ patientId }: { patientId: number }) {
   }
 
   return (
-    <section className="card" style={{ marginBottom: "1.1rem" }}>
-      <h2 style={{ marginTop: 0 }}>Anotações</h2>
-      <p className="minusculo" style={{ marginTop: 0 }}>
-        Só você vê. Não sai no plano nem no link do paciente.
-      </p>
-
-      {error && (
-        <div className="warning error" role="alert">
-          {error}
-        </div>
-      )}
-
-      <div>
-        <NotesField
-          label="Nova anotação"
-          value={draft}
-          onChange={setDraft}
-          minHeight="6rem"
-          onDemand
-        />
-        <div className="row end">
-          <button className="button" onClick={() => void add()} disabled={saving || !draft.trim()}>
-            Anotar
-          </button>
+    <section className="card patient-notes">
+      <div className="card-head">
+        <div>
+          <h2 className="card-title">Anotações</h2>
+          <p className="card-sub">Só você vê. Não sai no plano nem no link do paciente.</p>
         </div>
       </div>
 
-      {notes.length === 0 ? (
-        <p className="empty" style={{ marginBottom: 0 }}>
-          Nenhuma anotação ainda.
-        </p>
-      ) : (
-        <ol className="feed-anotacoes">
-          {notes.map((note) => (
-            <li key={note.id}>
-              {/* A anotação virou documento: formatada quando foi escrita
-                  assim, e a frase antiga continua legível do mesmo jeito. */}
-              <NotesView value={note.body} />
-              <div className="row" style={{ justifyContent: "space-between" }}>
-                <span className="minusculo">
-                  {new Date(note.createdAt).toLocaleString("pt-BR", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}
-                </span>
-                <button
-                  className="link-voltar minusculo"
-                  onClick={async () => {
-                    if (!confirm("Remover esta anotação?")) return;
-                    await api.patients.removeNote(patientId, note.id);
-                    await load();
-                  }}
-                >
-                  remover
-                </button>
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
+      <div className="stack">
+        {error && (
+          <div className="warning error" role="alert">
+            {error}
+          </div>
+        )}
+
+        <div className="notes-composer">
+          <NotesField
+            label="Nova anotação"
+            value={draft}
+            onChange={setDraft}
+            minHeight="6rem"
+            onDemand
+          />
+          <div className="row end">
+            <button
+              type="button"
+              className="button"
+              onClick={() => void add()}
+              disabled={saving || !draft.trim()}
+            >
+              Anotar
+            </button>
+          </div>
+        </div>
+
+        {notes.length === 0 ? (
+          <p className="empty notes-empty">
+            <span className="empty-icon">
+              <MessageSquareText aria-hidden="true" />
+            </span>
+            <span className="empty-hint">Nenhuma anotação ainda.</span>
+          </p>
+        ) : (
+          <ol className="feed-anotacoes">
+            {notes.map((note) => (
+              <li key={note.id}>
+                {/* A anotação virou documento: formatada quando foi escrita
+                    assim, e a frase antiga continua legível do mesmo jeito. */}
+                <div className="anotacao-corpo">
+                  <NotesView value={note.body} />
+                </div>
+                <div className="anotacao-meta">
+                  <span className="readout">
+                    {new Date(note.createdAt).toLocaleString("pt-BR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    className="button link pequeno"
+                    onClick={async () => {
+                      if (!confirm("Remover esta anotação?")) return;
+                      await api.patients.removeNote(patientId, note.id);
+                      await load();
+                    }}
+                  >
+                    remover
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
     </section>
   );
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { CalendarDays, FileQuestion } from "lucide-react";
 import { ErrorApi, api } from "../api/client";
-import type { PublicItem, PublicPlan } from "../api/types";
+import type { PublicItem, PublicMeal, PublicPlan } from "../api/types";
+import { MacroRing } from "../components/MacroRing";
 import { RichTextView } from "../components/RichText/RichTextView";
 import { emptyDoc, parseRichDoc } from "../components/RichText/document";
 
@@ -14,14 +16,18 @@ import { emptyDoc, parseRichDoc } from "../components/RichText/document";
  *
  * The reading is the day ruler: the meals hang from a timeline, with the real
  * hour as the marker, and the gap between breakfast and lunch shows up as a
- * real gap. Inside each item the household measure is the larger text — the
- * patient already knows what rice is; what they do not know is how much.
+ * real gap. Inside each item the household measure is the readout the patient
+ * reads first — they already know what rice is; what they do not know is how
+ * much — and the grams stay beside it, quieter, as the nutritionist's record.
  */
 export default function PatientPlan() {
   const { identifier } = useParams();
   const [plan, setPlan] = useState<PublicPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Read once: the "current" meal is the one the patient is in when the page
+  // opens, and it must not jump while they are reading.
+  const [now] = useState(() => new Date());
 
   useEffect(() => {
     if (!identifier) return;
@@ -55,10 +61,13 @@ export default function PatientPlan() {
   if (error || !plan) {
     return (
       <div className="page-patient">
-        <div className="plan-patient" style={{ paddingTop: "3rem" }}>
-          <div className="card" style={{ textAlign: "center", padding: "2.5rem 1.5rem" }}>
-            <h1 style={{ fontSize: "1.5rem" }}>Plano não encontrado</h1>
-            <p className="discreto" style={{ marginTop: "0.6rem" }}>
+        <div className="plan-patient plan-patient-empty">
+          <div className="card card-centered">
+            <span className="empty-icon">
+              <FileQuestion aria-hidden="true" />
+            </span>
+            <h1>Plano não encontrado</h1>
+            <p className="discreto">
               {error ?? "Confira o link que você recebeu do seu nutricionista."}
             </p>
           </div>
@@ -71,6 +80,8 @@ export default function PatientPlan() {
   // --theme-account and decides the final value, because in the dark theme it
   // has to be lightened so as not to disappear against the background.
   const practiceColor = plan.primaryColor || undefined;
+  const current = currentMealIndex(plan.meals, now);
+  const showSummary = plan.method !== "QUALITATIVE" && plan.summary.energyKcal !== undefined;
 
   return (
     <div
@@ -83,18 +94,35 @@ export default function PatientPlan() {
     >
       <div className="plan-patient">
         <header className="cover-plan">
-          {plan.practiceName && <span className="eyebrow">{plan.practiceName}</span>}
+          {plan.practiceName && (
+            <span className="cover-brand">
+              <span className="cover-dot" aria-hidden="true" />
+              <span className="eyebrow">{plan.practiceName}</span>
+            </span>
+          )}
           <h1>{plan.title}</h1>
-          <p>
+          <p className="cover-greeting">
             {plan.patientName ? `Olá, ${plan.patientName}. ` : ""}
-            {plan.nutritionistName
-              ? `Plano elaborado por ${plan.nutritionistName}${plan.nutritionistCrn ? ` · ${plan.nutritionistCrn}` : ""}.`
-              : ""}
+            {plan.nutritionistName ? (
+              <>
+                Plano elaborado por {plan.nutritionistName}
+                {plan.nutritionistCrn && (
+                  <>
+                    {" · "}
+                    <span className="readout cover-crn">{plan.nutritionistCrn}</span>
+                  </>
+                )}
+                .
+              </>
+            ) : null}
           </p>
           {plan.validityStart && (
             <p className="validity">
-              Vigência: {formatDate(plan.validityStart)}
-              {plan.validityEnd ? ` até ${formatDate(plan.validityEnd)}` : " em diante"}
+              <CalendarDays aria-hidden="true" />
+              <span>
+                Vigência: {formatDate(plan.validityStart)}
+                {plan.validityEnd ? ` até ${formatDate(plan.validityEnd)}` : " em diante"}
+              </span>
             </p>
           )}
         </header>
@@ -113,40 +141,47 @@ export default function PatientPlan() {
         )}
 
         {plan.handouts && (
-          <div className="card">
-            <h2 style={{ fontSize: "1.05rem", marginBottom: "0.5rem" }}>Orientações gerais</h2>
-            <RichTextView doc={parseRichDoc(plan.handouts) ?? emptyDoc()} empty="" />
-          </div>
+          <section className="card">
+            <div className="card-head">
+              <h2 className="card-title">Orientações gerais</h2>
+            </div>
+            <div className="plan-prose">
+              <RichTextView doc={parseRichDoc(plan.handouts) ?? emptyDoc()} empty="" />
+            </div>
+          </section>
         )}
 
         {plan.handoutsAttached?.length > 0 && (
-          <div className="card">
+          <section className="card">
             {plan.handoutsAttached.map((o, i) => (
-              <div className="handout-attached" key={o.id ?? i} style={i === 0 ? { marginTop: 0 } : undefined}>
+              <article className="plan-handout" key={o.id ?? i}>
                 <h3>{o.title}</h3>
-                <RichTextView doc={parseRichDoc(o.body) ?? emptyDoc()} empty="" />
+                <div className="plan-prose">
+                  <RichTextView doc={parseRichDoc(o.body) ?? emptyDoc()} empty="" />
+                </div>
                 {/* Public route: the address arrives ready in the response and
                     the tag fetches on its own, with no credential at all. */}
                 {/* No `loading="lazy"`: these are one or two small figures, and
                     the patient tends to print this page. A deferred image is an
                     image that risks coming out blank on paper. */}
-                {o.image && (
-                  <img className="figure-handout" src={o.image} alt={o.title} />
-                )}
-              </div>
+                {o.image && <img className="plan-figure" src={o.image} alt={o.title} />}
+              </article>
             ))}
-          </div>
+          </section>
         )}
 
-        <div className="ruler-day">
+        <ol className="ruler-day" aria-label="Refeições do dia">
           {plan.meals.map((meal, index) => (
-            <div
+            <li
               className="ruler-item"
               key={index}
               style={{ ["--order" as string]: index } as React.CSSProperties}
             >
               {meal.time ? (
-                <time className="ruler-hour" dateTime={meal.time}>
+                <time
+                  className={index === current ? "ruler-hour atual" : "ruler-hour"}
+                  dateTime={meal.time}
+                >
                   {meal.time.slice(0, 5)}
                 </time>
               ) : (
@@ -158,18 +193,22 @@ export default function PatientPlan() {
                 <section className="meal-patient">
                   <h2>{meal.name}</h2>
                   {meal.notes && (
-                    <div className="note-meal">
+                    <div className="note-meal plan-note">
                       <RichTextView doc={parseRichDoc(meal.notes) ?? emptyDoc()} empty="" />
                     </div>
                   )}
-                  {meal.items.map((item, i) => (
-                    <Item item={item} key={i} />
-                  ))}
+                  {meal.items.length > 0 && (
+                    <ul className="meal-items">
+                      {meal.items.map((item, i) => (
+                        <Item item={item} key={i} />
+                      ))}
+                    </ul>
+                  )}
                 </section>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ol>
 
         {/*
           O modo de preparo das receitas do cardápio, na mesma posição do PDF:
@@ -178,36 +217,45 @@ export default function PatientPlan() {
           uma coisa que ainda não foi apresentada.
         */}
         {plan.recipes?.length > 0 && (
-          <div className="card">
-            <h2 style={{ fontSize: "1.05rem", marginBottom: "0.5rem" }}>Modo de preparo</h2>
+          <section className="card">
+            <div className="card-head">
+              <h2 className="card-title">Modo de preparo</h2>
+            </div>
             {plan.recipes.map((receita) => (
-              <div className="handout-attached" key={receita.foodId}>
+              <article className="recipe-patient" key={receita.foodId}>
                 <h3>{receita.name}</h3>
-                <RichTextView
-                  doc={parseRichDoc(receita.modeInstructions) ?? emptyDoc()}
-                  empty=""
-                />
-              </div>
+                <div className="plan-prose">
+                  <RichTextView
+                    doc={parseRichDoc(receita.modeInstructions) ?? emptyDoc()}
+                    empty=""
+                  />
+                </div>
+              </article>
             ))}
-          </div>
+          </section>
         )}
 
-        {plan.method !== "QUALITATIVE" && plan.summary.energyKcal !== undefined && (
-          <div className="card">
-            <h2 style={{ fontSize: "1.05rem", marginBottom: "0.9rem" }}>Resumo do dia</h2>
-            <div className="summary-day">
-              <Summary label="Energia" value={plan.summary.energyKcal} unit="kcal" />
-              <Summary label="Proteínas" value={plan.summary.proteinG} unit="g" />
-              <Summary label="Carboidratos" value={plan.summary.carbohydrateG} unit="g" />
-              <Summary label="Gorduras" value={plan.summary.fatG} unit="g" />
+        {showSummary && (
+          <section className="card">
+            <div className="card-head">
+              <h2 className="card-title">Resumo do dia</h2>
             </div>
-            <p className="minusculo" style={{ marginTop: "0.8rem", marginBottom: 0 }}>
+            <div className="summary-body">
+              <MacroShares summary={plan.summary} />
+              <dl className="summary-day">
+                <Summary label="Energia" value={plan.summary.energyKcal} unit="kcal" />
+                <Summary label="Proteínas" value={plan.summary.proteinG} unit="g" />
+                <Summary label="Carboidratos" value={plan.summary.carbohydrateG} unit="g" />
+                <Summary label="Gorduras" value={plan.summary.fatG} unit="g" />
+              </dl>
+            </div>
+            <p className="minusculo summary-note">
               Valores estimados a partir das tabelas de composição de alimentos.
             </p>
-          </div>
+          </section>
         )}
 
-        <footer className="minusculo" style={{ textAlign: "center", paddingTop: "0.5rem" }}>
+        <footer className="minusculo plan-footer">
           Em caso de dúvida, fale com seu nutricionista.
           {plan.nutritionistName ? ` — ${plan.nutritionistName}` : ""}
         </footer>
@@ -217,47 +265,108 @@ export default function PatientPlan() {
 }
 
 function Item({ item }: { item: PublicItem }) {
+  const showWeight = item.weightGrams !== undefined && !isWeightAtGrams(item.serving);
   return (
-    <div className="item-patient">
-      <span className="name-food">{item.description}</span>
-      <span className="serving">
-        {item.serving}
-        {/* The grams only tag along when the portion is a household measure.
-            Repeating "100 g / 100 g" would say nothing. */}
-        {item.weightGrams !== undefined && !isWeightAtGrams(item.serving) && (
-          <span className="weight">{formatWeight(item.weightGrams)}</span>
-        )}
-      </span>
+    <li className="item-patient">
+      <div className="plan-item-row">
+        <span className="name-food">{item.description}</span>
+        <span className="serving">
+          <span className="readout strong">{item.serving}</span>
+          {/* The grams only tag along when the portion is a household measure.
+              Repeating "100 g / 100 g" would say nothing. */}
+          {showWeight && <span className="readout weight">{formatWeight(item.weightGrams!)}</span>}
+        </span>
+      </div>
       {item.notes && (
-        <div className="discreto observacao-item">
+        <div className="discreto observacao-item plan-note">
           <RichTextView doc={parseRichDoc(item.notes) ?? emptyDoc()} empty="" />
         </div>
       )}
       {item.substitutions.length > 0 && (
         <div className="substitutions">
-          <span className="title-sub">Você pode substituir por</span>
+          <span className="title-sub visually-hidden">Você pode substituir por</span>
           <ul>
             {item.substitutions.map((s, j) => (
-              <li key={j}>
-                {s.description} — {s.serving}
+              <li key={j} className="plan-item-row sub-row">
+                <span className="name-food">
+                  <span className="sub-ou" aria-hidden="true">
+                    ou
+                  </span>{" "}
+                  {s.description}
+                </span>
+                <span className="serving">
+                  <span className="readout">{s.serving}</span>
+                </span>
               </li>
             ))}
           </ul>
         </div>
       )}
-    </div>
+    </li>
   );
 }
 
 function Summary({ label, value, unit }: { label: string; value?: number; unit: string }) {
   return (
-    <div>
-      <span className="label">{label}</span>
-      <div className="value">
+    <div className="stat">
+      <dt className="stat-label">{label}</dt>
+      <dd className="stat-value">
         {value === undefined || value === null ? "—" : `${round(value)} ${unit}`}
-      </div>
+      </dd>
     </div>
   );
+}
+
+/**
+ * The day's energy split as the ring: proteins and carbohydrates at 4 kcal/g,
+ * fat at 9. Shown only when the three are known — a ring with a missing arc
+ * would say the day has no fat, which is a different statement from "unknown".
+ */
+function MacroShares({ summary }: { summary: PublicPlan["summary"] }) {
+  const { proteinG, carbohydrateG, fatG, energyKcal } = summary;
+  if (proteinG === undefined || carbohydrateG === undefined || fatG === undefined) return null;
+  const prot = proteinG * 4;
+  const carb = carbohydrateG * 4;
+  const fat = fatG * 9;
+  const total = prot + carb + fat;
+  if (total <= 0) return null;
+  const pct = (v: number) => Math.round((v / total) * 100);
+  const label = `Distribuição energética: ${pct(prot)}% proteínas, ${pct(carb)}% carboidratos, ${pct(fat)}% gorduras`;
+  return (
+    <div className="summary-ring">
+      <MacroRing size={96} protein={prot} carbohydrate={carb} fat={fat} label={label}>
+        <span>{energyKcal === undefined ? "—" : round(energyKcal)}</span>
+        <span className="summary-ring-unit">kcal</span>
+      </MacroRing>
+      <ul className="summary-legend" aria-hidden="true">
+        <li className="prot">P {pct(prot)}%</li>
+        <li className="carb">C {pct(carb)}%</li>
+        <li className="fat">G {pct(fat)}%</li>
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * The meal the patient is in right now: the latest prescribed hour that has
+ * already passed. Before the first meal there is no current one. Meals with no
+ * hour never qualify — "livre" has no place on the clock.
+ */
+function currentMealIndex(meals: PublicMeal[], now: Date): number {
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  let best = -1;
+  let bestMinutes = -1;
+  meals.forEach((meal, index) => {
+    if (!meal.time) return;
+    const [h = NaN, m = NaN] = meal.time.split(":").map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return;
+    const at = h * 60 + m;
+    if (at <= minutes && at > bestMinutes) {
+      best = index;
+      bestMinutes = at;
+    }
+  });
+  return best;
 }
 
 /** The portion already is the weight itself when there is no household measure, e.g. "100 g". */

@@ -1,9 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import { FontSize, TextStyle } from "@tiptap/extension-text-style";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
+import {
+  ALargeSmall,
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
+  BetweenHorizontalStart,
+  BetweenVerticalStart,
+  Bold,
+  Grid2x2X,
+  Italic,
+  List,
+  ListOrdered,
+  Strikethrough,
+  Table as TableIcon,
+  TableCellsMerge,
+  Trash2,
+  Underline,
+  type LucideIcon,
+} from "lucide-react";
 
 import {
   ALIGNMENTS,
@@ -90,10 +110,21 @@ export function RichTextEditor({
     if (editor) editor.setEditable(!onlyRead);
   }, [editor, onlyRead]);
 
-  if (!editor) return <div className="richtext" style={{ minHeight }} />;
+  // A altura mínima é dado da tela que chama (uma observação de item é menor
+  // que o modo de preparo), então viaja como variável para a moldura; o CSS
+  // aplica na área de texto, e o mesmo valor serve à moldura de espera.
+  const frame = richTextFrameStyle(minHeight);
+
+  if (!editor) {
+    return (
+      <div className="richtext" style={frame}>
+        {!onlyRead && <div className="richtext-bar" aria-hidden="true" />}
+      </div>
+    );
+  }
 
   return (
-    <div className="richtext">
+    <div className="richtext" style={frame}>
       {!onlyRead && <Toolbar editor={editor} />}
       {outsideModel && (
         <p className="richtext-alerta" role="alert">
@@ -101,9 +132,18 @@ export function RichTextEditor({
           registrada. Desfaça com Ctrl+Z e refaça de outra forma.
         </p>
       )}
-      <EditorContent editor={editor} style={{ minHeight }} />
+      <EditorContent editor={editor} />
     </div>
   );
+}
+
+/**
+ * A moldura recebe a altura mínima como variável, lida por `.richtext-area`.
+ * LazyEditor repete esta linha em vez de importá-la: importar um valor daqui
+ * traria o ProseMirror para o pacote principal.
+ */
+function richTextFrameStyle(minHeight: string): CSSProperties {
+  return { "--richtext-min-h": minHeight } as CSSProperties;
 }
 
 // ------------------------------------------------------------------ barra
@@ -114,13 +154,14 @@ function Toolbar({ editor }: { editor: Editor }) {
   return (
     <div className="richtext-bar">
       <div className="richtext-group" role="group" aria-label="Formatação">
-        <Mark editor={editor} mark="bold" label="Negrito" shown="N" />
-        <Mark editor={editor} mark="italic" label="Itálico" shown="I" />
-        <Mark editor={editor} mark="underline" label="Sublinhado" shown="S" />
-        <Mark editor={editor} mark="strike" label="Tachado" shown="T" />
+        <Mark editor={editor} mark="bold" label="Negrito" icon={Bold} />
+        <Mark editor={editor} mark="italic" label="Itálico" icon={Italic} />
+        <Mark editor={editor} mark="underline" label="Sublinhado" icon={Underline} />
+        <Mark editor={editor} mark="strike" label="Tachado" icon={Strikethrough} />
       </div>
 
-      <div className="richtext-group">
+      <div className="richtext-group richtext-group-size">
+        <ALargeSmall aria-hidden="true" className="richtext-size-icon" />
         <label className="visually-hidden" htmlFor="richtext-size">
           Tamanho da fonte
         </label>
@@ -145,24 +186,24 @@ function Toolbar({ editor }: { editor: Editor }) {
         <Command
           editor={editor}
           label="Marcadores"
-          shown="• —"
+          icon={List}
           active={editor.isActive("bulletList")}
           run={() => editor.chain().focus().toggleBulletList().run()}
         />
         <Command
           editor={editor}
           label="Numeração"
-          shown="1. —"
+          icon={ListOrdered}
           active={editor.isActive("orderedList")}
           run={() => editor.chain().focus().toggleOrderedList().run()}
         />
       </div>
 
       <div className="richtext-group" role="group" aria-label="Alinhamento">
-        <Align editor={editor} align="left" label="Alinhar à esquerda" />
-        <Align editor={editor} align="center" label="Centralizar" />
-        <Align editor={editor} align="right" label="Alinhar à direita" />
-        <Align editor={editor} align="justify" label="Justificar" />
+        <Align editor={editor} align="left" label="Alinhar à esquerda" icon={AlignLeft} />
+        <Align editor={editor} align="center" label="Centralizar" icon={AlignCenter} />
+        <Align editor={editor} align="right" label="Alinhar à direita" icon={AlignRight} />
+        <Align editor={editor} align="justify" label="Justificar" icon={AlignJustify} />
       </div>
 
       <div className="richtext-group" role="group" aria-label="Tabela">
@@ -171,37 +212,43 @@ function Toolbar({ editor }: { editor: Editor }) {
             <Command
               editor={editor}
               label="Inserir linha"
-              shown="+ linha"
+              icon={BetweenHorizontalStart}
               run={() => editor.chain().focus().addRowAfter().run()}
             />
             <Command
               editor={editor}
               label="Inserir coluna"
-              shown="+ coluna"
+              icon={BetweenVerticalStart}
               run={() => editor.chain().focus().addColumnAfter().run()}
             />
             <Command
               editor={editor}
               label="Mesclar ou dividir células"
-              shown="mesclar"
+              icon={TableCellsMerge}
               run={() => editor.chain().focus().mergeOrSplit().run()}
             />
+            {/* Uma lixeira sozinha não diz o que remove; a palavra ao lado diz. */}
             <Command
               editor={editor}
               label="Remover linha"
-              shown="− linha"
+              icon={Trash2}
+              shown="linha"
+              tone="perigo"
               run={() => editor.chain().focus().deleteRow().run()}
             />
             <Command
               editor={editor}
               label="Remover coluna"
-              shown="− coluna"
+              icon={Trash2}
+              shown="coluna"
+              tone="perigo"
               run={() => editor.chain().focus().deleteColumn().run()}
             />
             <Command
               editor={editor}
               label="Remover tabela"
-              shown="remover"
+              icon={Grid2x2X}
+              tone="perigo"
               run={() => editor.chain().focus().deleteTable().run()}
             />
           </>
@@ -209,7 +256,7 @@ function Toolbar({ editor }: { editor: Editor }) {
           <Command
             editor={editor}
             label="Inserir tabela"
-            shown="tabela"
+            icon={TableIcon}
             run={() =>
               editor
                 .chain()
@@ -228,18 +275,18 @@ function Mark({
   editor,
   mark,
   label,
-  shown,
+  icon,
 }: {
   editor: Editor;
   mark: "bold" | "italic" | "underline" | "strike";
   label: string;
-  shown: string;
+  icon: LucideIcon;
 }) {
   return (
     <Command
       editor={editor}
       label={label}
-      shown={shown}
+      icon={icon}
       active={editor.isActive(mark)}
       run={() => {
         const chain = editor.chain().focus();
@@ -256,46 +303,64 @@ function Align({
   editor,
   align,
   label,
+  icon,
 }: {
   editor: Editor;
   align: Alignment;
   label: string;
+  icon: LucideIcon;
 }) {
-  const shown = { left: "⇤", center: "↔", right: "⇥", justify: "≡" }[align];
   return (
     <Command
       editor={editor}
       label={label}
-      shown={shown}
+      icon={icon}
       active={editor.isActive({ textAlign: align })}
       run={() => editor.chain().focus().setTextAlign(align).run()}
     />
   );
 }
 
+/**
+ * Um botão da barra. O nome acessível é o `label`, em aria-label e title; o
+ * ícone é só desenho. `shown` acrescenta uma palavra visível ao lado do
+ * ícone, para os comandos que um ícone sozinho não distingue.
+ *
+ * O `onMouseDown` com preventDefault é essencial: mantém o foco dentro da
+ * área editável, para que o comando se aplique à seleção atual.
+ */
 function Command({
   label,
+  icon: Icon,
   shown,
   active = false,
+  tone,
   run,
 }: {
   editor: Editor;
   label: string;
-  shown: string;
+  icon: LucideIcon;
+  shown?: string;
   active?: boolean;
+  tone?: "perigo";
   run: () => void;
 }) {
+  const classes = ["richtext-button"];
+  if (active) classes.push("ativo");
+  if (shown) classes.push("rotulado");
+  if (tone) classes.push(tone);
   return (
     <button
       type="button"
-      className={`richtext-button${active ? " ativo" : ""}`}
+      className={classes.join(" ")}
       aria-label={label}
       aria-pressed={active}
       title={label}
       onMouseDown={(e) => e.preventDefault()}
       onClick={run}
     >
-      {shown}
+      <Icon aria-hidden="true" />
+      {shown && <span>{shown}</span>}
     </button>
   );
 }

@@ -40,29 +40,39 @@ export function WeightChart({ patientId }: { patientId: number }) {
   const first = weights[0] as number;
 
   return (
-    <section className="card" style={{ marginBottom: "1.1rem" }}>
-      <h2 style={{ marginTop: 0 }}>Peso</h2>
-      <p className="minusculo" style={{ marginTop: 0 }}>
-        {points.length} medições · da primeira até hoje,{" "}
-        {formatDifference((weights[weights.length - 1] as number) - first)}
-      </p>
+    <section className="card weight-chart mb-3">
+      <div className="card-head">
+        <div>
+          <h2 className="card-title">Peso</h2>
+          <p className="card-sub">
+            {points.length} medições · da primeira até hoje,{" "}
+            {formatDifference((weights[weights.length - 1] as number) - first)}
+          </p>
+        </div>
+      </div>
 
-      <div className="grafico-peso">
+      <div className="grafico-peso" role="list">
         {points.map((point) => {
           const weight = point.weightKg as number;
           const width = 12 + ((weight - lowest) / range) * 88;
           const diff = weight - first;
+          const weightText = `${weight.toLocaleString("pt-BR")} kg`;
           return (
-            <div className="linha-peso" key={point.assessmentId}>
-              <span className="minusculo mono">{formatBr(point.date)}</span>
-              <div className="barra-peso">
+            <div
+              className="linha-peso"
+              key={point.assessmentId}
+              role="listitem"
+              aria-label={`${formatBr(point.date)}: ${weightText}${diff !== 0 ? `, ${formatDifference(diff)}` : ""}`}
+            >
+              <span className="data-peso">{formatBr(point.date)}</span>
+              <div className="barra-peso" aria-hidden="true">
+                {/* data-driven width: the only inline style on the page */}
                 <div style={{ width: `${width}%` }} />
               </div>
               <span className="valor-peso">
-                {weight.toLocaleString("pt-BR")} kg
+                {weightText}
                 {diff !== 0 && (
-                  <span className={diff > 0 ? "subiu" : "desceu"}>
-                    {" "}
+                  <span className={diff > 0 ? "delta up" : "delta down"}>
                     {formatDifference(diff)}
                   </span>
                 )}
@@ -79,5 +89,5 @@ export function WeightChart({ patientId }: { patientId: number }) {
 function formatDifference(value: number): string {
   if (value === 0) return "sem variação";
   const rounded = Math.round(value * 10) / 10;
-  return `${rounded > 0 ? "+" : ""}${rounded.toLocaleString("pt-BR")} kg`;
+  return `${rounded > 0 ? "+" : "−"}${Math.abs(rounded).toLocaleString("pt-BR")} kg`;
 }

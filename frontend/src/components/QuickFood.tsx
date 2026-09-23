@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { X } from "lucide-react";
 
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
@@ -111,10 +112,10 @@ export function QuickFood({
 
   return (
     <form className="painel quick-form" onSubmit={submit}>
-      <h3 style={{ marginTop: 0 }}>Novo alimento</h3>
-      <p className="minusculo" style={{ marginTop: 0 }}>
-        Valores por 100 g. Você pode completar o resto depois, em Alimentos.
-      </p>
+      <div className="quick-form-head">
+        <h3>Novo alimento</h3>
+        <p>Valores por 100 g. Você pode completar o resto depois, em Alimentos.</p>
+      </div>
 
       {error && (
         <div className="warning error" role="alert">
@@ -135,7 +136,7 @@ export function QuickFood({
         />
       </div>
 
-      <div className="grid two">
+      <div className="grid quick-macros">
         <div className="field">
           <label htmlFor="qf-kcal">Energia (kcal)</label>
           <input
@@ -181,12 +182,12 @@ export function QuickFood({
         help="A primeira vira a medida padrão do alimento."
       />
 
-      <div className="row" style={{ marginTop: "0.8rem" }}>
-        <button className="button" type="submit" disabled={saving}>
-          {saving ? "Cadastrando…" : "Cadastrar e usar"}
-        </button>
+      <div className="row end quick-form-actions">
         <button className="button secundario" type="button" onClick={onClose} disabled={saving}>
           Cancelar
+        </button>
+        <button className="button" type="submit" disabled={saving}>
+          {saving ? "Cadastrando…" : "Cadastrar e usar"}
         </button>
       </div>
     </form>
@@ -216,14 +217,13 @@ function MeasureRows({
   }
 
   return (
-    <div style={{ marginTop: "0.8rem" }}>
-      <span className="minusculo">Medidas caseiras</span>
-      {help && <div className="minusculo">{help}</div>}
+    <div className="measure-rows">
+      <h4 className="quick-section-title">Medidas caseiras</h4>
+      {help && <span className="field-hint">{help}</span>}
 
       {rows.map((row, index) => (
-        <div className="row" key={row.key} style={{ gap: "0.4rem", marginTop: "0.3rem" }}>
+        <div className="measure-row" key={row.key}>
           <input
-            style={{ flex: 2, minWidth: 120 }}
             type="text"
             value={row.description}
             onChange={(e) => patch(row.key, { description: e.target.value })}
@@ -233,7 +233,6 @@ function MeasureRows({
             aria-label={`Medida ${index + 1}`}
           />
           <input
-            style={{ width: 110 }}
             inputMode="decimal"
             value={row.grams}
             onChange={(e) => patch(row.key, { grams: e.target.value })}
@@ -244,12 +243,13 @@ function MeasureRows({
           {rows.length > 1 && (
             <button
               type="button"
-              className="button perigo pequeno"
+              className="button perigo icon"
               onClick={() => onChange(rows.filter((x) => x.key !== row.key))}
               disabled={disabled}
               aria-label={`Remover medida ${index + 1}`}
+              title={`Remover medida ${index + 1}`}
             >
-              ×
+              <X aria-hidden="true" />
             </button>
           )}
         </div>
@@ -258,7 +258,6 @@ function MeasureRows({
       <button
         type="button"
         className="button secundario pequeno"
-        style={{ marginTop: "0.4rem" }}
         onClick={() => onChange([...rows, newRow()])}
         disabled={disabled}
       >
@@ -316,10 +315,12 @@ export function QuickMeasure({
 
   return (
     <form className="painel quick-form" onSubmit={submit}>
-      <h3 style={{ marginTop: 0 }}>Novas medidas caseiras</h3>
-      <p className="minusculo" style={{ marginTop: 0 }}>
-        Para <strong>{foodName}</strong>. Ficam só no seu consultório.
-      </p>
+      <div className="quick-form-head">
+        <h3>Novas medidas caseiras</h3>
+        <p>
+          Para <strong>{foodName}</strong>. Ficam só no seu consultório.
+        </p>
+      </div>
 
       {error && (
         <div className="warning error" role="alert">
@@ -329,12 +330,12 @@ export function QuickMeasure({
 
       <MeasureRows rows={rows} onChange={setRows} disabled={saving} />
 
-      <div className="row" style={{ marginTop: "0.8rem" }}>
-        <button className="button" type="submit" disabled={saving}>
-          {saving ? "Cadastrando…" : "Cadastrar e usar"}
-        </button>
+      <div className="row end quick-form-actions">
         <button className="button secundario" type="button" onClick={onClose} disabled={saving}>
           Cancelar
+        </button>
+        <button className="button" type="submit" disabled={saving}>
+          {saving ? "Cadastrando…" : "Cadastrar e usar"}
         </button>
       </div>
     </form>

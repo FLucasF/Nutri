@@ -9,6 +9,10 @@ import type { FoodSummary } from "../api/types";
  * the recipe editor — and a copy would diverge: the search already carries the
  * relevance ranking and the delay that avoids one query per keystroke, and
  * neither of the two screens should have to know about that.
+ *
+ * The suggestions are <button>s inside .results-search (the tests find them
+ * that way), and they stay buttons: onMouseDown preventDefault is what lets
+ * the click land before the input blurs and closes the list.
  */
 export default function FoodSearch({
   freeValue,
@@ -75,6 +79,7 @@ export default function FoodSearch({
         placeholder="Buscar alimento ou escrever livremente"
         disabled={disabled}
         aria-label={label}
+        autoComplete="off"
       />
       {/*
         Dizer que está procurando, em vez de não dizer nada. Sem isso, o tempo
@@ -83,30 +88,31 @@ export default function FoodSearch({
       */}
       {open && searching && results.length === 0 && freeValue.trim().length >= 2 && (
         <div className="results-search">
-          <span className="minusculo" style={{ padding: "0.5rem 0.6rem", display: "block" }}>
-            Procurando…
-          </span>
+          <span className="results-status">Procurando…</span>
         </div>
       )}
       {open && results.length > 0 && (
         <div className="results-search">
-          {results.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                onChoose(r);
-                setOpen(false);
-              }}
-            >
-              {r.description}
-              <small>
-                {r.group ?? r.brand ?? "—"}
-                {r.energyKcal !== undefined ? ` · ${Math.round(r.energyKcal)} kcal/100 g` : ""}
-              </small>
-            </button>
-          ))}
+          {results.map((r) => {
+            const meta = r.group ?? r.brand;
+            return (
+              <button
+                key={r.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChoose(r);
+                  setOpen(false);
+                }}
+              >
+                <span className="results-name">{r.description}</span>
+                {meta && <small className="results-meta">{meta}</small>}
+                {r.energyKcal !== undefined && (
+                  <span className="readout">{Math.round(r.energyKcal)} kcal/100 g</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

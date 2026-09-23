@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { FileText, Link2, Paperclip } from "lucide-react";
 
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
@@ -44,86 +45,107 @@ export function PatientAttachments({ patientId }: { patientId: number }) {
   }
 
   return (
-    <section className="card" style={{ marginBottom: "1.1rem" }}>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+    <section className="card patient-attachments">
+      <div className="card-head">
         <div>
-          <h2 style={{ margin: 0 }}>Arquivos anexos</h2>
-          <p className="minusculo" style={{ margin: "0.15rem 0 0" }}>
+          <h2 className="card-title">Arquivos anexos</h2>
+          <p className="card-sub">
             Laudo, cardápio antigo, foto de exame — o que já existe fora do sistema.
           </p>
         </div>
-        <div className="row">
+        <div className="card-head-actions">
           <button
+            type="button"
             className="button secundario pequeno"
+            aria-pressed={adding === "file"}
             onClick={() => setAdding(adding === "file" ? null : "file")}
           >
+            <Paperclip aria-hidden="true" />
             Anexar arquivo
           </button>
           <button
+            type="button"
             className="button secundario pequeno"
+            aria-pressed={adding === "link"}
             onClick={() => setAdding(adding === "link" ? null : "link")}
           >
+            <Link2 aria-hidden="true" />
             Guardar link
           </button>
         </div>
       </div>
 
-      {error && (
-        <div className="warning error" role="alert" style={{ marginTop: "0.7rem" }}>
-          {error}
-        </div>
-      )}
+      <div className="stack">
+        {error && (
+          <div className="warning error" role="alert">
+            {error}
+          </div>
+        )}
 
-      {adding && (
-        <FormAttachment
-          patientId={patientId}
-          kind={adding}
-          onClose={() => setAdding(null)}
-          onSaved={async () => {
-            setAdding(null);
-            await load();
-          }}
-          onError={setError}
-        />
-      )}
+        {adding && (
+          <FormAttachment
+            patientId={patientId}
+            kind={adding}
+            onClose={() => setAdding(null)}
+            onSaved={async () => {
+              setAdding(null);
+              await load();
+            }}
+            onError={setError}
+          />
+        )}
 
-      {items.length === 0 ? (
-        <p className="empty" style={{ marginBottom: 0 }}>
-          Nenhum anexo. É aqui que o cardápio do sistema antigo pode ficar, sem precisar
-          ser refeito.
-        </p>
-      ) : (
-        <div className="card-list" style={{ marginTop: "0.9rem" }}>
-          {items.map((item) => (
-            <div className="row anexo" key={item.id}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <strong>{item.title}</strong>
-                <div className="minusculo">
-                  {item.kindDescription}
-                  {item.referenceDate ? ` · ${formatBr(item.referenceDate)}` : ""}
-                  {item.fileSize ? ` · ${Math.round(item.fileSize / 1024)} KB` : ""}
+        {items.length === 0 ? (
+          <p className="empty attachments-empty">
+            <span className="empty-icon">
+              <Paperclip aria-hidden="true" />
+            </span>
+            <span className="empty-hint">
+              Nenhum anexo. É aqui que o cardápio do sistema antigo pode ficar, sem precisar
+              ser refeito.
+            </span>
+          </p>
+        ) : (
+          <ul className="lista-anexos">
+            {items.map((item) => (
+              <li className="anexo" key={item.id}>
+                <span className="anexo-icone">
+                  {item.kind === "LINK" ? <Link2 aria-hidden="true" /> : <FileText aria-hidden="true" />}
+                </span>
+                <div className="anexo-texto">
+                  <strong>{item.title}</strong>
+                  <div className="anexo-meta">
+                    {item.kindDescription}
+                    {item.referenceDate ? ` · ${formatBr(item.referenceDate)}` : ""}
+                    {item.fileSize ? ` · ${Math.round(item.fileSize / 1024)} KB` : ""}
+                  </div>
+                  {item.notes && <p className="anexo-nota">{item.notes}</p>}
                 </div>
-                {item.notes && <p className="minusculo">{item.notes}</p>}
-              </div>
-              <div className="row">
-                <button className="button secundario pequeno" onClick={() => void open(item)}>
-                  Abrir
-                </button>
-                <button
-                  className="button perigo pequeno"
-                  onClick={async () => {
-                    if (!confirm(`Remover "${item.title}"?`)) return;
-                    await api.patients.removeAttachment(patientId, item.id);
-                    await load();
-                  }}
-                >
-                  Remover
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                <div className="anexo-acoes">
+                  <button
+                    type="button"
+                    className="button secundario pequeno"
+                    onClick={() => void open(item)}
+                  >
+                    Abrir
+                  </button>
+                  <button
+                    type="button"
+                    className="button perigo pequeno"
+                    onClick={async () => {
+                      if (!confirm(`Remover "${item.title}"?`)) return;
+                      await api.patients.removeAttachment(patientId, item.id);
+                      await load();
+                    }}
+                  >
+                    Remover
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }
@@ -182,74 +204,77 @@ function FormAttachment({
   }
 
   return (
-    <div className="painel" style={{ marginTop: "0.9rem" }}>
-      <div className="grid two">
-        <div className="field">
-          <label htmlFor="an-titulo">Título</label>
-          <input
-            id="an-titulo"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Cardápio anterior (Webdiet)"
-            maxLength={150}
-            autoFocus
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="an-data">Data do documento</label>
-          <input
-            id="an-data"
-            type="date"
-            value={referenceDate}
-            onChange={(e) => setReferenceDate(e.target.value)}
-          />
-          <span className="minusculo">Raramente é a data de hoje.</span>
-        </div>
-
-        {kind === "file" ? (
+    <div className="painel painel-anexo">
+      <h3 className="painel-titulo">{kind === "file" ? "Anexar arquivo" : "Guardar link"}</h3>
+      <div className="stack">
+        <div className="grid two">
           <div className="field">
-            <label htmlFor="an-arquivo">Arquivo</label>
+            <label htmlFor="an-titulo">Título</label>
             <input
-              id="an-arquivo"
-              type="file"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-            <span className="minusculo">Até 15 MB.</span>
-          </div>
-        ) : (
-          <div className="field">
-            <label htmlFor="an-url">Endereço</label>
-            <input
-              id="an-url"
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://…"
-              maxLength={2000}
+              id="an-titulo"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Cardápio anterior (Webdiet)"
+              maxLength={150}
+              autoFocus
             />
           </div>
-        )}
+          <div className="field">
+            <label htmlFor="an-data">Data do documento</label>
+            <input
+              id="an-data"
+              type="date"
+              value={referenceDate}
+              onChange={(e) => setReferenceDate(e.target.value)}
+            />
+            <span className="field-hint">Raramente é a data de hoje.</span>
+          </div>
 
-        <div className="field">
-          <label htmlFor="an-obs">Observação</label>
-          <input
-            id="an-obs"
-            type="text"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            maxLength={1000}
-          />
+          {kind === "file" ? (
+            <div className="field">
+              <label htmlFor="an-arquivo">Arquivo</label>
+              <input
+                id="an-arquivo"
+                type="file"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+              <span className="field-hint">Até 15 MB.</span>
+            </div>
+          ) : (
+            <div className="field">
+              <label htmlFor="an-url">Endereço</label>
+              <input
+                id="an-url"
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://…"
+                maxLength={2000}
+              />
+            </div>
+          )}
+
+          <div className="field">
+            <label htmlFor="an-obs">Observação</label>
+            <input
+              id="an-obs"
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={1000}
+            />
+          </div>
         </div>
-      </div>
 
-      <div className="row" style={{ marginTop: "0.7rem" }}>
-        <button className="button" onClick={() => void save()} disabled={saving}>
-          {saving ? "Guardando…" : "Guardar"}
-        </button>
-        <button className="button secundario" onClick={onClose} disabled={saving}>
-          Cancelar
-        </button>
+        <div className="row">
+          <button type="button" className="button" onClick={() => void save()} disabled={saving}>
+            {saving ? "Guardando…" : "Guardar"}
+          </button>
+          <button type="button" className="button ghost" onClick={onClose} disabled={saving}>
+            Cancelar
+          </button>
+        </div>
       </div>
     </div>
   );

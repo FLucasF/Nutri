@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ComponentProps } from "react";
+import { Suspense, lazy, type CSSProperties, type ComponentProps } from "react";
 
 import type { RichTextEditor as Editor } from "./RichTextEditor";
 
@@ -17,13 +17,15 @@ const Loaded = lazy(() =>
 );
 
 export function RichTextEditor(props: ComponentProps<typeof Editor>) {
+  // A mesma moldura do editor pronto — barra vazia da mesma altura e a mesma
+  // altura mínima — para a página não pular quando o editor de fato chega.
+  const frame = { "--richtext-min-h": props.minHeight ?? "12rem" } as CSSProperties;
   return (
     <Suspense
       fallback={
-        <div className="richtext" style={{ minHeight: props.minHeight ?? "12rem" }}>
-          <p className="empty" style={{ padding: "1rem" }}>
-            Abrindo o editor…
-          </p>
+        <div className="richtext" style={frame}>
+          {!props.onlyRead && <div className="richtext-bar" aria-hidden="true" />}
+          <p className="empty richtext-loading">Abrindo o editor…</p>
         </div>
       }
     >

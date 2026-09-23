@@ -1,5 +1,16 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ClipboardList,
+  FileText,
+  Pencil,
+  Plus,
+  Ruler,
+  Trash2,
+  X,
+} from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
@@ -13,6 +24,7 @@ import type {
   Pregnancy,
   Derived,
   Progress,
+  ProgressPoint,
   CompositionProtocol,
   ProtocolInfo,
   Change,
@@ -168,17 +180,18 @@ export default function Anthropometry() {
     <>
       <div className="header-page">
         <div>
-          <Link to={`/patients/${patientId}`} className="minusculo">
-            ← {progress?.patientName ?? "Paciente"}
+          <Link to={`/patients/${patientId}`} className="migalha">
+            <ChevronLeft aria-hidden="true" />
+            {progress?.patientName ?? "Paciente"}
           </Link>
-          <h1 style={{ marginTop: "0.2rem" }}>Antropometria</h1>
+          <h1>Antropometria</h1>
           <p>
             {assessments.length === 0
               ? "Nenhuma avaliação registrada."
               : `${assessments.length} ${assessments.length === 1 ? "avaliação" : "avaliações"}`}
           </p>
         </div>
-        <div className="row">
+        <div className="header-page-actions">
           {/*
             O relatório só aparece com duas avaliações: uma evolução de um
             ponto só não é uma evolução, e o botão prometeria uma folha que o
@@ -191,22 +204,24 @@ export default function Anthropometry() {
               disabled={generatingReport}
               title="Abre em outra guia"
             >
+              <FileText aria-hidden="true" />
               {generatingReport ? "Gerando…" : "Relatório de evolução"}
             </button>
           )}
           <button
-            className="button"
+            className={creating ? "button secundario" : "button"}
             onClick={() => {
               setEditing(null);
               setCreating((v) => !v);
             }}
           >
+            {creating ? <X aria-hidden="true" /> : <Plus aria-hidden="true" />}
             {creating ? "Cancelar" : "Nova avaliação"}
           </button>
         </div>
       </div>
 
-      {error && <div className="warning error" style={{ marginBottom: "0.9rem" }}>{error}</div>}
+      {error && <div className="warning error mb-3">{error}</div>}
 
       {(creating || editing) && (
         <FormAssessment
@@ -229,15 +244,34 @@ export default function Anthropometry() {
         />
       )}
 
+      {assessments.length === 0 && !creating && (
+        <section className="card">
+          <div className="empty">
+            <span className="empty-icon">
+              <Ruler aria-hidden="true" />
+            </span>
+            <span className="empty-title">Sem avaliações por enquanto</span>
+            <span className="empty-hint">
+              Registre a primeira: a evolução aparece a partir da segunda.
+            </span>
+          </div>
+        </section>
+      )}
+
       {moreRecent && <AssessmentSummary assessment={moreRecent} patientId={patientId} />}
 
       {progress && progress.points.length > 1 && <ProgressTable progress={progress} />}
 
       {assessments.length > 0 && (
-        <>
-          <h2 style={{ margin: "1.3rem 0 0.6rem" }}>Histórico</h2>
-          <div className="rolagem">
-            <table>
+        <section className="card">
+          <div className="card-head">
+            <div>
+              <h2 className="card-title">Histórico</h2>
+              <p className="card-sub">Da mais recente para a primeira.</p>
+            </div>
+          </div>
+          <TableScroll>
+            <table className="history-table">
               <thead>
                 <tr>
                   <th>Data</th>
@@ -245,9 +279,11 @@ export default function Anthropometry() {
                   <th className="num">IMC</th>
                   <th>Classificação</th>
                   <th className="num">% gordura</th>
-                  <th className="num">Massa magra</th>
-                  <th>Protocolo</th>
-                  <th />
+                  <th className="num col-secundaria">Massa magra</th>
+                  <th className="col-secundaria">Protocolo</th>
+                  <th className="acoes">
+                    <span className="visually-hidden">Ações</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -256,7 +292,7 @@ export default function Anthropometry() {
                     <td className="mono">{formatBr(a.date)}</td>
                     <td className="num">{a.weightKg ? `${num(a.weightKg)} kg` : "—"}</td>
                     <td className="num">{a.bmi ? num(a.bmi) : "—"}</td>
-                    <td>
+                    <td className="col-class">
                       {a.classificationBmi.value ? (
                         CLASSIFICATIONS[a.classificationBmi.value]
                       ) : (
@@ -268,37 +304,77 @@ export default function Anthropometry() {
                         ? `${num(a.composition.percentageFat)}%`
                         : "—"}
                     </td>
-                    <td className="num">
+                    <td className="num col-secundaria">
                       {a.composition?.massLeanKg
                         ? `${num(a.composition.massLeanKg)} kg`
                         : a.biaMuscleMassKg
                           ? `${num(a.biaMuscleMassKg)} kg`
                           : "—"}
                     </td>
-                    <td className="discreto">{a.composition?.protocolDescription ?? "—"}</td>
-                    <td style={{ textAlign: "right" }}>
-                      <button
-                        className="button secundario pequeno"
-                        onClick={() => {
-                          setCreating(false);
-                          setEditing(a);
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }}
-                      >
-                        Editar
-                      </button>{" "}
-                      <button className="button perigo pequeno" onClick={() => remove(a.id)}>
-                        Remover
-                      </button>
+                    <td className="discreto col-secundaria col-protocolo">
+                      {a.composition?.protocolDescription ?? "—"}
+                    </td>
+                    <td className="acoes">
+                      <div className="history-actions">
+                        <button
+                          className="button secundario pequeno"
+                          onClick={() => {
+                            setCreating(false);
+                            setEditing(a);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                        >
+                          <Pencil aria-hidden="true" />
+                          Editar
+                        </button>
+                        <button className="button perigo pequeno" onClick={() => remove(a.id)}>
+                          <Trash2 aria-hidden="true" />
+                          Remover
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </>
+          </TableScroll>
+        </section>
       )}
     </>
+  );
+}
+
+// ------------------------------------------------------------ table scroll
+
+/**
+ * The numeric-table wrapper: scrolls sideways, keeps the first column, fades
+ * the right edge until the end is reached (data-scroll-end, components.css).
+ */
+function TableScroll({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [atEnd, setAtEnd] = useState(true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, []);
+
+  return (
+    <div className="table-frame">
+      <div ref={ref} className="table-scroll" data-scroll-end={atEnd ? "true" : "false"}>
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -312,19 +388,26 @@ function AssessmentSummary({
   patientId: number;
 }) {
   return (
-    <div className="card" style={{ marginBottom: "1.1rem" }}>
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2>Última avaliação</h2>
-        <span className="minusculo mono">{formatBr(assessment.date)}</span>
+    <section className="card mb-3">
+      <div className="card-head">
+        <h2 className="card-title">Última avaliação</h2>
+        <span className="summary-date">
+          <CalendarDays aria-hidden="true" />
+          {formatBr(assessment.date)}
+        </span>
       </div>
 
-      <div className="grid three" style={{ marginTop: "0.8rem" }}>
-        <Indicator label="Peso" value={assessment.weightKg} unit="kg" />
-        <Indicator label="Altura" value={assessment.heightCm} unit="cm" />
-        <Indicator label="IMC" value={assessment.bmi} />
-        <Derived label="Classificação" derived={assessment.classificationBmi} map={CLASSIFICATIONS} />
-        <Indicator label="Cintura/quadril" value={assessment.ratioWaistHip} />
-        <Derived
+      <div className="stats">
+        <Stat label="Peso" value={assessment.weightKg} unit="kg" />
+        <Stat label="Altura" value={assessment.heightCm} unit="cm" />
+        <Stat label="IMC" value={assessment.bmi} />
+        <DerivedStat
+          label="Classificação"
+          derived={assessment.classificationBmi}
+          map={CLASSIFICATIONS}
+        />
+        <Stat label="Cintura/quadril" value={assessment.ratioWaistHip} />
+        <DerivedStat
           label="Risco cardiometabólico"
           derived={assessment.riskCardiometabolico}
           map={RISKS}
@@ -332,50 +415,42 @@ function AssessmentSummary({
       </div>
 
       {assessment.composition && (
-        <>
-          <h3 style={{ margin: "1rem 0 0.4rem" }}>
-            Composição corporal
-            <span className="tag" style={{ marginLeft: "0.5rem" }}>
-              {assessment.composition.protocolDescription}
-            </span>
-          </h3>
-          <div className="grid three">
-            <Indicator
-              label="Gordura corporal"
-              value={assessment.composition.percentageFat}
-              unit="%"
-            />
-            <Indicator label="Massa gorda" value={assessment.composition.massFatKg} unit="kg" />
-            <Indicator label="Massa magra" value={assessment.composition.massLeanKg} unit="kg" />
+        <section className="summary-group">
+          <div className="summary-group-head">
+            <h3>Composição corporal</h3>
+            <span className="tag">{assessment.composition.protocolDescription}</span>
           </div>
-        </>
+          <div className="stats">
+            <Stat label="Gordura corporal" value={assessment.composition.percentageFat} unit="%" />
+            <Stat label="Massa gorda" value={assessment.composition.massFatKg} unit="kg" />
+            <Stat label="Massa magra" value={assessment.composition.massLeanKg} unit="kg" />
+          </div>
+        </section>
       )}
 
       {assessment.childGrowth?.value && (
-        <>
-          <h3 style={{ margin: "1rem 0 0.4rem" }}>
-            Crescimento
-            <span className="tag" style={{ marginLeft: "0.5rem" }}>
-              {assessment.childGrowth.value.ageAtMonths} meses
-            </span>
-          </h3>
-          {assessment.childGrowth.value.indicators.map((i) => (
-            <div className="nutrient-row" key={i.indicator}>
-              <span>
-                {i.indicatorDescription}
-                <div className="minusculo">{i.reference}</div>
-              </span>
-              <span style={{ textAlign: "right" }}>
-                escore-z {i.scoreZ?.toFixed(2).replace(".", ",")}
-                <div>
+        <section className="summary-group">
+          <div className="summary-group-head">
+            <h3>Crescimento</h3>
+            <span className="tag">{assessment.childGrowth.value.ageAtMonths} meses</span>
+          </div>
+          <div className="growth-list">
+            {assessment.childGrowth.value.indicators.map((i) => (
+              <div className="growth-row" key={i.indicator}>
+                <span>
+                  {i.indicatorDescription}
+                  <span className="growth-row-ref">{i.reference}</span>
+                </span>
+                <span className="growth-row-score">
+                  <span>escore-z {i.scoreZ?.toFixed(2).replace(".", ",")}</span>
                   <span className={`tag ${i.requiresAttention ? "ambar" : "verde"}`}>
                     {i.classificationDescription}
                   </span>
-                </div>
-              </span>
-            </div>
-          ))}
-        </>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {AREAS_HIDDEN.gestation && assessment.pregnancy?.value && (
@@ -383,33 +458,27 @@ function AssessmentSummary({
       )}
 
       {AREAS_HIDDEN.gestation && assessment.pregnancy && !assessment.pregnancy.value && (
-        <div className="warning attention" style={{ marginTop: "0.9rem" }}>
-          {assessment.pregnancy.unavailableBecause}
-        </div>
+        <div className="warning attention mt-3">{assessment.pregnancy.unavailableBecause}</div>
       )}
 
       {assessment.expenditureEnergy && (
-        <>
-          <h3 style={{ margin: "1rem 0 0.4rem" }}>
-            Gasto energético
-            <span className="tag" style={{ marginLeft: "0.5rem" }}>
-              {assessment.expenditureEnergy.equationDescription}
-            </span>
-          </h3>
-          <div className="grid three">
-            <Indicator label="Basal" value={assessment.expenditureEnergy.basalKcal} unit="kcal" />
-            <Indicator
-              label="Fator de atividade"
-              value={assessment.expenditureEnergy.factorActivity}
-            />
-            <Indicator label="Total" value={assessment.expenditureEnergy.totalKcal} unit="kcal" />
+        <section className="summary-group">
+          <div className="summary-group-head">
+            <h3>Gasto energético</h3>
+            <span className="tag">{assessment.expenditureEnergy.equationDescription}</span>
+          </div>
+          <div className="stats">
+            <Stat label="Basal" value={assessment.expenditureEnergy.basalKcal} unit="kcal" />
+            <Stat label="Fator de atividade" value={assessment.expenditureEnergy.factorActivity} />
+            <Stat label="Total" value={assessment.expenditureEnergy.totalKcal} unit="kcal" />
           </div>
           {assessment.expenditureEnergy.totalKcal !== undefined && (
-            <div className="row" style={{ marginTop: "0.7rem" }}>
+            <div className="summary-action">
               <Link
                 className="button secundario pequeno"
                 to={`/prescriptions/new?patientId=${patientId}&target=${assessment.expenditureEnergy.totalKcal}`}
               >
+                <ClipboardList aria-hidden="true" />
                 Usar como meta do plano
               </Link>
               <span className="minusculo">
@@ -417,15 +486,17 @@ function AssessmentSummary({
               </span>
             </div>
           )}
-        </>
+        </section>
       )}
 
       {assessment.circumferences.length > 0 && (
-        <>
-          <h3 style={{ margin: "1rem 0 0.4rem" }}>Circunferências (cm)</h3>
-          <div className="grid three">
+        <section className="summary-group">
+          <div className="summary-group-head">
+            <h3>Circunferências (cm)</h3>
+          </div>
+          <div className="stats dense">
             {assessment.circumferences.map((c) => (
-              <Indicator
+              <Stat
                 key={keyOf(c.site, c.side)}
                 label={
                   c.side === "SINGLE"
@@ -437,15 +508,15 @@ function AssessmentSummary({
               />
             ))}
           </div>
-        </>
+        </section>
       )}
 
       {assessment.notes && (
-        <div className="discreto" style={{ marginTop: "0.9rem" }}>
+        <div className="summary-notes">
           <NotesView value={assessment.notes} />
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -460,26 +531,24 @@ function BlockPregnancy({ pregnancy }: { pregnancy: Pregnancy }) {
     pregnancy.status === "ADEQUATE" ? "verde" : pregnancy.status === "ABOVE" ? "vermelha" : "ambar";
 
   return (
-    <>
-      <h3 style={{ margin: "1rem 0 0.4rem" }}>
-        Gestação
-        <span className="tag" style={{ marginLeft: "0.5rem" }}>
-          {pregnancy.gestationalWeek}ª semana
-        </span>
-      </h3>
+    <section className="summary-group">
+      <div className="summary-group-head">
+        <h3>Gestação</h3>
+        <span className="tag">{pregnancy.gestationalWeek}ª semana</span>
+      </div>
 
-      <div className="grid three">
-        <Indicator label="IMC pré-gestacional" value={pregnancy.bmiGestationalPre} />
-        <Indicator label="Ganho até agora" value={pregnancy.gainAteNow} unit="kg" />
-        <div>
-          <span className="minusculo">Situação</span>
-          <div style={{ marginTop: "0.2rem" }}>
+      <div className="stats">
+        <Stat label="IMC pré-gestacional" value={pregnancy.bmiGestationalPre} />
+        <Stat label="Ganho até agora" value={pregnancy.gainAteNow} unit="kg" />
+        <div className="stat">
+          <span className="stat-label">Situação</span>
+          <span className="stat-tag">
             <span className={`tag ${classe}`}>{pregnancy.statusDescription}</span>
-          </div>
+          </span>
         </div>
       </div>
 
-      <p className="minusculo" style={{ marginTop: "0.6rem", marginBottom: 0 }}>
+      <p className="summary-hint">
         Faixa {pregnancy.rangeDescription.toLowerCase()}: esperado{" "}
         {pregnancy.expectedMin.toLocaleString("pt-BR")} a{" "}
         {pregnancy.expectedMax.toLocaleString("pt-BR")} kg até a {pregnancy.gestationalWeek}ª
@@ -487,31 +556,31 @@ function BlockPregnancy({ pregnancy }: { pregnancy: Pregnancy }) {
         {pregnancy.totalGainRecommendedMax.toLocaleString("pt-BR")} kg em toda a gestação
         (IOM, 2009).
       </p>
-    </>
+    </section>
   );
 }
 
-function Indicator({
+/** A measured value as a stat tile. `null` reads as not measured, like undefined. */
+function Stat({
   label,
   value,
   unit,
 }: {
   label: string;
-  value?: number;
+  value?: number | null;
   unit?: string;
 }) {
   return (
-    <div>
-      <span className="minusculo">{label}</span>
-      <div className="mono" style={{ fontSize: "1.05rem", fontWeight: 600 }}>
-        {value === undefined || value === null ? (
-          <span style={{ color: "var(--ink-faint)", fontWeight: 400, fontSize: "0.9rem" }}>
-            não medido
-          </span>
-        ) : (
-          `${num(value)}${unit ? ` ${unit}` : ""}`
-        )}
-      </div>
+    <div className="stat">
+      <span className="stat-label">{label}</span>
+      {value === undefined || value === null ? (
+        <span className="stat-empty">não medido</span>
+      ) : (
+        <span className="stat-value">
+          {num(value)}
+          {unit && <span className="stat-unit">{unit}</span>}
+        </span>
+      )}
     </div>
   );
 }
@@ -521,7 +590,7 @@ function Indicator({
  * measurement. Showing the reason is what tells the professional what to do
  * about it.
  */
-function Derived<T extends string>({
+function DerivedStat<T extends string>({
   label,
   derived,
   map,
@@ -531,14 +600,12 @@ function Derived<T extends string>({
   map: Record<string, string>;
 }) {
   return (
-    <div>
-      <span className="minusculo">{label}</span>
+    <div className="stat">
+      <span className="stat-label">{label}</span>
       {derived.value ? (
-        <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>{map[derived.value]}</div>
+        <span className="stat-value texto">{map[derived.value]}</span>
       ) : (
-        <div className="minusculo" style={{ marginTop: "0.15rem", lineHeight: 1.35 }}>
-          {derived.unavailableBecause ?? "não disponível"}
-        </div>
+        <span className="stat-empty">{derived.unavailableBecause ?? "não disponível"}</span>
       )}
     </div>
   );
@@ -548,16 +615,23 @@ function Derived<T extends string>({
 
 function ProgressTable({ progress }: { progress: Progress }) {
   const measures = ["weightKg", "bmi", "circumferenceWaist", "percentageFat"];
+  // The first point has no comparison of its own; its figures come out of
+  // the second point's comparison against it.
+  const second = progress.points[1];
 
   return (
-    <div className="card" style={{ marginBottom: "1.1rem" }}>
-      <h2>Evolução</h2>
-      <p className="discreto" style={{ margin: "0.3rem 0 0.8rem" }}>
-        A variação só aparece quando as duas avaliações são comparáveis: medida presente nas duas,
-        e composição estimada pelo mesmo protocolo.
-      </p>
+    <section className="card mb-3">
+      <div className="card-head">
+        <div>
+          <h2 className="card-title">Evolução</h2>
+          <p className="card-sub">
+            A variação só aparece quando as duas avaliações são comparáveis: medida presente nas
+            duas, e composição estimada pelo mesmo protocolo.
+          </p>
+        </div>
+      </div>
 
-      <div className="rolagem">
+      <TableScroll>
         <table>
           <thead>
             <tr>
@@ -572,12 +646,19 @@ function ProgressTable({ progress }: { progress: Progress }) {
           <tbody>
             {progress.points.map((point, index) => (
               <tr key={point.assessmentId}>
-                <td className="mono">{formatBr(point.date)}</td>
+                <td className="mono">
+                  {formatBr(point.date)}
+                  {index === 0 && <span className="tag neutra baseline-tag">primeira</span>}
+                </td>
                 {measures.map((measure) => {
                   const v = point.changesPreviousFront.find((x) => x.measure === measure);
                   return (
                     <td key={measure} className="num">
-                      <ValueComChange change={v} first={index === 0} />
+                      <ValueComChange
+                        change={v}
+                        first={index === 0}
+                        baseline={index === 0 ? baselineOf(point, second, measure) : undefined}
+                      />
                     </td>
                   );
                 })}
@@ -585,18 +666,38 @@ function ProgressTable({ progress }: { progress: Progress }) {
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+      </TableScroll>
+    </section>
   );
+}
+
+/** What the first assessment measured, read back from the second's comparison. */
+function baselineOf(first: ProgressPoint, second: ProgressPoint | undefined, measure: string) {
+  const previous = second?.changesPreviousFront.find((x) => x.measure === measure)?.previous;
+  if (previous !== undefined && previous !== null) return previous;
+  if (measure === "weightKg") return first.weightKg;
+  if (measure === "bmi") return first.bmi;
+  if (measure === "percentageFat") return first.percentageFat;
+  return undefined;
 }
 
 function ValueComChange({
   change,
   first,
+  baseline,
 }: {
   change?: Change;
   first: boolean;
+  baseline?: number;
 }) {
+  if (first) {
+    return baseline === undefined ? (
+      <span className="minusculo">—</span>
+    ) : (
+      <span>{num(baseline)}</span>
+    );
+  }
+
   if (!change) return <span className="minusculo">—</span>;
 
   const current = change.current;
@@ -604,30 +705,31 @@ function ValueComChange({
     return <span className="minusculo">—</span>;
   }
 
-  if (first) {
-    return <span>{num(current)}</span>;
-  }
-
   if (!change.comparable) {
     return (
-      <span title={change.notes}>
-        {num(current)}{" "}
-        <span className="minusculo" style={{ cursor: "help" }}>
-          (sem comparação)
-        </span>
+      <span className="value-change" title={change.notes}>
+        {num(current)}
+        <span className="minusculo sem-comparacao">(sem comparação)</span>
       </span>
     );
   }
 
-  const d = change.difference ?? 0;
-  const color = d < 0 ? "var(--accent)" : d > 0 ? "var(--alerta)" : "var(--ink-faint)";
   return (
-    <span>
-      {num(current)}{" "}
-      <span style={{ color: color, fontSize: "0.8rem" }}>
-        {d > 0 ? "+" : ""}
-        {num(d)}
-      </span>
+    <span className="value-change">
+      {num(current)}
+      <Delta value={change.difference ?? 0} />
+    </span>
+  );
+}
+
+/** The change as a badge: direction by colour, sign spelled out. */
+function Delta({ value }: { value: number }) {
+  const kind = value > 0 ? "up" : value < 0 ? "down" : "flat";
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return (
+    <span className={`delta ${kind}`}>
+      {sign}
+      {num(Math.abs(value))}
     </span>
   );
 }
@@ -770,241 +872,269 @@ function FormAssessment({
   }
 
   return (
-    <form className="card" style={{ marginBottom: "1.1rem" }} onSubmit={send}>
-      <h2>{editing ? `Corrigir avaliação de ${formatBr(editing.date)}` : "Nova avaliação"}</h2>
-
-      {error && <div className="warning error" style={{ margin: "0.8rem 0" }}>{error}</div>}
-
-      <div className="grid three" style={{ marginTop: "0.8rem" }}>
-        <div className="field">
-          <label htmlFor="av-data">Data</label>
-          <input
-            id="av-data"
-            name="date"
-            type="date"
-            value={date}
-            max={today}
-            onChange={(e) => setDate(e.target.value)}
-            required
-            {...fields.props("date")}
-          />
-          <FieldError field="date" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="av-peso">Peso (kg)</label>
-          <input
-            id="av-peso"
-            name="weightKg"
-            inputMode="decimal"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            {...fields.props("weightKg")}
-          />
-          <FieldError field="weightKg" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="av-altura">Altura (cm)</label>
-          <input
-            id="av-altura"
-            name="heightCm"
-            inputMode="decimal"
-            value={height}
-            readOnly={heightLocked}
-            onChange={(e) => setHeight(e.target.value)}
-            {...fields.props("heightCm")}
-          />
-          {heightLocked && (
-            <span className="minusculo">
-              Puxada da avaliação anterior. Adulto não muda de altura.
-            </span>
-          )}
-          <FieldError field="heightCm" errors={fields.errors} />
+    <form className="card form-assessment mb-3" onSubmit={send}>
+      <div className="card-head">
+        <div>
+          <h2 className="card-title">
+            {editing ? `Corrigir avaliação de ${formatBr(editing.date)}` : "Nova avaliação"}
+          </h2>
+          <p className="card-sub">Só a data é obrigatória; o resto entra conforme foi medido.</p>
         </div>
       </div>
 
-      <h3 style={{ margin: "1.1rem 0 0.4rem" }}>Circunferências (cm)</h3>
-      <div className="grid three">
-        {CIRCUMFERENCES.flatMap((c) =>
-          (c.bilateral ? (["RIGHT", "LEFT"] as Side[]) : (["SINGLE"] as Side[])).map((side) => {
-            const key = keyOf(c.site, side);
-            const label =
-              side === "SINGLE" ? c.label : `${c.label} (${side === "RIGHT" ? "D" : "E"})`;
+      {error && <div className="warning error mb-3">{error}</div>}
+
+      <section className="card form-section">
+        <div className="form-section-head">
+          <h3>Medidas</h3>
+        </div>
+        <div className="form-grid three">
+          <div className="field largo">
+            <label htmlFor="av-data">Data</label>
+            <input
+              id="av-data"
+              name="date"
+              type="date"
+              value={date}
+              max={today}
+              onChange={(e) => setDate(e.target.value)}
+              required
+              {...fields.props("date")}
+            />
+            <FieldError field="date" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="av-peso">Peso (kg)</label>
+            <input
+              id="av-peso"
+              name="weightKg"
+              inputMode="decimal"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              {...fields.props("weightKg")}
+            />
+            <FieldError field="weightKg" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="av-altura">Altura (cm)</label>
+            <input
+              id="av-altura"
+              name="heightCm"
+              inputMode="decimal"
+              value={height}
+              readOnly={heightLocked}
+              onChange={(e) => setHeight(e.target.value)}
+              {...fields.props("heightCm")}
+            />
+            {heightLocked && (
+              <span className="field-hint">
+                Puxada da avaliação anterior. Adulto não muda de altura.
+              </span>
+            )}
+            <FieldError field="heightCm" errors={fields.errors} />
+          </div>
+        </div>
+      </section>
+
+      <section className="card form-section">
+        <div className="form-section-head">
+          <h3>Circunferências (cm)</h3>
+        </div>
+        <div className="form-grid">
+          {CIRCUMFERENCES.flatMap((c) =>
+            (c.bilateral ? (["RIGHT", "LEFT"] as Side[]) : (["SINGLE"] as Side[])).map((side) => {
+              const key = keyOf(c.site, side);
+              const label =
+                side === "SINGLE" ? c.label : `${c.label} (${side === "RIGHT" ? "D" : "E"})`;
+              return (
+                <div className="field" key={key}>
+                  <label htmlFor={`circ-${key}`}>{label}</label>
+                  <input
+                    id={`circ-${key}`}
+                    inputMode="decimal"
+                    value={circumferences[key] ?? ""}
+                    onChange={(e) =>
+                      setCircumferences((v) => ({ ...v, [key]: e.target.value }))
+                    }
+                  />
+                </div>
+              );
+            }),
+          )}
+        </div>
+      </section>
+
+      <section className="card form-section">
+        <div className="form-section-head">
+          <h3>Alturas de apoio e diâmetros ósseos (cm)</h3>
+        </div>
+        <div className="form-grid">
+          {EXTRAS_MEASURES.map((field) => (
+            <div className="field" key={field.key}>
+              <label htmlFor={`ex-${field.key}`}>{field.label}</label>
+              <input
+                id={`ex-${field.key}`}
+                inputMode="decimal"
+                value={extras[field.key] ?? ""}
+                onChange={(e) => setExtras((v) => ({ ...v, [field.key]: e.target.value }))}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card form-section">
+        <div className="form-section-head">
+          <h3>Bioimpedância</h3>
+        </div>
+        <p className="form-section-hint">
+          Como o aparelho informou. Estes números são guardados, não recalculados.
+        </p>
+        <div className="form-grid">
+          {BIA_FIELDS.map((field) => (
+            <div className="field" key={field.key}>
+              <label htmlFor={`bia-${field.key}`}>{field.label}</label>
+              <input
+                id={`bia-${field.key}`}
+                inputMode="decimal"
+                value={extras[field.key] ?? ""}
+                onChange={(e) => setExtras((v) => ({ ...v, [field.key]: e.target.value }))}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card form-section">
+        <div className="form-section-head">
+          <h3>Dobras cutâneas (mm)</h3>
+        </div>
+        <div className="form-grid">
+          {SKINFOLDS.map((d) => {
+            const mandatory = required.has(d.key);
             return (
-              <div className="field" key={key}>
-                <label htmlFor={`circ-${key}`}>{label}</label>
+              <div className="field" key={d.key}>
+                <label htmlFor={`dobra-${d.key}`}>
+                  {d.label}
+                  {mandatory && <span className="tag verde">exigida</span>}
+                </label>
                 <input
-                  id={`circ-${key}`}
+                  id={`dobra-${d.key}`}
                   inputMode="decimal"
-                  value={circumferences[key] ?? ""}
-                  onChange={(e) =>
-                    setCircumferences((v) => ({ ...v, [key]: e.target.value }))
-                  }
+                  value={skinfolds[d.key] ?? ""}
+                  onChange={(e) => setSkinfolds((v) => ({ ...v, [d.key]: e.target.value }))}
                 />
               </div>
             );
-          }),
-        )}
-      </div>
+          })}
+        </div>
+      </section>
 
-      <h3 style={{ margin: "1.1rem 0 0.4rem" }}>Alturas de apoio e diâmetros ósseos (cm)</h3>
-      <div className="grid three">
-        {EXTRAS_MEASURES.map((field) => (
-          <div className="field" key={field.key}>
-            <label htmlFor={`ex-${field.key}`}>{field.label}</label>
-            <input
-              id={`ex-${field.key}`}
-              inputMode="decimal"
-              value={extras[field.key] ?? ""}
-              onChange={(e) => setExtras((v) => ({ ...v, [field.key]: e.target.value }))}
-            />
+      <section className="card form-section">
+        <div className="form-section-head">
+          <h3>Estimativas</h3>
+        </div>
+        <div className="form-grid three">
+          <div className="field">
+            <label htmlFor="av-protocolo">Estimar composição por</label>
+            <select
+              id="av-protocolo"
+              value={protocol}
+              onChange={(e) => setProtocol(e.target.value)}
+            >
+              <option value="">Não estimar</option>
+              {protocols.map((p) => (
+                <option key={p.protocol} value={p.protocol}>
+                  {p.description}
+                </option>
+              ))}
+            </select>
+            {chosen && (
+              <span className="field-hint">
+                Exige {count(required.size, "dobra", "dobras")}. Faltando alguma, o sistema recusa
+                e diz qual.
+              </span>
+            )}
           </div>
-        ))}
-      </div>
 
-      <h3 style={{ margin: "1.1rem 0 0.4rem" }}>Bioimpedância</h3>
-      <p className="minusculo" style={{ marginTop: 0 }}>
-        Como o aparelho informou. Estes números são guardados, não recalculados.
-      </p>
-      <div className="grid three">
-        {BIA_FIELDS.map((field) => (
-          <div className="field" key={field.key}>
-            <label htmlFor={`bia-${field.key}`}>{field.label}</label>
-            <input
-              id={`bia-${field.key}`}
-              inputMode="decimal"
-              value={extras[field.key] ?? ""}
-              onChange={(e) => setExtras((v) => ({ ...v, [field.key]: e.target.value }))}
-            />
+          <div className="field">
+            <label htmlFor="av-equacao">Estimar gasto energético por</label>
+            <select id="av-equacao" value={equation} onChange={(e) => setEquation(e.target.value)}>
+              <option value="">Não estimar</option>
+              <option value="MIFFLIN_ST_JEOR">Mifflin-St Jeor</option>
+              <option value="HARRIS_BENEDICT">Harris-Benedict revisada</option>
+            </select>
           </div>
-        ))}
-      </div>
 
-      <h3 style={{ margin: "1.1rem 0 0.4rem" }}>Dobras cutâneas (mm)</h3>
-      <div className="grid three">
-        {SKINFOLDS.map((d) => {
-          const mandatory = required.has(d.key);
-          return (
-            <div className="field" key={d.key}>
-              <label htmlFor={`dobra-${d.key}`}>
-                {d.label}
-                {mandatory && (
-                  <span className="tag verde" style={{ marginLeft: "0.35rem" }}>
-                    exigida
-                  </span>
-                )}
-              </label>
-              <input
-                id={`dobra-${d.key}`}
-                inputMode="decimal"
-                value={skinfolds[d.key] ?? ""}
-                onChange={(e) => setSkinfolds((v) => ({ ...v, [d.key]: e.target.value }))}
-              />
+          {equation && (
+            <div className="field">
+              <label htmlFor="av-fator">Fator de atividade</label>
+              <select
+                id="av-fator"
+                name="factorActivity"
+                value={factor}
+                onChange={(e) => setFactor(e.target.value)}
+                {...fields.props("factorActivity")}
+              >
+                <option value="1.2">1,20 — sedentário</option>
+                <option value="1.375">1,375 — levemente ativo</option>
+                <option value="1.55">1,55 — moderadamente ativo</option>
+                <option value="1.725">1,725 — muito ativo</option>
+                <option value="1.9">1,90 — extremamente ativo</option>
+              </select>
+              <FieldError field="factorActivity" errors={fields.errors} />
             </div>
-          );
-        })}
-      </div>
-
-      <div className="grid two" style={{ marginTop: "1.1rem" }}>
-        <div className="field">
-          <label htmlFor="av-protocolo">Estimar composição por</label>
-          <select
-            id="av-protocolo"
-            value={protocol}
-            onChange={(e) => setProtocol(e.target.value)}
-          >
-            <option value="">Não estimar</option>
-            {protocols.map((p) => (
-              <option key={p.protocol} value={p.protocol}>
-                {p.description}
-              </option>
-            ))}
-          </select>
-          {chosen && (
-            <span className="minusculo">
-              Exige {count(required.size, "dobra", "dobras")}. Faltando alguma, o sistema recusa
-              e diz qual.
-            </span>
           )}
         </div>
 
-        <div className="field">
-          <label htmlFor="av-equacao">Estimar gasto energético por</label>
-          <select id="av-equacao" value={equation} onChange={(e) => setEquation(e.target.value)}>
-            <option value="">Não estimar</option>
-            <option value="MIFFLIN_ST_JEOR">Mifflin-St Jeor</option>
-            <option value="HARRIS_BENEDICT">Harris-Benedict revisada</option>
-          </select>
-        </div>
-      </div>
-
-      {equation && (
-        <div className="field" style={{ marginTop: "0.6rem", maxWidth: 260 }}>
-          <label htmlFor="av-fator">Fator de atividade</label>
-          <select
-            id="av-fator"
-            name="factorActivity"
-            value={factor}
-            onChange={(e) => setFactor(e.target.value)}
-            {...fields.props("factorActivity")}
-          >
-            <option value="1.2">1,20 — sedentário</option>
-            <option value="1.375">1,375 — levemente ativo</option>
-            <option value="1.55">1,55 — moderadamente ativo</option>
-            <option value="1.725">1,725 — muito ativo</option>
-            <option value="1.9">1,90 — extremamente ativo</option>
-          </select>
-          <FieldError field="factorActivity" errors={fields.errors} />
-        </div>
-      )}
-
-      {AREAS_HIDDEN.gestation && (
-      <label className="row" style={{ gap: "0.4rem", marginTop: "0.9rem" }}>
-        <input
-          type="checkbox"
-          checked={pregnant}
-          onChange={(e) => setPregnant(e.target.checked)}
-          style={{ width: "auto" }}
-        />
-        <span className="discreto">Gestante</span>
-      </label>
-      )}
-
-      {AREAS_HIDDEN.gestation && pregnant && (
-        <div className="grid two" style={{ marginTop: "0.5rem" }}>
-          <div className="field">
-            <label htmlFor="av-semana">Semana gestacional</label>
+        {AREAS_HIDDEN.gestation && (
+          <label className="form-check">
             <input
-              id="av-semana"
-              name="gestationalWeek"
-              inputMode="numeric"
-              value={week}
-              onChange={(e) => setWeek(e.target.value)}
-              placeholder="20"
-              {...fields.props("gestationalWeek")}
+              type="checkbox"
+              checked={pregnant}
+              onChange={(e) => setPregnant(e.target.checked)}
             />
-            <FieldError field="gestationalWeek" errors={fields.errors} />
-          </div>
-          <div className="field">
-            <label htmlFor="av-peso-pre">Peso antes da gestação (kg)</label>
-            <input
-              id="av-peso-pre"
-              name="weightGestationalPreKg"
-              inputMode="decimal"
-              value={weightPre}
-              onChange={(e) => setWeightPre(e.target.value)}
-              placeholder="61,2"
-              {...fields.props("weightGestationalPreKg")}
-            />
-            <FieldError field="weightGestationalPreKg" errors={fields.errors} />
-            <span className="minusculo">
-              A faixa de ganho vem do IMC de antes. O IMC de hoje já embute o ganho que se quer
-              avaliar.
-            </span>
-          </div>
-        </div>
-      )}
+            <span>Gestante</span>
+          </label>
+        )}
 
-      <div style={{ marginTop: "0.8rem" }}>
+        {AREAS_HIDDEN.gestation && pregnant && (
+          <div className="form-grid three mt-3">
+            <div className="field">
+              <label htmlFor="av-semana">Semana gestacional</label>
+              <input
+                id="av-semana"
+                name="gestationalWeek"
+                inputMode="numeric"
+                value={week}
+                onChange={(e) => setWeek(e.target.value)}
+                placeholder="20"
+                {...fields.props("gestationalWeek")}
+              />
+              <FieldError field="gestationalWeek" errors={fields.errors} />
+            </div>
+            <div className="field">
+              <label htmlFor="av-peso-pre">Peso antes da gestação (kg)</label>
+              <input
+                id="av-peso-pre"
+                name="weightGestationalPreKg"
+                inputMode="decimal"
+                value={weightPre}
+                onChange={(e) => setWeightPre(e.target.value)}
+                placeholder="61,2"
+                {...fields.props("weightGestationalPreKg")}
+              />
+              <FieldError field="weightGestationalPreKg" errors={fields.errors} />
+              <span className="field-hint">
+                A faixa de ganho vem do IMC de antes. O IMC de hoje já embute o ganho que se quer
+                avaliar.
+              </span>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <div className="form-notes">
         <NotesField
           label="Observações"
           value={notes}
@@ -1015,7 +1145,7 @@ function FormAssessment({
         <FieldError field="notes" errors={fields.errors} />
       </div>
 
-      <div className="row end" style={{ marginTop: "0.9rem" }}>
+      <div className="form-actions">
         <button className="button" type="submit" disabled={sending}>
           {sending
             ? "Salvando…"
@@ -1099,5 +1229,3 @@ function numbersMap(origin: Record<string, string>): Record<string, number> {
 function num(value: number) {
   return value.toFixed(2).replace(".", ",").replace(/,00$/, "");
 }
-
-

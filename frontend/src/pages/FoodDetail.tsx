@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ChevronLeft, Plus, Ruler } from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
 import { NUTRIENTS, formatNutrient } from "../api/nutrients";
 import type { FoodDetail as Food, CalculatedServing } from "../api/types";
 import { Own, Reference } from "../components/Own";
+import { useIsNarrow } from "../hooks/useMediaQuery";
 
 const GROUPS_SHOWN = [
   { group: "energy", title: "Energia" },
@@ -75,35 +77,36 @@ export default function FoodDetail() {
   const base = serving ? serving.measureUsed : "100 g";
 
   return (
-    <>
+    <div className="page-food">
       <div className="header-page">
         <div>
-          <Link to="/foods" className="minusculo">
-            ← Alimentos
+          <Link to="/foods" className="migalha">
+            <ChevronLeft aria-hidden="true" />
+            Alimentos
           </Link>
-          <h1 style={{ marginTop: "0.2rem" }}>{food.description}</h1>
+          <div className="food-title">
+            <h1>{food.description}</h1>
+            {food.publicBase ? <Reference>tabela de referência</Reference> : <Own>alimento seu</Own>}
+          </div>
           <p>
             {food.group ?? "Sem grupo"}
             {food.brand ? ` · ${food.brand}` : ""} · Fonte: {food.sourceDescription}
           </p>
         </div>
-        {food.publicBase ? (
-          <Reference>tabela de referência</Reference>
-        ) : (
-          <Own>alimento seu</Own>
-        )}
       </div>
 
-      {error && <div className="warning error" style={{ marginBottom: "0.9rem" }}>{error}</div>}
+      {error && <div className="warning error">{error}</div>}
 
-      <div className="card" style={{ marginBottom: "1.1rem" }}>
-        <h2>Calcular porção</h2>
-        <div className="row" style={{ marginTop: "0.7rem" }}>
-          <div className="field" style={{ width: 120 }}>
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">Calcular porção</h2>
+        </div>
+        <div className="calc-row">
+          <div className="field">
             <label htmlFor="qtd">Quantidade</label>
             <input id="qtd" inputMode="decimal" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </div>
-          <div className="field" style={{ flex: 1, minWidth: 200 }}>
+          <div className="field">
             <label htmlFor="med">Medida</label>
             <select id="med" value={measureId} onChange={(e) => setMeasureId(e.target.value)}>
               <option value="">gramas</option>
@@ -115,27 +118,26 @@ export default function FoodDetail() {
               ))}
             </select>
           </div>
-          {serving && (
-            <div style={{ paddingTop: "1.1rem" }}>
-              <span className="tag verde">{formatWeight(serving.grams)}</span>
-            </div>
-          )}
+          <div className="stat calc-result" aria-live="polite">
+            <span className="stat-label">Equivale a</span>
+            <span className="stat-value">{serving ? formatWeight(serving.grams) : "—"}</span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="card" style={{ marginBottom: "1.1rem" }}>
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <h2>Composição</h2>
-          <span className="minusculo">por {base}</span>
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">Composição</h2>
+          <span className="readout strong">por {base}</span>
         </div>
 
-        <div className="grid two" style={{ marginTop: "0.8rem" }}>
+        <div className="food-composition">
           {GROUPS_SHOWN.map(({ group, title }) => {
             const forGroup = NUTRIENTS.filter((n) => n.group === group);
             if (forGroup.length === 0) return null;
             return (
-              <div key={group}>
-                <h3 style={{ marginBottom: "0.3rem" }}>{title}</h3>
+              <div key={group} className="nutrient-group">
+                <h3>{title}</h3>
                 {forGroup.map((n) => {
                   const value = shown[n.key];
                   const missing = value === undefined || value === null;
@@ -150,10 +152,10 @@ export default function FoodDetail() {
             );
           })}
         </div>
-      </div>
+      </section>
 
       <Measures food={food} onChange={load} />
-    </>
+    </div>
   );
 }
 
@@ -163,6 +165,7 @@ function formatWeight(grams: number) {
 }
 
 function Measures({ food, onChange }: { food: Food; onChange: () => void }) {
+  const narrow = useIsNarrow();
   const [description, setDescription] = useState("");
   const [grams, setGrams] = useState("");
   const [standard, setStandard] = useState(false);
@@ -204,93 +207,116 @@ function Measures({ food, onChange }: { food: Food; onChange: () => void }) {
   }
 
   return (
-    <div className="card">
-      <h2>Porções usuais</h2>
-      <p className="discreto" style={{ margin: "0.3rem 0 0.8rem" }}>
-        É o que torna o plano legível para o paciente: ninguém serve 5 g de sal, serve uma pitada.
-        Você pode cadastrar sua própria versão de qualquer porção — a sua aparece primeiro, e as que
-        acompanham o sistema continuam disponíveis para os demais.
-      </p>
+    <section className="card">
+      <div className="card-head">
+        <div>
+          <h2 className="card-title">Porções usuais</h2>
+          <p className="card-sub">
+            É o que torna o plano legível para o paciente: ninguém serve 5 g de sal, serve uma
+            pitada. Você pode cadastrar sua própria versão de qualquer porção — a sua aparece
+            primeiro, e as que acompanham o sistema continuam disponíveis para os demais.
+          </p>
+        </div>
+      </div>
 
-      {error && <div className="warning error" style={{ marginBottom: "0.85rem" }}>{error}</div>}
+      {error && <div className="warning error mb-3">{error}</div>}
 
       {food.measures.length === 0 ? (
-        <div className="empty" style={{ padding: "1.2rem" }}>
-          Este alimento ainda não tem porção usual. Cadastre uma para prescrevê-lo em colheres,
-          fatias ou unidades — e não só em gramas.
+        <div className="empty measure-empty">
+          <span className="empty-icon">
+            <Ruler aria-hidden="true" />
+          </span>
+          <span className="empty-hint">
+            Este alimento ainda não tem porção usual. Cadastre uma para prescrevê-lo em colheres,
+            fatias ou unidades — e não só em gramas.
+          </span>
+        </div>
+      ) : narrow ? (
+        <div className="measure-list">
+          {food.measures.map((m) => (
+            <div key={m.id} className="measure-item">
+              <div className="measure-item-body">
+                <span className="measure-name">{m.description}</span>
+                <span className="measure-item-tags">
+                  {m.standard && <span className="tag verde">padrão</span>}
+                  {m.forCatalogBase ? <Reference>do sistema</Reference> : <Own />}
+                </span>
+              </div>
+              <span className="readout strong">{formatWeight(m.grams)}</span>
+              {m.editable && (
+                <button type="button" className="button perigo pequeno" onClick={() => remove(m.id)}>
+                  Remover
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       ) : (
-        <div className="rolagem" style={{ marginBottom: "0.9rem" }}>
-          <table>
-            <thead>
-              <tr>
-                <th>Porção</th>
-                <th className="num">Peso</th>
-                <th>Origem</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {food.measures.map((m) => (
-                <tr key={m.id}>
-                  <td>
+        <table className="measure-table">
+          <thead>
+            <tr>
+              <th>Porção</th>
+              <th className="num">Peso</th>
+              <th>Origem</th>
+              <th>
+                <span className="visually-hidden">Ações</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {food.measures.map((m) => (
+              <tr key={m.id}>
+                <td>
+                  <span className="measure-name">
                     {m.description}
-                    {m.standard && <span className="tag verde" style={{ marginLeft: "0.4rem" }}>padrão</span>}
-                  </td>
-                  <td className="num">{formatWeight(m.grams)}</td>
-                  <td>
-                    {m.forCatalogBase ? <Reference>do sistema</Reference> : <Own />}
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    {m.editable && (
-                      <button className="button perigo pequeno" onClick={() => remove(m.id)}>
-                        Remover
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    {m.standard && <span className="tag verde">padrão</span>}
+                  </span>
+                </td>
+                <td className="num">{formatWeight(m.grams)}</td>
+                <td>{m.forCatalogBase ? <Reference>do sistema</Reference> : <Own />}</td>
+                <td>
+                  {m.editable && (
+                    <button type="button" className="button perigo pequeno" onClick={() => remove(m.id)}>
+                      Remover
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
 
-      <form onSubmit={add}>
-        <div className="row">
-          <div className="field" style={{ flex: 2, minWidth: 190 }}>
-            <label htmlFor="nova-med">Nova porção</label>
-            <input
-              id="nova-med"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="colher de servir da clínica"
-              required
-            />
-          </div>
-          <div className="field" style={{ width: 110 }}>
-            <label htmlFor="nova-med-g">Peso (g)</label>
-            <input
-              id="nova-med-g"
-              inputMode="decimal"
-              value={grams}
-              onChange={(e) => setGrams(e.target.value)}
-              required
-            />
-          </div>
-          <label className="row" style={{ gap: "0.35rem", paddingTop: "1.1rem" }}>
-            <input
-              type="checkbox"
-              checked={standard}
-              onChange={(e) => setStandard(e.target.checked)}
-              style={{ width: "auto" }}
-            />
-            <span className="discreto">Padrão</span>
-          </label>
-          <button className="button" type="submit" disabled={sending} style={{ marginTop: "1.1rem" }}>
-            Adicionar
-          </button>
+      <form onSubmit={add} className="measure-form">
+        <div className="field">
+          <label htmlFor="nova-med">Nova porção</label>
+          <input
+            id="nova-med"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="colher de servir da clínica"
+            required
+          />
         </div>
+        <div className="field">
+          <label htmlFor="nova-med-g">Peso (g)</label>
+          <input
+            id="nova-med-g"
+            inputMode="decimal"
+            value={grams}
+            onChange={(e) => setGrams(e.target.value)}
+            required
+          />
+        </div>
+        <label className="measure-standard">
+          <input type="checkbox" checked={standard} onChange={(e) => setStandard(e.target.checked)} />
+          <span className="discreto">Padrão</span>
+        </label>
+        <button className="button" type="submit" disabled={sending}>
+          <Plus aria-hidden="true" />
+          Adicionar
+        </button>
       </form>
-    </div>
+    </section>
   );
 }

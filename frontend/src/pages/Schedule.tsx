@@ -1,8 +1,27 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import {
+  CalendarCheck,
+  CalendarDays,
+  CalendarPlus,
+  CalendarRange,
+  CalendarSync,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheck,
+  Copy,
+  Link,
+  Plus,
+  RotateCcw,
+  UserX,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
+import { useIsCompact } from "../hooks/useMediaQuery";
 import { dayAbbreviated, formatBr, todayIso, weekStart, sumDays } from "../api/dates";
 import type {
   Appointment,
@@ -23,12 +42,27 @@ const STATUS_DESCRIPTION: Record<AppointmentStatus, string> = {
   CANCELED: "canceled",
 };
 
+/**
+ * The colour of the status tag. Scheduled is the ordinary state and stays
+ * neutral; confirmed is firm (info), completed is done (success), a no-show
+ * is the one that costs a slot (danger), and a cancellation is struck through
+ * on the card rather than coloured.
+ */
 const CLASSE_BY_STATUS: Record<AppointmentStatus, string> = {
-  SCHEDULED: "",
-  CONFIRMED: "verde",
+  SCHEDULED: "neutra",
+  CONFIRMED: "azul",
   COMPLETED: "verde",
   NOSHOW: "vermelha",
-  CANCELED: "",
+  CANCELED: "neutra",
+};
+
+/** The icon of each transition, for the week columns where the text has no room. */
+const ICON_BY_STATUS: Record<AppointmentStatus, LucideIcon> = {
+  SCHEDULED: RotateCcw,
+  CONFIRMED: CalendarCheck,
+  COMPLETED: CircleCheck,
+  NOSHOW: UserX,
+  CANCELED: X,
 };
 
 export default function Schedule() {
@@ -89,8 +123,16 @@ export default function Schedule() {
     setDay(sumDays(day, days));
   }
 
+  const previousLabel = view === "week" ? "← Semana anterior" : "← Dia anterior";
+  const nextLabel = view === "week" ? "Próxima semana →" : "Próximo dia →";
+
+  // The appointment happening now (or the next one today) gets the marked
+  // hour chip; on any other day nothing is "now".
+  const currentId =
+    view === "week" ? currentAppointmentId(week) : currentAppointmentId(schedule?.appointments ?? []);
+
   return (
-    <>
+    <div className="page-schedule">
       <div className="header-page">
         <div>
           <h1>Agenda</h1>
@@ -108,15 +150,18 @@ export default function Schedule() {
                 : "—"}
           </p>
         </div>
-        <div className="row">
+        <div className="header-page-actions schedule-actions">
           <button
+            type="button"
             className="button secundario"
             onClick={() => setSubscribing((v) => !v)}
             aria-expanded={subscribing}
           >
+            <CalendarSync aria-hidden="true" />
             Ver no meu calendário
           </button>
-          <button className="button" onClick={() => setCreating((v) => !v)}>
+          <button type="button" className="button" onClick={() => setCreating((v) => !v)}>
+            {creating ? <X aria-hidden="true" /> : <Plus aria-hidden="true" />}
             {creating ? "Cancelar" : "Novo atendimento"}
           </button>
         </div>
@@ -124,7 +169,7 @@ export default function Schedule() {
 
       {subscribing && <ScheduleSubscription onClose={() => setSubscribing(false)} />}
 
-      {error && <div className="warning error" style={{ marginBottom: "0.9rem" }}>{error}</div>}
+      {error && <div className="warning error mb-3">{error}</div>}
 
       {creating && (
         <FormAppointment
@@ -138,50 +183,53 @@ export default function Schedule() {
         />
       )}
 
-      <div className="card" style={{ marginBottom: "0.9rem" }}>
-        <div className="row">
-          <div className="picker-view" role="group" aria-label="Visão da agenda">
-            <button
-              type="button"
-              aria-pressed={view === "day"}
-              onClick={() => setView("day")}
-            >
-              Dia
-            </button>
-            <button
-              type="button"
-              aria-pressed={view === "week"}
-              onClick={() => setView("week")}
-            >
-              Semana
-            </button>
-          </div>
-          <button className="button secundario pequeno" onClick={() => move(view === "week" ? -7 : -1)}>
-            {view === "week" ? "← Semana anterior" : "← Dia anterior"}
+      <div className="card schedule-toolbar">
+        <div className="segmented" role="group" aria-label="Visão da agenda">
+          <button type="button" aria-pressed={view === "day"} onClick={() => setView("day")}>
+            <CalendarDays aria-hidden="true" />
+            Dia
           </button>
-          <div className="field" style={{ width: 170 }}>
-            <input
-              type="date"
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-              aria-label="Data da agenda"
-            />
-          </div>
-          <button className="button secundario pequeno" onClick={() => move(view === "week" ? 7 : 1)}>
-            {view === "week" ? "Próxima semana →" : "Próximo dia →"}
+          <button type="button" aria-pressed={view === "week"} onClick={() => setView("week")}>
+            <CalendarRange aria-hidden="true" />
+            Semana
           </button>
-          <button
-            className="button secundario pequeno"
-            onClick={() => setDay(todayIso())}
-          >
-            Hoje
-          </button>
-          <span className="discreto">
-            {view === "week"
-              ? `${formatBr(weekFirst)} — ${formatBr(weekLast)}`
-              : weekDay(day)}
-          </span>
         </div>
+
+        <div className="date-stepper">
+          <button
+            type="button"
+            className="button secundario icon"
+            title={previousLabel}
+            onClick={() => move(view === "week" ? -7 : -1)}
+          >
+            <ChevronLeft aria-hidden="true" />
+            <span className="visually-hidden">{previousLabel}</span>
+          </button>
+          <input
+            type="date"
+            value={day}
+            onChange={(e) => setDay(e.target.value)}
+            aria-label="Data da agenda"
+          />
+          <button
+            type="button"
+            className="button secundario icon"
+            title={nextLabel}
+            onClick={() => move(view === "week" ? 7 : 1)}
+          >
+            <ChevronRight aria-hidden="true" />
+            <span className="visually-hidden">{nextLabel}</span>
+          </button>
+        </div>
+        <button type="button" className="button secundario" onClick={() => setDay(todayIso())}>
+          Hoje
+        </button>
+
+        <span className="discreto toolbar-caption">
+          {view === "week"
+            ? `${formatBr(weekFirst)} — ${formatBr(weekLast)}`
+            : weekDay(day)}
+        </span>
       </div>
 
       {loading ? (
@@ -190,6 +238,7 @@ export default function Schedule() {
         <ScheduleWeek
           start={weekFirst}
           appointments={week}
+          currentId={currentId}
           onChooseDay={(d) => {
             setDay(d);
             setView("day");
@@ -198,19 +247,29 @@ export default function Schedule() {
         />
       ) : !schedule || schedule.appointments.length === 0 ? (
         <div className="card empty">
-          Nenhum atendimento neste dia. Use <strong>Novo atendimento</strong> para marcar o
-          primeiro.
+          <span className="empty-icon">
+            <CalendarDays aria-hidden="true" />
+          </span>
+          <span className="empty-title">Nenhum atendimento neste dia.</span>
+          <span className="empty-hint">
+            Use <strong>Novo atendimento</strong> para marcar o primeiro.
+          </span>
         </div>
       ) : (
         /* The same ruler as the patient's plan: the day is a line, and the gap
            between two appointments shows up as a real gap. */
         <div className="ruler-day">
           {schedule.appointments.map((a) => (
-            <AppointmentRow key={a.id} appointment={a} onChangeStatus={changeStatus} />
+            <AppointmentRow
+              key={a.id}
+              appointment={a}
+              current={a.id === currentId}
+              onChangeStatus={changeStatus}
+            />
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -284,16 +343,17 @@ function ScheduleSubscription({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="card" style={{ marginBottom: "0.9rem" }}>
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2>Ver a agenda no meu calendário</h2>
-        <button type="button" className="button secundario pequeno" onClick={onClose}>
+    <div className="card mb-3 schedule-subscription">
+      <div className="card-head">
+        <h2 className="card-title">Ver a agenda no meu calendário</h2>
+        <button type="button" className="button ghost pequeno" onClick={onClose}>
+          <X aria-hidden="true" />
           Fechar
         </button>
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ margin: "0.6rem 0" }}>
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
@@ -301,48 +361,50 @@ function ScheduleSubscription({ onClose }: { onClose: () => void }) {
       {loading ? (
         <p className="loading">Carregando…</p>
       ) : !address ? (
-        <>
-          <p className="minusculo" style={{ marginTop: "0.5rem" }}>
+        <div className="stack">
+          <p className="discreto subscription-lead">
             Gere um endereço e assine-o no Google Agenda, no Apple Calendar ou no Outlook. Eles
             passam a buscar a agenda sozinhos, e o que você marcar aqui aparece lá.
           </p>
-          <div className="row" style={{ marginTop: "0.7rem" }}>
+          <div className="row">
             <button type="button" className="button" onClick={generate}>
+              <Link aria-hidden="true" />
               Gerar endereço
             </button>
           </div>
-        </>
+        </div>
       ) : (
-        <>
-          <div className="field" style={{ marginTop: "0.6rem" }}>
+        <div className="stack">
+          <div className="field">
             <label htmlFor="endereco-da-agenda">Endereço da assinatura</label>
-            <div className="row" style={{ gap: "0.4rem" }}>
+            <div className="copy-row">
               <input
                 id="endereco-da-agenda"
+                className="subscription-address"
                 readOnly
                 value={address}
                 onFocus={(e) => e.currentTarget.select()}
-                style={{ flex: 1, fontFamily: "inherit" }}
               />
-              <button type="button" className="button secundario pequeno" onClick={copy}>
+              <button type="button" className="button secundario" onClick={copy}>
+                {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
                 {copied ? "Copiado" : "Copiar"}
               </button>
             </div>
-            <span className="minusculo">
+            <span className="field-hint">
               No Google Agenda: <strong>Outros calendários → Do URL</strong>. No Apple Calendar:{" "}
               <strong>Arquivo → Nova assinatura de calendário</strong>.
             </span>
           </div>
 
-          <p className="minusculo" style={{ marginTop: "0.7rem" }}>
+          <div className="warning attention">
             Quem tem este endereço vê a agenda com nome de paciente, sem senha — trate-o como uma
             chave. Gerar outro invalida este na hora.
-          </p>
-          <p className="minusculo" style={{ marginTop: "0.3rem" }}>
+          </div>
+          <p className="minusculo subscription-note">
             O caminho é de mão única: um evento criado no seu calendário não vira atendimento aqui.
           </p>
 
-          <div className="row" style={{ marginTop: "0.7rem" }}>
+          <div className="row">
             <button type="button" className="button secundario pequeno" onClick={generate}>
               Gerar outro endereço
             </button>
@@ -350,7 +412,7 @@ function ScheduleSubscription({ onClose }: { onClose: () => void }) {
               Desligar
             </button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -359,31 +421,35 @@ function ScheduleSubscription({ onClose }: { onClose: () => void }) {
 /**
  * An appointment hanging from the day ruler.
  *
- * Extracted so that the week view could reuse it: the seven days use the same
- * row, and not a reduced version that would diverge over time.
+ * Extracted so that the stacked week could reuse it: the seven days use the
+ * same row, and not a reduced version that would diverge over time.
  */
 function AppointmentRow({
   appointment: a,
+  current,
   onChangeStatus,
 }: {
   appointment: Appointment;
+  current: boolean;
   onChangeStatus: (id: number, status: AppointmentStatus) => void;
 }) {
   return (
     <div className="ruler-item">
-      <time className="ruler-hour" dateTime={a.start}>
+      <time className={current ? "ruler-hour atual" : "ruler-hour"} dateTime={a.start}>
         {hour(a.start)}
       </time>
       <div className="ruler-body">
-        <div className="appointment">
+        <div className={a.status === "CANCELED" ? "appointment cancelado" : "appointment"}>
           <div className="appointment-who">
-            <strong>{a.patientName ?? "Sem paciente"}</strong>
-            <span className={`tag ${CLASSE_BY_STATUS[a.status]}`}>
-              {a.statusDescription}
-            </span>
+            <strong className="appointment-name">{a.patientName ?? "Sem paciente"}</strong>
+            <span className={`tag ${CLASSE_BY_STATUS[a.status]}`}>{a.statusDescription}</span>
           </div>
           <p className="appointment-target">
-            {a.typeDescription} · {hour(a.start)}–{hour(a.end)} · {a.durationMinutes} min
+            <span className="readout strong">
+              {hour(a.start)}–{hour(a.end)}
+            </span>
+            <span className="appointment-type">{a.typeDescription}</span>
+            <span className="readout">{a.durationMinutes} min</span>
           </p>
           {a.notes && <p className="appointment-note">{a.notes}</p>}
           {a.reasonOutcome && <p className="appointment-note">{a.reasonOutcome}</p>}
@@ -395,42 +461,94 @@ function AppointmentRow({
 }
 
 /**
- * The week as seven stacked days, each with its own ruler.
+ * An appointment inside a week column: the same facts as the ruler row, in
+ * the width of one seventh of the screen. The actions become icon buttons,
+ * each carrying its text as name and tooltip.
+ */
+function WeekAppointment({
+  appointment: a,
+  current,
+  onChangeStatus,
+}: {
+  appointment: Appointment;
+  current: boolean;
+  onChangeStatus: (id: number, status: AppointmentStatus) => void;
+}) {
+  const classes = ["week-appt"];
+  if (current) classes.push("atual");
+  if (a.status === "CANCELED") classes.push("cancelado");
+  return (
+    <article className={classes.join(" ")}>
+      <div className="week-appt-top">
+        <time className="readout strong" dateTime={a.start}>
+          {hour(a.start)}
+        </time>
+        <span className={`tag ${CLASSE_BY_STATUS[a.status]}`}>{a.statusDescription}</span>
+      </div>
+      <strong className="week-appt-name">{a.patientName ?? "Sem paciente"}</strong>
+      <span className="week-appt-meta">
+        {a.typeDescription} · {a.durationMinutes} min
+      </span>
+      {a.notes && (
+        <p className="week-appt-note" title={a.notes}>
+          {a.notes}
+        </p>
+      )}
+      {a.reasonOutcome && (
+        <p className="week-appt-note" title={a.reasonOutcome}>
+          {a.reasonOutcome}
+        </p>
+      )}
+      <Transitions appointment={a} onChoose={onChangeStatus} compact />
+    </article>
+  );
+}
+
+/**
+ * The week: seven columns on a wide screen, seven stacked days below 900px.
  *
- * Seven columns side by side would fit on a monitor and on no phone, and would
- * squeeze exactly what matters to read: the patient's name and the status.
- * Stacked, the empty day shows up too — and a hole in the schedule is
- * information.
+ * The columns give the overview a monitor has room for; stacked, each day
+ * keeps the full ruler row, because a phone has no width to squeeze the
+ * patient's name and the status into. Either way the empty day shows up too —
+ * a hole in the schedule is information.
  */
 function ScheduleWeek({
   start,
   appointments,
+  currentId,
   onChooseDay,
   onChangeStatus,
 }: {
   start: string;
   appointments: Appointment[];
+  currentId: number | null;
   onChooseDay: (day: string) => void;
   onChangeStatus: (id: number, status: AppointmentStatus) => void;
 }) {
   const days = Array.from({ length: 7 }, (_, i) => sumDays(start, i));
   const today = todayIso();
+  const stacked = useIsCompact();
 
   if (appointments.length === 0) {
     return (
       <div className="card empty">
-        Nenhum atendimento entre {formatBr(start)} e {formatBr(sumDays(start, 6))}.
+        <span className="empty-icon">
+          <CalendarRange aria-hidden="true" />
+        </span>
+        <span className="empty-title">
+          Nenhum atendimento entre {formatBr(start)} e {formatBr(sumDays(start, 6))}.
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="week">
+    <div className={stacked ? "week stacked" : "week columns"}>
       {days.map((d) => {
         const forDay = appointments.filter((a) => a.start.slice(0, 10) === d);
         return (
           <section className={`week-day ${d === today ? "today" : ""}`} key={d}>
-            <header>
+            <header className="week-head">
               <button type="button" onClick={() => onChooseDay(d)}>
                 <span className="label-day">{dayAbbreviated(d)}</span>
                 <span className="date-day">{formatBr(d).slice(0, 5)}</span>
@@ -439,13 +557,31 @@ function ScheduleWeek({
                 {forDay.length === 0 ? "livre" : count(forDay.length, "atendimento", "atendimentos")}
               </span>
             </header>
-            {forDay.length > 0 && (
-              <div className="ruler-day">
-                {forDay.map((a) => (
-                  <AppointmentRow key={a.id} appointment={a} onChangeStatus={onChangeStatus} />
-                ))}
-              </div>
-            )}
+            {stacked
+              ? forDay.length > 0 && (
+                  <div className="ruler-day">
+                    {forDay.map((a) => (
+                      <AppointmentRow
+                        key={a.id}
+                        appointment={a}
+                        current={a.id === currentId}
+                        onChangeStatus={onChangeStatus}
+                      />
+                    ))}
+                  </div>
+                )
+              : (
+                  <div className="week-list">
+                    {forDay.map((a) => (
+                      <WeekAppointment
+                        key={a.id}
+                        appointment={a}
+                        current={a.id === currentId}
+                        onChangeStatus={onChangeStatus}
+                      />
+                    ))}
+                  </div>
+                )}
           </section>
         );
       })}
@@ -457,28 +593,52 @@ function ScheduleWeek({
  * Only the transitions the server accepts from the current status.
  * Offering a button that would result in an error would be asking the
  * professional to discover the rule by trial.
+ *
+ * Compact (week columns): icon only, with the text as name and tooltip.
  */
 function Transitions({
   appointment,
   onChoose,
+  compact = false,
 }: {
   appointment: Appointment;
   onChoose: (id: number, status: AppointmentStatus) => void;
+  compact?: boolean;
 }) {
   if (appointment.transitionsAllowed.length === 0) {
     return null;
   }
   return (
-    <div className="row appointment-actions" style={{ gap: "0.3rem" }}>
-      {appointment.transitionsAllowed.map((status) => (
-        <button
-          key={status}
-          className={`button ${status === "COMPLETED" ? "" : "secundario"} pequeno`}
-          onClick={() => onChoose(appointment.id, status)}
-        >
-          {statusLabel(status)}
-        </button>
-      ))}
+    <div className={compact ? "appointment-actions compact" : "appointment-actions"}>
+      {appointment.transitionsAllowed.map((status) => {
+        const label = statusLabel(status);
+        const tone = status === "COMPLETED" ? "" : status === "CANCELED" ? "perigo" : "secundario";
+        if (compact) {
+          const Icon = ICON_BY_STATUS[status];
+          return (
+            <button
+              key={status}
+              type="button"
+              className={`button ${tone} pequeno icon`}
+              aria-label={label}
+              title={label}
+              onClick={() => onChoose(appointment.id, status)}
+            >
+              <Icon aria-hidden="true" />
+            </button>
+          );
+        }
+        return (
+          <button
+            key={status}
+            type="button"
+            className={`button ${tone} pequeno`}
+            onClick={() => onChoose(appointment.id, status)}
+          >
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -538,99 +698,107 @@ function FormAppointment({
   }
 
   return (
-    <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
-      <h2>Novo atendimento</h2>
-
-      {error && <div className="warning error" style={{ margin: "0.8rem 0" }}>{error}</div>}
-
-      <div className="grid three" style={{ marginTop: "0.8rem" }}>
-        <div className="field" style={{ gridColumn: "span 2" }}>
-          <label htmlFor="ag-paciente">Paciente</label>
-          <select
-            id="ag-paciente"
-            name="patientId"
-            value={patientId}
-            onChange={(e) => setPatientId(e.target.value)}
-            required
-            {...fields.props("patientId")}
-          >
-            <option value="">Selecione…</option>
-            {patients.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <FieldError field="patientId" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="ag-tipo">Tipo</label>
-          <select
-            id="ag-tipo"
-            value={type}
-            onChange={(e) => chooseType(e.target.value as AppointmentType)}
-          >
-            {types.map((t) => (
-              <option key={t.type} value={t.type}>
-                {t.description}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="ag-data">Data</label>
-          <input
-            id="ag-data"
-            name="start"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-            {...fields.props("start")}
-          />
-          <FieldError field="start" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="ag-hora">Início</label>
-          <input
-            id="ag-hora"
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="ag-duracao">Duração (min)</label>
-          <input
-            id="ag-duracao"
-            name="durationMinutes"
-            inputMode="numeric"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            required
-            {...fields.props("durationMinutes")}
-          />
-          <FieldError field="durationMinutes" errors={fields.errors} />
-        </div>
+    <form className="card mb-3 form-appointment" onSubmit={send}>
+      <div className="card-head">
+        <h2 className="card-title">Novo atendimento</h2>
       </div>
 
-      <div className="field" style={{ marginTop: "0.7rem" }}>
-        <label htmlFor="ag-obs">Observação</label>
-        <input
-          id="ag-obs"
-          name="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          {...fields.props("notes")}
-        />
-        <FieldError field="notes" errors={fields.errors} />
-      </div>
+      {error && <div className="warning error mb-3">{error}</div>}
 
-      <div className="row end" style={{ marginTop: "0.9rem" }}>
-        <button className="button" type="submit" disabled={sending}>
-          {sending ? "Agendando…" : "Agendar"}
-        </button>
+      <div className="stack">
+        <div className="form-appointment-grid who">
+          <div className="field">
+            <label htmlFor="ag-paciente">Paciente</label>
+            <select
+              id="ag-paciente"
+              name="patientId"
+              value={patientId}
+              onChange={(e) => setPatientId(e.target.value)}
+              required
+              {...fields.props("patientId")}
+            >
+              <option value="">Selecione…</option>
+              {patients.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <FieldError field="patientId" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="ag-tipo">Tipo</label>
+            <select
+              id="ag-tipo"
+              value={type}
+              onChange={(e) => chooseType(e.target.value as AppointmentType)}
+            >
+              {types.map((t) => (
+                <option key={t.type} value={t.type}>
+                  {t.description}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-appointment-grid when">
+          <div className="field">
+            <label htmlFor="ag-data">Data</label>
+            <input
+              id="ag-data"
+              name="start"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+              {...fields.props("start")}
+            />
+            <FieldError field="start" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="ag-hora">Início</label>
+            <input
+              id="ag-hora"
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="ag-duracao">Duração (min)</label>
+            <input
+              id="ag-duracao"
+              name="durationMinutes"
+              inputMode="numeric"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              required
+              {...fields.props("durationMinutes")}
+            />
+            <FieldError field="durationMinutes" errors={fields.errors} />
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="ag-obs">Observação</label>
+          <input
+            id="ag-obs"
+            name="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            {...fields.props("notes")}
+          />
+          <FieldError field="notes" errors={fields.errors} />
+        </div>
+
+        <div className="row end">
+          <button className="button" type="submit" disabled={sending}>
+            <CalendarPlus aria-hidden="true" />
+            {sending ? "Agendando…" : "Agendar"}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -654,4 +822,29 @@ function hour(iso: string) {
 function weekDay(iso: string) {
   const date = new Date(`${iso}T12:00:00`);
   return date.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+}
+
+/** The local clock in the same shape as the appointments' start/end. */
+function nowLocalIso(): string {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  return `${todayIso()}T${hh}:${mm}:${ss}`;
+}
+
+/**
+ * The appointment that is "now": the one in progress today or, failing that,
+ * the next one still to start today. Cancelled ones do not count, and on any
+ * other day there is none.
+ */
+function currentAppointmentId(appointments: Appointment[]): number | null {
+  const now = nowLocalIso();
+  const today = now.slice(0, 10);
+  const ofToday = appointments
+    .filter((a) => a.start.slice(0, 10) === today && a.status !== "CANCELED")
+    .sort((x, y) => x.start.localeCompare(y.start));
+  const inProgress = ofToday.find((a) => a.start <= now && now < a.end);
+  const next = ofToday.find((a) => a.start > now);
+  return (inProgress ?? next)?.id ?? null;
 }

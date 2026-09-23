@@ -1,5 +1,17 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
+import {
+  BookmarkPlus,
+  ChevronLeft,
+  CircleCheck,
+  ClipboardList,
+  FileText,
+  FlaskConical,
+  Paperclip,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
@@ -11,9 +23,11 @@ import type {
   Patient,
   LabtestSeries,
   LabtestOrder,
+  LabtestClassification,
 } from "../api/types";
 import { count } from "../text";
 import { Own } from "../components/Own";
+import { useIsNarrow } from "../hooks/useMediaQuery";
 
 /**
  * Compara ignorando acento e caixa.
@@ -39,6 +53,59 @@ const CLASSE_BY_CLASSIFICATION: Record<string, string> = {
   ABOVE: "vermelha",
 };
 
+/** The short word for the series table, where the column already says "against the reference". */
+const SHORT_BY_CLASSIFICATION: Record<LabtestClassification, string> = {
+  BELOW: "Abaixo",
+  NORMAL: "Normal",
+  ABOVE: "Acima",
+};
+
+function formatValue(value: number | undefined, unit: string): ReactNode {
+  if (value === undefined) return <span className="minusculo">não determinado</span>;
+  return (
+    <span className="labtest-value">
+      {value.toLocaleString("pt-BR")} <span className="labtest-unit">{unit}</span>
+    </span>
+  );
+}
+
+/**
+ * A numeric table that scrolls sideways with its first column pinned
+ * (.table-scroll). The right-edge fade goes away once the table is scrolled
+ * to its end — or when there was never anything to scroll to.
+ */
+function ScrollTable({ className, children }: { className?: string; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [atEnd, setAtEnd] = useState(true);
+
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const check = () => setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener("scroll", check);
+      observer.disconnect();
+    };
+  }, []);
+
+  // Rows come and go with the filter; the width they need changes with them.
+  useEffect(() => {
+    const el = box.current;
+    if (el) setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+  });
+
+  const classes = ["table-scroll", className].filter(Boolean).join(" ");
+  return (
+    <div ref={box} className={classes} data-scroll-end={atEnd ? "true" : "false"}>
+      {children}
+    </div>
+  );
+}
+
 /**
  * The patient's lab tests.
  *
@@ -51,6 +118,7 @@ export default function Labtests() {
   const feedback = useFeedback();
   const { id } = useParams();
   const patientId = Number(id);
+  const narrow = useIsNarrow();
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [labtests, setLabtests] = useState<LabtestResult[]>([]);
@@ -132,37 +200,76 @@ export default function Labtests() {
     (e) => matches(e.parameter, term) || matches(e.group, term) || matches(e.notes, term),
   );
 
+  /** The name opens the series; the two buttons act on the row. Same in the table and in the cards. */
+  const nameOf = (e: LabtestResult) => (
+    <button
+      type="button"
+      className="link labtest-name"
+      title="Ver a evolução deste exame"
+      onClick={() => openSeries(e.parameterId)}
+    >
+      <strong>{e.parameter}</strong>
+    </button>
+  );
+  const actionsOf = (e: LabtestResult) => (
+    <div className="labtest-actions">
+      <ButtonReport labtest={e} onAttach={(file) => attachReport(e.id, file)} onOpen={() => openReport(e.id)} />
+      <button type="button" className="button perigo pequeno" onClick={() => remove(e)}>
+        <Trash2 aria-hidden="true" />
+        Remover
+      </button>
+    </div>
+  );
+  const tagOf = (e: LabtestResult) =>
+    e.classification ? (
+      <span className={`tag ${CLASSE_BY_CLASSIFICATION[e.classification] ?? ""}`}>
+        {e.classificationDescription}
+      </span>
+    ) : null;
+
   return (
     <>
       <div className="header-page">
         <div>
-          <Link to={`/patients/${patientId}`} className="minusculo">
-            ← {patient?.name ?? "Paciente"}
+          <Link to={`/patients/${patientId}`} className="migalha">
+            <ChevronLeft aria-hidden="true" />
+            {patient?.name ?? "Paciente"}
           </Link>
           <h1>Exames</h1>
           <p>
             {count(labtests.length, "resultado", "resultados")}
-            {changed.length > 0 ? ` · ${changed.length} fora da referência` : ""}
+            {changed.length > 0 && (
+              <>
+                {" · "}
+                <span className="labtest-off">{changed.length} fora da referência</span>
+              </>
+            )}
           </p>
         </div>
-        <div className="row">
+        <div className="header-page-actions">
           <button
+            type="button"
             className="button secundario"
+            aria-expanded={panel === "request"}
             onClick={() => setPanel(panel === "request" ? "none" : "request")}
           >
+            <ClipboardList aria-hidden="true" />
             Solicitar exames
           </button>
           <button
+            type="button"
             className="button"
+            aria-expanded={panel === "entry"}
             onClick={() => setPanel(panel === "entry" ? "none" : "entry")}
           >
+            <Plus aria-hidden="true" />
             Registrar resultado
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
@@ -197,100 +304,117 @@ export default function Labtests() {
         <p className="loading">Carregando…</p>
       ) : labtests.length === 0 ? (
         <div className="card empty">
-          Nenhum exame registrado. Use <strong>Registrar resultado</strong> quando o laudo chegar.
+          <span className="empty-icon">
+            <FlaskConical aria-hidden="true" />
+          </span>
+          <span className="empty-title">Nenhum exame registrado.</span>
+          <span className="empty-hint">
+            Use <strong>Registrar resultado</strong> quando o laudo chegar.
+          </span>
         </div>
       ) : (
         <>
-        <div className="field" style={{ marginBottom: "0.7rem", maxWidth: 360 }}>
-          <label htmlFor="ex-busca">Buscar exame</label>
-          <input
-            id="ex-busca"
-            type="search"
-            value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            placeholder="Glicose, TGP, vitamina D…"
-          />
-        </div>
-        <div className="rolagem">
-          <table>
-            <thead>
-              <tr>
-                <th>Exame</th>
-                <th>Coleta</th>
-                <th className="num">Resultado</th>
-                <th>Referência usada</th>
-                <th>Laudo</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
+          <div className="field labtest-search mb-3">
+            <label htmlFor="ex-busca">Buscar exame</label>
+            <div className="input-search">
+              <input
+                id="ex-busca"
+                type="search"
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                placeholder="Glicose, TGP, vitamina D…"
+              />
+            </div>
+          </div>
+
+          {shown.length === 0 ? (
+            <div className="card empty">Nenhum exame com “{term}”.</div>
+          ) : narrow ? (
+            <ul className="labtest-cards">
               {shown.map((e) => (
-                <tr key={e.id}>
-                  <td>
-                    <button
-                      type="button"
-                      className="link"
-                      onClick={() => openSeries(e.parameterId)}
-                    >
-                      <strong>{e.parameter}</strong>
-                    </button>
-                    {e.group && <div className="minusculo">{e.group}</div>}
-                    {e.notes && <div className="minusculo">{e.notes}</div>}
-                  </td>
-                  <td className="mono">{formatBr(e.dateCollection)}</td>
-                  <td className="num">
-                    {e.value === undefined ? (
-                      <span className="minusculo">não determinado</span>
-                    ) : (
-                      <>
-                        {e.value.toLocaleString("pt-BR")} {e.unit}
-                        {e.classification && (
-                          <div>
-                            <span
-                              className={`tag ${CLASSE_BY_CLASSIFICATION[e.classification] ?? ""}`}
-                            >
-                              {e.classificationDescription}
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </td>
-                  <td className="discreto">{e.reference ?? "—"}</td>
-                  <td>
-                    <ButtonReport
-                      labtest={e}
-                      onAttach={(file) => attachReport(e.id, file)}
-                      onOpen={() => openReport(e.id)}
-                    />
-                  </td>
-                  <td>
-                    <button className="button perigo pequeno" onClick={() => remove(e)}>
-                      Remover
-                    </button>
-                  </td>
-                </tr>
+                <li className="card labtest-card" key={e.id}>
+                  <div className="labtest-card-top">
+                    <div className="labtest-card-title">
+                      {nameOf(e)}
+                      {e.group && <div className="minusculo">{e.group}</div>}
+                    </div>
+                    <span className="mono minusculo nowrap">{formatBr(e.dateCollection)}</span>
+                  </div>
+                  <div className="labtest-card-result">
+                    {formatValue(e.value, e.unit)}
+                    {tagOf(e)}
+                  </div>
+                  <div className="labtest-card-ref">
+                    <span className="minusculo">Referência usada</span>
+                    <span className="discreto">{e.reference ?? "—"}</span>
+                  </div>
+                  {e.notes && <div className="minusculo">{e.notes}</div>}
+                  {actionsOf(e)}
+                </li>
               ))}
-            </tbody>
-          </table>
-        </div>
-        {shown.length === 0 && (
-          <p className="empty">Nenhum exame com “{term}”.</p>
-        )}
+            </ul>
+          ) : (
+            <ScrollTable className="rolagem">
+              <table className="labtest-table">
+                <thead>
+                  <tr>
+                    <th>Exame</th>
+                    <th>Coleta</th>
+                    <th className="num">Resultado</th>
+                    <th>Referência usada</th>
+                    <th className="text-right">
+                      <span className="visually-hidden">Ações</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((e) => (
+                    <tr key={e.id}>
+                      <td>
+                        {nameOf(e)}
+                        {e.group && <div className="minusculo">{e.group}</div>}
+                        {e.notes && <div className="minusculo">{e.notes}</div>}
+                      </td>
+                      <td className="mono nowrap">{formatBr(e.dateCollection)}</td>
+                      <td className="num">
+                        <span className="labtest-result">
+                          {formatValue(e.value, e.unit)}
+                          {e.value !== undefined && tagOf(e)}
+                        </span>
+                      </td>
+                      <td className="discreto">{e.reference ?? "—"}</td>
+                      <td className="labtest-actions-cell">{actionsOf(e)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollTable>
+          )}
         </>
       )}
 
       {requests.length > 0 && (
-        <div className="card" style={{ marginTop: "0.9rem" }}>
-          <h2>Solicitações</h2>
-          {requests.map((s) => (
-            <div key={s.id} style={{ marginTop: "0.6rem" }}>
-              <span className="mono">{formatBr(s.date)}</span>{" "}
-              <span className="discreto">{s.labtests.join(", ")}</span>
-              {s.notes && <div className="minusculo">{s.notes}</div>}
+        <section className="card mt-3" aria-labelledby="labtest-orders-title">
+          <div className="card-head">
+            <div>
+              <h2 className="card-title" id="labtest-orders-title">
+                Solicitações
+              </h2>
+              <p className="card-sub">{count(requests.length, "pedido entregue", "pedidos entregues")}</p>
             </div>
-          ))}
-        </div>
+          </div>
+          <ul className="labtest-orders">
+            {requests.map((s) => (
+              <li className="labtest-order" key={s.id}>
+                <span className="mono labtest-order-date">{formatBr(s.date)}</span>
+                <div className="labtest-order-body">
+                  <span className="discreto">{s.labtests.join(", ")}</span>
+                  {s.notes && <div className="minusculo">{s.notes}</div>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </>
   );
@@ -310,19 +434,24 @@ function ButtonReport({
   return (
     <>
       {labtest.hasReport ? (
-        <button className="button secundario pequeno" onClick={onOpen}>
+        <button type="button" className="button secundario pequeno" title={labtest.reportName} onClick={onOpen}>
+          <FileText aria-hidden="true" />
           Abrir
         </button>
       ) : (
-        <button className="button secundario pequeno" onClick={() => input.current?.click()}>
+        <button type="button" className="button secundario pequeno" onClick={() => input.current?.click()}>
+          <Paperclip aria-hidden="true" />
           Anexar
         </button>
       )}
+      {/* Out of sight and out of the tab order: the button above is the control. */}
       <input
         ref={input}
         type="file"
         accept=".pdf,image/*"
-        style={{ display: "none" }}
+        className="visually-hidden"
+        tabIndex={-1}
+        aria-hidden="true"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) onAttach(file);
@@ -335,48 +464,70 @@ function ButtonReport({
 
 function PanelSeries({ series, onClose }: { series: LabtestSeries; onClose: () => void }) {
   return (
-    <div className="card" style={{ marginBottom: "0.9rem" }}>
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2>{series.parameter} ao longo do tempo</h2>
-        <button className="button secundario pequeno" onClick={onClose}>
+    <section className="card mb-3" aria-labelledby="labtest-series-title">
+      <div className="card-head">
+        <div>
+          <h2 className="card-title" id="labtest-series-title">
+            {series.parameter} ao longo do tempo
+          </h2>
+          <p className="card-sub">
+            {count(series.points.length, "coleta", "coletas")}
+            {series.unit ? ` · ${series.unit}` : ""}
+          </p>
+        </div>
+        <button type="button" className="button secundario pequeno" onClick={onClose}>
+          <X aria-hidden="true" />
           Fechar
         </button>
       </div>
 
       {series.unitsMixed && (
-        <div className="warning attention" style={{ marginTop: "0.7rem" }}>
+        <div className="warning attention mb-3">
           Esta série tem coletas em unidades diferentes. Os valores não são comparáveis entre si, e
           a variação não é calculada entre eles.
         </div>
       )}
 
-      <div className="ruler-day" style={{ marginTop: "0.8rem" }}>
-        {series.points.map((p, i) => (
-          <div className="ruler-item" key={i}>
-            <span className="ruler-hour without-hour">{formatBr(p.dateCollection).slice(0, 5)}</span>
-            <div className="ruler-body">
-              <strong style={{ fontSize: "1rem" }}>
-                {p.value === undefined ? "não determinado" : `${p.value.toLocaleString("pt-BR")} ${p.unit}`}
-              </strong>
-              {p.classification && (
-                <span
-                  className={`tag ${CLASSE_BY_CLASSIFICATION[p.classification] ?? ""}`}
-                  style={{ marginLeft: "0.5rem" }}
-                >
-                  {p.classification.toLowerCase()}
-                </span>
-              )}
-              {p.change !== undefined && (
-                <p className="appointment-target">
-                  {p.change > 0 ? "+" : ""}
-                  {p.change.toLocaleString("pt-BR")} desde a coleta anterior
-                </p>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+      <ScrollTable className="labtest-series">
+        <table>
+          <thead>
+            <tr>
+              <th>Coleta</th>
+              <th className="num">Resultado</th>
+              <th>Referência</th>
+              <th className="num" title="Variação desde a coleta anterior">
+                Desde a anterior
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {series.points.map((p, i) => (
+              <tr key={i}>
+                <td className="mono nowrap">{formatBr(p.dateCollection)}</td>
+                <td className="num">{formatValue(p.value, p.unit)}</td>
+                <td>
+                  {p.classification && (
+                    <span className={`tag ${CLASSE_BY_CLASSIFICATION[p.classification] ?? ""}`}>
+                      {SHORT_BY_CLASSIFICATION[p.classification]}
+                    </span>
+                  )}
+                </td>
+                <td className="num labtest-change">
+                  {p.change === undefined ? (
+                    <span className="minusculo">—</span>
+                  ) : (
+                    <>
+                      {p.change > 0 ? "+" : ""}
+                      {p.change.toLocaleString("pt-BR")}
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </ScrollTable>
+    </section>
   );
 }
 
@@ -423,32 +574,34 @@ function FormResult({
   }
 
   return (
-    <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
-      <h2>Registrar resultado</h2>
+    <form className="card labtest-form mb-3" onSubmit={send} aria-labelledby="labtest-entry-title">
+      <div className="card-head">
+        <h2 className="card-title" id="labtest-entry-title">
+          Registrar resultado
+        </h2>
+      </div>
 
-      {error && (
-        <div className="warning error" style={{ margin: "0.8rem 0" }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="warning error mb-3">{error}</div>}
 
-      <div className="grid three" style={{ marginTop: "0.8rem" }}>
-        <div className="field" style={{ gridColumn: "span 2" }}>
+      <div className="labtest-form-grid">
+        <div className="field lt-span-3">
           <label htmlFor="ex-filtro">Buscar exame</label>
           {/*
             O filtro fica antes da lista em vez de substituí-la: a lista
             continua sendo um select nativo, que no celular abre a roda do
             sistema e responde ao teclado sem que a gente reimplemente nada.
           */}
-          <input
-            id="ex-filtro"
-            type="search"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Glicose, TGP, vitamina D…"
-          />
+          <div className="input-search">
+            <input
+              id="ex-filtro"
+              type="search"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Glicose, TGP, vitamina D…"
+            />
+          </div>
         </div>
-        <div className="field" style={{ gridColumn: "span 2" }}>
+        <div className="field lt-span-3">
           <label htmlFor="ex-parametro">Exame</label>
           <select
             id="ex-parametro"
@@ -470,12 +623,12 @@ function FormResult({
               ))}
           </select>
           {chosen && chosen.ranges.length > 0 && (
-            <span className="minusculo">
+            <span className="field-hint">
               Referência: {chosen.ranges.map((f) => f.text).join(" · ")} {chosen.unitStandard}
             </span>
           )}
         </div>
-        <div className="field">
+        <div className="field lt-span-2">
           <label htmlFor="ex-data">Data da coleta</label>
           <input
             id="ex-data"
@@ -486,7 +639,7 @@ function FormResult({
             required
           />
         </div>
-        <div className="field">
+        <div className="field lt-span-2">
           <label htmlFor="ex-valor">Resultado</label>
           <input
             id="ex-valor"
@@ -495,11 +648,9 @@ function FormResult({
             onChange={(e) => setValue(e.target.value)}
             placeholder={chosen?.unitStandard}
           />
-          <span className="minusculo">
-            Deixe vazio se o exame foi pedido e ainda não saiu.
-          </span>
+          <span className="field-hint">Deixe vazio se o exame foi pedido e ainda não saiu.</span>
         </div>
-        <div className="field">
+        <div className="field lt-span-2">
           <label htmlFor="ex-unidade">Unidade</label>
           <input
             id="ex-unidade"
@@ -507,17 +658,15 @@ function FormResult({
             onChange={(e) => setUnit(e.target.value)}
             placeholder={chosen?.unitStandard ?? ""}
           />
-          <span className="minusculo">
-            Só se o laudo usar outra. Nesse caso o valor não é classificado.
-          </span>
+          <span className="field-hint">Só se o laudo usar outra. Nesse caso o valor não é classificado.</span>
         </div>
-        <div className="field">
+        <div className="field lt-span-6">
           <label htmlFor="ex-obs">Observação</label>
           <input id="ex-obs" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
       </div>
 
-      <div className="row end" style={{ marginTop: "0.9rem" }}>
+      <div className="labtest-form-actions">
         <button type="button" className="button secundario" onClick={onClose}>
           Cancelar
         </button>
@@ -629,24 +778,24 @@ function FormOrder({
     });
 
   return (
-    <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
-      <h2>Solicitar exames</h2>
-      <p className="discreto" style={{ margin: "0.3rem 0 0.8rem" }}>
-        Registra o pedido entregue ao paciente. Os resultados são lançados quando o laudo chegar.
-      </p>
-
-      {error && (
-        <div className="warning error" style={{ marginBottom: "0.8rem" }}>
-          {error}
+    <form className="card labtest-form mb-3" onSubmit={send} aria-labelledby="labtest-order-title">
+      <div className="card-head">
+        <div>
+          <h2 className="card-title" id="labtest-order-title">
+            Solicitar exames
+          </h2>
+          <p className="card-sub">
+            Registra o pedido entregue ao paciente. Os resultados são lançados quando o laudo chegar.
+          </p>
         </div>
-      )}
+      </div>
+
+      {error && <div className="warning error mb-3">{error}</div>}
 
       {panels.length > 0 && (
         <div className="paineis">
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <span className="minusculo">
-              Painéis — um clique acrescenta os exames dele ao pedido
-            </span>
+          <div className="paineis-head">
+            <span className="paineis-hint">Painéis — um clique acrescenta os exames dele ao pedido</span>
             <button
               type="button"
               className="button secundario pequeno"
@@ -654,10 +803,11 @@ function FormOrder({
               disabled={savingPanel || chosen.length === 0}
               title="Guarda o que está marcado como um painel seu"
             >
+              <BookmarkPlus aria-hidden="true" />
               Salvar como painel
             </button>
           </div>
-          <div className="row paineis-botoes">
+          <div className="paineis-botoes">
             {panels.map((panel) => (
               <button
                 type="button"
@@ -668,53 +818,58 @@ function FormOrder({
               >
                 {panel.name}
                 {panel.own && <Own />}
-                <span className="minusculo"> {panel.parameters.length}</span>
+                <span className="painel-n">{panel.parameters.length}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      <div className="field" style={{ maxWidth: 360, marginBottom: "0.6rem" }}>
-        <label htmlFor="sol-busca">Buscar exame</label>
-        {/*
-          A busca some com os grupos que não têm nada a ver e deixa à vista só
-          o que foi procurado. O que já estava marcado continua marcado: filtrar
-          é olhar de outro jeito, não desmarcar.
-        */}
-        <input
-          id="sol-busca"
-          type="search"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Glicose, TGP, vitamina D…"
-        />
+      <div className="labtest-order-search">
+        <div className="field labtest-search">
+          <label htmlFor="sol-busca">Buscar exame</label>
+          {/*
+            A busca some com os grupos que não têm nada a ver e deixa à vista só
+            o que foi procurado. O que já estava marcado continua marcado: filtrar
+            é olhar de outro jeito, não desmarcar.
+          */}
+          <div className="input-search">
+            <input
+              id="sol-busca"
+              type="search"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Glicose, TGP, vitamina D…"
+            />
+          </div>
+        </div>
         {chosen.length > 0 && (
-          <span className="minusculo">{chosen.length} marcado(s) no pedido</span>
+          <span className="labtest-marked" role="status">
+            <CircleCheck aria-hidden="true" />
+            {chosen.length} marcado(s) no pedido
+          </span>
         )}
       </div>
 
-      <div className="grid two">
+      <div className="labtest-groups">
         {[...byGroup.entries()].map(([group, list]) => (
-          <div key={group}>
-            <span className="minusculo">{group}</span>
-            {list.map((p) => (
-              <label className="row" key={p.id} style={{ gap: "0.4rem", marginTop: "0.2rem" }}>
-                <input
-                  type="checkbox"
-                  checked={chosen.includes(p.id)}
-                  onChange={() => toggle(p.id)}
-                  style={{ width: "auto" }}
-                />
-                <span style={{ fontSize: "0.88rem" }}>{p.name}</span>
-              </label>
-            ))}
-          </div>
+          <fieldset className="labtest-group" key={group}>
+            <legend className="labtest-group-name">{group}</legend>
+            <div className="labtest-checks">
+              {list.map((p) => (
+                <label className="labtest-check" key={p.id}>
+                  <input type="checkbox" checked={chosen.includes(p.id)} onChange={() => toggle(p.id)} />
+                  <span>{p.name}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
         ))}
+        {byGroup.size === 0 && <div className="empty">Nenhum exame com “{filter}”.</div>}
       </div>
 
-      <div className="row" style={{ marginTop: "0.9rem" }}>
-        <div className="field" style={{ width: 170 }}>
+      <div className="labtest-order-meta">
+        <div className="field">
           <label htmlFor="sol-data">Data</label>
           <input
             id="sol-data"
@@ -725,7 +880,7 @@ function FormOrder({
             required
           />
         </div>
-        <div className="field" style={{ flex: 1, minWidth: 220 }}>
+        <div className="field">
           <label htmlFor="sol-obs">Observação</label>
           <input
             id="sol-obs"
@@ -736,7 +891,7 @@ function FormOrder({
         </div>
       </div>
 
-      <div className="row end" style={{ marginTop: "0.9rem" }}>
+      <div className="labtest-form-actions">
         <button type="button" className="button secundario" onClick={onClose}>
           Cancelar
         </button>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PenLine } from "lucide-react";
 
 import { RichTextEditor } from "./LazyEditor";
 import { RichTextView } from "./RichTextView";
@@ -62,7 +63,7 @@ export function NotesField({
   if (disabled) {
     if (empty) return null;
     return (
-      <div className="field">
+      <div className="field richtext-field">
         <label>{label}</label>
         <RichTextView doc={doc} empty="" />
       </div>
@@ -71,11 +72,16 @@ export function NotesField({
 
   if (!open) {
     return (
-      <div className="field">
+      <div className="field richtext-field">
         {/* Sem `htmlFor`: o editor não é um campo nativo. Quem usa leitor de
             tela recebe o nome pelo aria-label que o próprio editor põe. */}
         <label>{label}</label>
-        <button type="button" className="link-voltar minusculo" onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          className="link-voltar minusculo richtext-abrir"
+          onClick={() => setOpen(true)}
+        >
+          <PenLine aria-hidden="true" />
           + escrever
         </button>
       </div>
@@ -83,10 +89,10 @@ export function NotesField({
   }
 
   return (
-    <div className="field">
+    <div className="field richtext-field">
       <label>{label}</label>
       <RichTextEditor value={doc} label={label} minHeight={minHeight} onChange={write} />
-      {help && <span className="minusculo">{help}</span>}
+      {help && <span className="field-hint">{help}</span>}
     </div>
   );
 }

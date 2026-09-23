@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { BookOpen, ChevronDown, ChevronUp, Copy, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
@@ -82,19 +83,23 @@ export default function Handouts() {
             {count(templates.length, "modelo do sistema", "modelos do sistema")}
           </p>
         </div>
-        <button className="button" onClick={() => setAtEdit("nova")}>
-          Nova orientação
-        </button>
+        <div className="header-page-actions">
+          <button className="button" onClick={() => setAtEdit("nova")}>
+            <Plus aria-hidden="true" />
+            Nova orientação
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
 
       {inEdit && (
         <Editor
+          key={inEdit === "nova" ? "nova" : inEdit.id}
           handout={inEdit === "nova" ? null : inEdit}
           onClose={() => setAtEdit(null)}
           onSave={async () => {
@@ -104,24 +109,31 @@ export default function Handouts() {
         />
       )}
 
-      <div className="card" style={{ marginBottom: "0.9rem" }}>
-        <div className="field">
-          <label htmlFor="busca-orientacao">Buscar</label>
+      <div className="library-toolbar">
+        <label htmlFor="busca-orientacao" className="visually-hidden">
+          Buscar
+        </label>
+        <span className="input-search">
           <input
             id="busca-orientacao"
             value={term}
             onChange={(e) => setTerm(e.target.value)}
             placeholder="Hidratação, rótulo, compras…"
           />
-        </div>
+        </span>
       </div>
 
       {loading ? (
         <p className="loading">Carregando…</p>
       ) : handouts.length === 0 ? (
         <div className="card empty">
-          Nenhuma orientação com esse termo. Use <strong>Nova orientação</strong> para escrever a
-          primeira.
+          <span className="empty-icon">
+            <BookOpen aria-hidden="true" />
+          </span>
+          <span className="empty-title">Nenhuma orientação com esse termo.</span>
+          <span className="empty-hint">
+            Use <strong>Nova orientação</strong> para escrever a primeira.
+          </span>
         </div>
       ) : (
         <div className="list-handouts">
@@ -135,9 +147,9 @@ export default function Handouts() {
             />
           ))}
           {templates.length > 0 && (
-            <p className="minusculo" style={{ margin: "0.6rem 0 0" }}>
+            <h2 className="library-section">
               Modelos do sistema — duplique para criar a sua versão.
-            </p>
+            </h2>
           )}
           {templates.map((o) => (
             <Card key={o.id} handout={o} onDuplicate={() => duplicate(o)} />
@@ -163,8 +175,16 @@ function Card({
 
   return (
     <article className={`card handout ${handout.systemTemplate ? "template" : ""}`}>
-      <header>
-        <button type="button" className="title-handout" onClick={() => setOpen(!open)}>
+      <header className="handout-head">
+        <button
+          type="button"
+          className="title-handout"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          <span className="handout-icon">
+            <FileText aria-hidden="true" />
+          </span>
           <h2>{handout.title}</h2>
         </button>
         {handout.systemTemplate && <span className="tag">do sistema</span>}
@@ -182,23 +202,29 @@ function Card({
         />
       )}
 
-      <div className="row" style={{ marginTop: "0.6rem" }}>
-        <button type="button" className="button secundario pequeno" onClick={() => setOpen(!open)}>
+      <div className="handout-actions">
+        <button type="button" className="button ghost pequeno" onClick={() => setOpen(!open)}>
+          {open ? <ChevronUp aria-hidden="true" /> : <ChevronDown aria-hidden="true" />}
           {open ? "Recolher" : "Ler tudo"}
         </button>
-        <button type="button" className="button secundario pequeno" onClick={onDuplicate}>
-          Duplicar
-        </button>
-        {onEdit && (
-          <button type="button" className="button secundario pequeno" onClick={onEdit}>
-            Editar
+        <div className="handout-actions-right">
+          <button type="button" className="button secundario pequeno" onClick={onDuplicate}>
+            <Copy aria-hidden="true" />
+            Duplicar
           </button>
-        )}
-        {onRemove && (
-          <button type="button" className="button perigo pequeno" onClick={onRemove}>
-            Remover
-          </button>
-        )}
+          {onEdit && (
+            <button type="button" className="button secundario pequeno" onClick={onEdit}>
+              <Pencil aria-hidden="true" />
+              Editar
+            </button>
+          )}
+          {onRemove && (
+            <button type="button" className="button perigo pequeno" onClick={onRemove}>
+              <Trash2 aria-hidden="true" />
+              Remover
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );
@@ -248,56 +274,56 @@ function Editor({
   }
 
   return (
-    <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
-      <h2>{handout ? "Editar orientação" : "Nova orientação"}</h2>
+    <form className="card handout-editor mb-3" onSubmit={send}>
+      <div className="card-head">
+        <h2 className="card-title">{handout ? "Editar orientação" : "Nova orientação"}</h2>
+      </div>
 
-      {error && (
-        <div className="warning error" style={{ margin: "0.8rem 0" }}>
-          {error}
+      {error && <div className="warning error mb-3">{error}</div>}
+
+      <div className="stack">
+        <div className="field">
+          <label htmlFor="or-titulo">Título</label>
+          <input
+            id="or-titulo"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            maxLength={150}
+            placeholder="Como montar o prato"
+          />
         </div>
-      )}
 
-      <div className="field" style={{ marginTop: "0.8rem" }}>
-        <label htmlFor="or-titulo">Título</label>
-        <input
-          id="or-titulo"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-          maxLength={150}
-          placeholder="Como montar o prato"
-        />
+        <div className="field">
+          <label htmlFor="or-corpo">Texto</label>
+          <RichTextEditor
+            value={body}
+            onChange={setBody}
+            label="Texto da orientação"
+            minHeight="14rem"
+          />
+          <span className="field-hint">
+            Este texto vai para o paciente como você escrever — no link do plano e no PDF.
+          </span>
+        </div>
+
+        <div className="field">
+          <label htmlFor="or-figura">Figura</label>
+          <input
+            id="or-figura"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFigure(e.target.files?.[0] ?? null)}
+          />
+          <span className="field-hint">
+            {handout?.hasImage
+              ? "Esta orientação já tem uma figura. Escolher outra substitui a atual."
+              : "Opcional, até 2 MB. Um desenho do prato dividido diz mais que o parágrafo que o descreve."}
+          </span>
+        </div>
       </div>
 
-      <div className="field" style={{ marginTop: "0.7rem" }}>
-        <label htmlFor="or-corpo">Texto</label>
-        <RichTextEditor
-          value={body}
-          onChange={setBody}
-          label="Texto da orientação"
-          minHeight="14rem"
-        />
-        <span className="minusculo">
-          Este texto vai para o paciente como você escrever — no link do plano e no PDF.
-        </span>
-      </div>
-
-      <div className="field" style={{ marginTop: "0.7rem" }}>
-        <label htmlFor="or-figura">Figura</label>
-        <input
-          id="or-figura"
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFigure(e.target.files?.[0] ?? null)}
-        />
-        <span className="minusculo">
-          {handout?.hasImage
-            ? "Esta orientação já tem uma figura. Escolher outra substitui a atual."
-            : "Opcional, até 2 MB. Um desenho do prato dividido diz mais que o parágrafo que o descreve."}
-        </span>
-      </div>
-
-      <div className="row end" style={{ marginTop: "0.9rem" }}>
+      <div className="row end mt-3">
         <button type="button" className="button secundario" onClick={onClose}>
           Cancelar
         </button>

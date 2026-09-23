@@ -1,5 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import {
+  ArrowDown,
+  ArrowUp,
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ClipboardList,
+  Copy,
+  FileText,
+  Pencil,
+  Plus,
+  SlidersHorizontal,
+  Trash2,
+} from "lucide-react";
 
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
@@ -99,26 +113,27 @@ export default function Anamneses() {
     <>
       <div className="header-page">
         <div>
-          <Link to={`/patients/${patientId}`} className="minusculo">
-            ← {patient?.name ?? "Paciente"}
+          <Link to={`/patients/${patientId}`} className="migalha">
+            <ChevronLeft aria-hidden="true" />
+            {patient?.name ?? "Paciente"}
           </Link>
-          <h1 style={{ marginTop: "0.2rem" }}>Anamnese geral</h1>
-          <p>
-            {loading ? "Carregando…" : count(anamneses.length, "anamnese", "anamneses")}
-          </p>
+          <h1>Anamnese geral</h1>
+          <p>{loading ? "Carregando…" : count(anamneses.length, "anamnese", "anamneses")}</p>
         </div>
-        <div className="row">
-          <button className="button secundario" onClick={() => setConfiguring(true)}>
+        <div className="header-page-actions acoes-anamneses">
+          <button type="button" className="button secundario" onClick={() => setConfiguring(true)}>
+            <SlidersHorizontal aria-hidden="true" />
             Campos de destaque
           </button>
-          <button className="button" onClick={() => setEditing("nova")}>
+          <button type="button" className="button" onClick={() => setEditing("nova")}>
+            <Plus aria-hidden="true" />
             Nova anamnese
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
@@ -135,9 +150,14 @@ export default function Anamneses() {
       )}
 
       {!loading && anamneses.length === 0 ? (
-        <p className="empty">
-          Nenhuma anamnese ainda. A primeira é o registro da consulta inicial.
-        </p>
+        <div className="card empty">
+          <span className="empty-icon">
+            <ClipboardList aria-hidden="true" />
+          </span>
+          <p className="empty-hint">
+            Nenhuma anamnese ainda. A primeira é o registro da consulta inicial.
+          </p>
+        </div>
       ) : (
         <div className="card-list">
           {anamneses.map((anamnesis) => (
@@ -177,25 +197,30 @@ function Row({
   const [removing, setRemoving] = useState(false);
 
   return (
-    <article className="card-anamnese">
+    <article className="card card-anamnese">
       <div className="card-anamnese-top">
-        <div>
-          <h2>{anamnesis.name}</h2>
-          <p className="minusculo">
+        <div className="card-anamnese-titulo">
+          <span className="eyebrow card-anamnese-data">
+            <CalendarDays aria-hidden="true" />
             {formatBr(anamnesis.date)}
-          </p>
+          </span>
+          <h2 className="card-title">{anamnesis.name}</h2>
         </div>
-        <div className="row">
-          <button className="button secundario pequeno" onClick={onPdf}>
+        <div className="card-anamnese-acoes">
+          <button type="button" className="button secundario pequeno" onClick={onPdf}>
+            <FileText aria-hidden="true" />
             PDF
           </button>
-          <button className="button secundario pequeno" onClick={onOpen}>
+          <button type="button" className="button secundario pequeno" onClick={onOpen}>
+            <Pencil aria-hidden="true" />
             Editar
           </button>
-          <button className="button secundario pequeno" onClick={onDuplicate}>
+          <button type="button" className="button secundario pequeno" onClick={onDuplicate}>
+            <Copy aria-hidden="true" />
             Duplicar
           </button>
-          <button className="button perigo pequeno" onClick={() => setRemoving(true)}>
+          <button type="button" className="button perigo pequeno" onClick={() => setRemoving(true)}>
+            <Trash2 aria-hidden="true" />
             Excluir
           </button>
         </div>
@@ -204,7 +229,7 @@ function Row({
       {anamnesis.highlights.length > 0 && (
         <dl className="destaques">
           {anamnesis.highlights.map((highlight) => (
-            <div key={`${highlight.fieldId}-${highlight.order}`}>
+            <div className="destaque" key={`${highlight.fieldId}-${highlight.order}`}>
               <dt>{highlight.label}</dt>
               <dd>{highlight.value}</dd>
             </div>
@@ -251,24 +276,31 @@ function ConfirmRemoval({
   const allowed = typed.trim().toUpperCase() === "DELETAR";
 
   return (
-    <div className="warning error" style={{ marginTop: "0.8rem" }}>
-      <p style={{ marginTop: 0 }}>
+    <div className="warning error confirmacao-exclusao">
+      <p className="confirmacao-texto">
         Excluir <strong>{name}</strong> apaga o registro da consulta, e isso não tem volta.
         Digite <strong>DELETAR</strong> para confirmar.
       </p>
-      <div className="row">
+      <div className="confirmacao-acoes">
         <input
           type="text"
+          className="confirmacao-input"
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
           aria-label="Digite DELETAR para confirmar"
           placeholder="DELETAR"
-          style={{ maxWidth: "12rem" }}
+          autoComplete="off"
         />
-        <button className="button perigo" disabled={!allowed} onClick={() => void onConfirm()}>
+        <button
+          type="button"
+          className="button perigo"
+          disabled={!allowed}
+          onClick={() => void onConfirm()}
+        >
+          <Trash2 aria-hidden="true" />
           Excluir
         </button>
-        <button className="button secundario" onClick={onCancel}>
+        <button type="button" className="button secundario" onClick={onCancel}>
           Cancelar
         </button>
       </div>
@@ -365,87 +397,96 @@ function Editor({
     <>
       <div className="header-page">
         <div>
-          <button className="link-voltar minusculo" onClick={onClose}>
-            ← Anamneses de {patientName}
+          <button type="button" className="link-voltar migalha" onClick={onClose}>
+            <ChevronLeft aria-hidden="true" />
+            Anamneses de {patientName}
           </button>
-          <h1 style={{ marginTop: "0.2rem" }}>
-            {anamnesisId === null ? "Nova anamnese" : "Editar anamnese"}
-          </h1>
+          <h1>{anamnesisId === null ? "Nova anamnese" : "Editar anamnese"}</h1>
         </div>
-        <div className="row">
-          <button className="button secundario" onClick={onClose} disabled={saving}>
+        <div className="header-page-actions acoes-par">
+          <button type="button" className="button secundario" onClick={onClose} disabled={saving}>
             Cancelar
           </button>
-          <button className="button" onClick={() => void save()} disabled={saving || loading}>
+          <button
+            type="button"
+            className="button"
+            onClick={() => void save()}
+            disabled={saving || loading}
+          >
+            <Check aria-hidden="true" />
             {saving ? "Salvando…" : "Salvar"}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
 
       {loading ? (
-        <p className="empty">Carregando…</p>
+        <p className="loading">Carregando…</p>
       ) : (
-        <>
-          <div className="grid two">
-            <div className="field">
-              <label htmlFor="an-nome">Nome</label>
-              <input
-                id="an-nome"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={150}
-              />
+        <div className="editor-anamnese">
+          <section className="card stack">
+            <div className="grid two">
+              <div className="field">
+                <label htmlFor="an-nome">Nome</label>
+                <input
+                  id="an-nome"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={150}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="an-data">Data</label>
+                <input
+                  id="an-data"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="field">
-              <label htmlFor="an-data">Data</label>
-              <input
-                id="an-data"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-            </div>
-          </div>
 
-          {fields.length > 0 && (
-            <div className="grid two" style={{ marginTop: "0.4rem" }}>
-              {fields.map((field) => (
-                <div className="field" key={field.id}>
-                  <label htmlFor={`an-campo-${field.id}`}>{field.label}</label>
-                  <input
-                    id={`an-campo-${field.id}`}
-                    type="text"
-                    value={values[field.id] ?? ""}
-                    onChange={(e) =>
-                      setValues((old) => ({ ...old, [field.id]: e.target.value }))
-                    }
-                    maxLength={500}
-                  />
-                  {field.showInListing && (
-                    <span className="minusculo">Aparece na listagem.</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+            {fields.length > 0 && (
+              <div className="grid two campos-anamnese">
+                {fields.map((field) => (
+                  <div className="field" key={field.id}>
+                    <label htmlFor={`an-campo-${field.id}`}>{field.label}</label>
+                    <input
+                      id={`an-campo-${field.id}`}
+                      type="text"
+                      value={values[field.id] ?? ""}
+                      onChange={(e) =>
+                        setValues((old) => ({ ...old, [field.id]: e.target.value }))
+                      }
+                      maxLength={500}
+                    />
+                    {field.showInListing && (
+                      <span className="field-hint">Aparece na listagem.</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
-          <h2 style={{ margin: "1.4rem 0 0.5rem" }}>Registro da consulta</h2>
-          {ready && (
-            <RichTextEditor
-              value={body}
-              onChange={setBody}
-              label="Registro da consulta"
-              minHeight="22rem"
-            />
-          )}
-        </>
+          <section className="registro-anamnese">
+            <h2 className="card-title">Registro da consulta</h2>
+            {ready && (
+              <RichTextEditor
+                value={body}
+                onChange={setBody}
+                label="Registro da consulta"
+                minHeight="22rem"
+              />
+            )}
+          </section>
+        </div>
       )}
     </>
   );
@@ -503,86 +544,105 @@ function FieldSettings({
   }
 
   return (
-    <section className="painel" style={{ marginBottom: "1.2rem" }}>
-      <h2 style={{ marginTop: 0 }}>Campos de destaque</h2>
-      <p className="discreto">
-        Os pontos que você preenche em toda anamnese. Os marcados aparecem na listagem, para
-        você reconhecer a consulta sem abrir.
-      </p>
+    <section className="card campos-destaque">
+      <div className="card-head">
+        <div>
+          <h2 className="card-title">Campos de destaque</h2>
+          <p className="card-sub">
+            Os pontos que você preenche em toda anamnese. Os marcados aparecem na listagem,
+            para você reconhecer a consulta sem abrir.
+          </p>
+        </div>
+      </div>
 
       {error && (
-        <div className="warning error" role="alert">
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
 
-      {draft.map((field, index) => (
-        <div className="row campo-destaque" key={index}>
-          <input
-            type="text"
-            value={field.label}
-            placeholder="Propósito da consulta"
-            aria-label={`Rótulo do campo ${index + 1}`}
-            onChange={(e) =>
-              setDraft((old) =>
-                old.map((f, i) => (i === index ? { ...f, label: e.target.value } : f)),
-              )
-            }
-            maxLength={120}
-          />
-          <label className="row" style={{ gap: "0.35rem", whiteSpace: "nowrap" }}>
-            <input
-              type="checkbox"
-              checked={field.showInListing}
-              style={{ width: "auto" }}
-              onChange={(e) =>
-                setDraft((old) =>
-                  old.map((f, i) =>
-                    i === index ? { ...f, showInListing: e.target.checked } : f,
-                  ),
-                )
-              }
-            />
-            <span className="minusculo">Na listagem</span>
-          </label>
-          <button
-            className="button secundario pequeno"
-            aria-label="Subir"
-            disabled={index === 0}
-            onClick={() => move(index, -1)}
-          >
-            ↑
-          </button>
-          <button
-            className="button secundario pequeno"
-            aria-label="Descer"
-            disabled={index === draft.length - 1}
-            onClick={() => move(index, 1)}
-          >
-            ↓
-          </button>
-          <button
-            className="button perigo pequeno"
-            onClick={() => setDraft((old) => old.filter((_, i) => i !== index))}
-          >
-            Remover
-          </button>
+      {draft.length > 0 && (
+        <div className="painel campos-destaque-lista">
+          {draft.map((field, index) => (
+            <div className="campo-destaque" key={index}>
+              <input
+                type="text"
+                value={field.label}
+                placeholder="Propósito da consulta"
+                aria-label={`Rótulo do campo ${index + 1}`}
+                onChange={(e) =>
+                  setDraft((old) =>
+                    old.map((f, i) => (i === index ? { ...f, label: e.target.value } : f)),
+                  )
+                }
+                maxLength={120}
+              />
+              <label className="campo-destaque-listagem">
+                <input
+                  type="checkbox"
+                  checked={field.showInListing}
+                  onChange={(e) =>
+                    setDraft((old) =>
+                      old.map((f, i) =>
+                        i === index ? { ...f, showInListing: e.target.checked } : f,
+                      ),
+                    )
+                  }
+                />
+                <span>Na listagem</span>
+              </label>
+              <div className="campo-destaque-ordem">
+                <button
+                  type="button"
+                  className="button secundario pequeno icon"
+                  aria-label="Subir"
+                  title="Subir"
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
+                >
+                  <ArrowUp aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="button secundario pequeno icon"
+                  aria-label="Descer"
+                  title="Descer"
+                  disabled={index === draft.length - 1}
+                  onClick={() => move(index, 1)}
+                >
+                  <ArrowDown aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="button perigo pequeno"
+                  onClick={() => setDraft((old) => old.filter((_, i) => i !== index))}
+                >
+                  Remover
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
 
-      <div className="row" style={{ marginTop: "0.8rem" }}>
+      <div className="campos-destaque-rodape">
         <button
+          type="button"
           className="button secundario"
           onClick={() => setDraft((old) => [...old, { label: "", showInListing: true }])}
         >
+          <Plus aria-hidden="true" />
           Adicionar campo
         </button>
-        <button className="button" onClick={() => void save()} disabled={saving}>
-          {saving ? "Salvando…" : "Salvar campos"}
-        </button>
-        <button className="button secundario" onClick={onClose} disabled={saving}>
-          Fechar
-        </button>
+        <div className="campos-destaque-fim acoes-par">
+          <button type="button" className="button secundario" onClick={onClose} disabled={saving}>
+            Fechar
+          </button>
+          <button type="button" className="button" onClick={() => void save()} disabled={saving}>
+            <Check aria-hidden="true" />
+            {saving ? "Salvando…" : "Salvar campos"}
+          </button>
+        </div>
       </div>
     </section>
   );

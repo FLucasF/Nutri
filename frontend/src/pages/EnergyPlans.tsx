@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { Calculator, ChevronLeft, ClipboardList, Flame, Plus } from "lucide-react";
 
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
@@ -15,6 +16,8 @@ import type {
   Patient,
 } from "../api/types";
 import { count } from "../text";
+
+const kcal = (value: number) => Math.round(value).toLocaleString("pt-BR");
 
 /**
  * O cálculo energético do paciente.
@@ -86,60 +89,94 @@ export default function EnergyPlans() {
 
   return (
     <>
-      <div className="header-page">
+      <div className="header-page energia-header">
         <div>
-          <Link to={`/patients/${patientId}`} className="minusculo">
-            ← {patient?.name ?? "Paciente"}
+          <Link to={`/patients/${patientId}`} className="migalha">
+            <ChevronLeft aria-hidden="true" />
+            {patient?.name ?? "Paciente"}
           </Link>
-          <h1 style={{ marginTop: "0.2rem" }}>Cálculo energético</h1>
+          <h1>Cálculo energético</h1>
           <p>{loading ? "Carregando…" : count(plans.length, "cálculo", "cálculos")}</p>
         </div>
-        <button className="button" onClick={() => setEditing("novo")} disabled={!options}>
-          Novo cálculo
-        </button>
+        <div className="header-page-actions">
+          <button className="button" onClick={() => setEditing("novo")} disabled={!options}>
+            <Plus aria-hidden="true" />
+            Novo cálculo
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
 
       {!loading && plans.length === 0 ? (
-        <p className="empty">
-          Nenhum cálculo ainda. O primeiro define a meta energética do cardápio.
-        </p>
+        <div className="card empty">
+          <span className="empty-icon">
+            <Flame aria-hidden="true" />
+          </span>
+          <span className="empty-title">Nenhum cálculo ainda.</span>
+          <span className="empty-hint">O primeiro define a meta energética do cardápio.</span>
+        </div>
       ) : (
         <div className="card-list">
           {plans.map((plan) => (
-            <article className="card-anamnese" key={plan.id}>
-              <div className="card-anamnese-top">
-                <div>
-                  <h2>{plan.name}</h2>
-                  <p className="minusculo">
-                    {formatBr(plan.date)} · {plan.equations.join(" + ")}
-                  </p>
-                </div>
-                <div className="row">
-                  <span className="tag verde kcal-destaque">
-                    {Math.round(plan.prescribedKcal).toLocaleString("pt-BR")} kcal
-                  </span>
-                  <button
-                    className="button secundario pequeno"
-                    onClick={() => setEditing(plan.id)}
-                  >
-                    Abrir
-                  </button>
-                  <button className="button perigo pequeno" onClick={() => void remove(plan)}>
-                    Excluir
-                  </button>
-                </div>
-              </div>
-            </article>
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              onOpen={() => setEditing(plan.id)}
+              onRemove={() => void remove(plan)}
+            />
           ))}
         </div>
       )}
     </>
+  );
+}
+
+// ---------------------------------------------------------------- o cartão
+
+/** Um cálculo salvo: nome, data, equações usadas e o número que importa. */
+function PlanCard({
+  plan,
+  onOpen,
+  onRemove,
+}: {
+  plan: EnergyPlanSummary;
+  onOpen: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <article className="card plano-energia">
+      <div className="plano-energia-body">
+        <h2 className="card-title">{plan.name}</h2>
+        <div className="plano-energia-meta">
+          <time dateTime={plan.date}>{formatBr(plan.date)}</time>
+          {plan.equations.map((equation) => (
+            <span className="equacao-chip" key={equation}>
+              {equation}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="stat plano-energia-kcal">
+        <span className="stat-label">Prescrito</span>
+        <span className="readout strong kcal-destaque">
+          {kcal(plan.prescribedKcal)}
+          <span> kcal</span>
+        </span>
+      </div>
+      <div className="plano-energia-actions">
+        <button className="button secundario pequeno" onClick={onOpen}>
+          Abrir
+        </button>
+        <button className="button perigo pequeno" onClick={onRemove}>
+          Excluir
+        </button>
+      </div>
+    </article>
   );
 }
 
@@ -260,27 +297,27 @@ function Editor({
 
   return (
     <>
-      <div className="header-page">
+      <div className="header-page energia-header">
         <div>
-          <button className="link-voltar minusculo" onClick={onClose}>
-            ← Cálculos de {patientName}
+          <button type="button" className="migalha link-voltar" onClick={onClose}>
+            <ChevronLeft aria-hidden="true" />
+            Cálculos de {patientName}
           </button>
-          <h1 style={{ marginTop: "0.2rem" }}>
-            {planId === null ? "Novo cálculo" : name || "Cálculo energético"}
-          </h1>
+          <h1>{planId === null ? "Novo cálculo" : name || "Cálculo energético"}</h1>
         </div>
-        <div className="row">
+        <div className="header-page-actions">
           <button className="button secundario" onClick={onClose} disabled={saving}>
             Voltar
           </button>
           <button className="button" onClick={() => void save()} disabled={saving || loading}>
+            <Calculator aria-hidden="true" />
             {saving ? "Calculando…" : "Calcular e salvar"}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
+        <div className="warning error mb-3" role="alert">
           {error}
         </div>
       )}
@@ -289,149 +326,161 @@ function Editor({
         <p className="empty">Carregando…</p>
       ) : (
         <div className="energia-layout">
-          <section>
-            <div className="grid two">
-              <div className="field">
-                <label htmlFor="en-nome">Nome</label>
-                <input
-                  id="en-nome"
-                  type="text"
-                  value={name}
-                  placeholder={`Cálculo de ${patientName}`}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={150}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="en-data">Data</label>
-                <input
-                  id="en-data"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="en-peso">Peso (kg)</label>
-                <input
-                  id="en-peso"
-                  inputMode="decimal"
-                  value={weight}
-                  placeholder="80"
-                  onChange={(e) => setWeight(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="en-altura">Altura (cm)</label>
-                <input
-                  id="en-altura"
-                  inputMode="decimal"
-                  value={height}
-                  placeholder="180"
-                  onChange={(e) => setHeight(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <h2 style={{ margin: "1.4rem 0 0.4rem" }}>Equações</h2>
-            <p className="discreto" style={{ marginTop: 0 }}>
-              Escolhendo mais de uma, o resultado é a média entre elas.
-            </p>
-            <div className="equacoes">
-              {options.equations.map((option) => (
-                <label className="equacao" key={option.equation}>
+          <section className="card energia-form">
+            <div className="energia-secao">
+              <div className="energia-campos">
+                <div className="field">
+                  <label htmlFor="en-nome">Nome</label>
                   <input
-                    type="checkbox"
-                    aria-label={option.description}
-                    checked={chosen.includes(option.equation)}
-                    onChange={(e) =>
-                      setChosen((old) =>
-                        e.target.checked
-                          ? [...old, option.equation]
-                          : old.filter((name) => name !== option.equation),
-                      )
-                    }
+                    id="en-nome"
+                    type="text"
+                    value={name}
+                    placeholder={`Cálculo de ${patientName}`}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={150}
                   />
-                  <span>
-                    <strong>{option.description}</strong>
-                    <span className="minusculo">
-                      {option.total
-                        ? "Já inclui o nível de atividade"
-                        : "Gasto basal — recebe o fator de atividade"}
+                </div>
+                <div className="field">
+                  <label htmlFor="en-data">Data</label>
+                  <input
+                    id="en-data"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="en-peso">Peso (kg)</label>
+                  <input
+                    id="en-peso"
+                    inputMode="decimal"
+                    value={weight}
+                    placeholder="80"
+                    onChange={(e) => setWeight(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="en-altura">Altura (cm)</label>
+                  <input
+                    id="en-altura"
+                    inputMode="decimal"
+                    value={height}
+                    placeholder="180"
+                    onChange={(e) => setHeight(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="energia-secao">
+              <div className="card-head">
+                <div>
+                  <h2 className="card-title">Equações</h2>
+                  <p className="card-sub">Escolhendo mais de uma, o resultado é a média entre elas.</p>
+                </div>
+              </div>
+              <div className="equacoes">
+                {options.equations.map((option) => (
+                  <label className="equacao" key={option.equation}>
+                    <input
+                      type="checkbox"
+                      aria-label={option.description}
+                      checked={chosen.includes(option.equation)}
+                      onChange={(e) =>
+                        setChosen((old) =>
+                          e.target.checked
+                            ? [...old, option.equation]
+                            : old.filter((name) => name !== option.equation),
+                        )
+                      }
+                    />
+                    <span className="equacao-texto">
+                      <strong>{option.description}</strong>
+                      <span className="equacao-nota">
+                        {option.total
+                          ? "Já inclui o nível de atividade"
+                          : "Gasto basal — recebe o fator de atividade"}
+                      </span>
                     </span>
-                  </span>
-                </label>
-              ))}
-            </div>
+                  </label>
+                ))}
+              </div>
 
-            <div className="grid two" style={{ marginTop: "1.2rem" }}>
-              <div className="field">
-                <label htmlFor="en-atividade">Nível de atividade física</label>
-                <select
-                  id="en-atividade"
-                  value={activity}
-                  onChange={(e) => setActivity(e.target.value as ActivityLevel)}
-                >
-                  {options.activityLevels.map((level) => (
-                    <option key={level.level} value={level.level}>
-                      {level.description}
-                    </option>
-                  ))}
-                </select>
-                {!hasBasal && (
-                  <span className="minusculo">
-                    As equações escolhidas já contam a atividade nos próprios coeficientes.
-                  </span>
-                )}
-              </div>
-              <div className="field">
-                <label htmlFor="en-injuria">Fator de injúria</label>
-                <input
-                  id="en-injuria"
-                  inputMode="decimal"
-                  value={injury}
-                  onChange={(e) => setInjury(e.target.value)}
-                />
-                <span className="minusculo">1,00 fora de estresse metabólico.</span>
-              </div>
-              <div className="field">
-                <label htmlFor="en-met">Calorias por MET (kcal/dia)</label>
-                <input
-                  id="en-met"
-                  inputMode="decimal"
-                  value={met}
-                  placeholder="0"
-                  onChange={(e) => setMet(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <h2 style={{ margin: "1.4rem 0 0.4rem" }}>Programar o peso</h2>
-            <p className="discreto" style={{ marginTop: 0 }}>
-              Pelo Valor Energético do Tecido Adiposo. Deixe em branco para não programar.
-            </p>
-            <div className="grid two">
-              <div className="field">
-                <label htmlFor="en-peso-alvo">Peso desejado (kg)</label>
-                <input
-                  id="en-peso-alvo"
-                  inputMode="decimal"
-                  value={targetWeight}
-                  onChange={(e) => setTargetWeight(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="en-data-alvo">Até a data</label>
-                <input
-                  id="en-data-alvo"
-                  type="date"
-                  value={targetDate}
-                  onChange={(e) => setTargetDate(e.target.value)}
-                />
+              <div className="energia-campos mt-3">
+                <div className="field largo">
+                  <label htmlFor="en-atividade">Nível de atividade física</label>
+                  <select
+                    id="en-atividade"
+                    value={activity}
+                    onChange={(e) => setActivity(e.target.value as ActivityLevel)}
+                  >
+                    {options.activityLevels.map((level) => (
+                      <option key={level.level} value={level.level}>
+                        {level.description}
+                      </option>
+                    ))}
+                  </select>
+                  {!hasBasal && (
+                    <span className="field-hint">
+                      As equações escolhidas já contam a atividade nos próprios coeficientes.
+                    </span>
+                  )}
+                </div>
+                <div className="field fator">
+                  <label htmlFor="en-injuria">Fator de injúria</label>
+                  <input
+                    id="en-injuria"
+                    inputMode="decimal"
+                    value={injury}
+                    onChange={(e) => setInjury(e.target.value)}
+                  />
+                  <span className="field-hint">1,00 fora de estresse metabólico.</span>
+                </div>
+                <div className="field fator">
+                  <label htmlFor="en-met">Calorias por MET (kcal/dia)</label>
+                  <input
+                    id="en-met"
+                    inputMode="decimal"
+                    value={met}
+                    placeholder="0"
+                    onChange={(e) => setMet(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
-            <div style={{ marginTop: "0.8rem" }}>
+            <div className="energia-secao">
+              <div className="card-head">
+                <div>
+                  <h2 className="card-title">Programar o peso</h2>
+                  <p className="card-sub">
+                    Pelo Valor Energético do Tecido Adiposo. Deixe em branco para não programar.
+                  </p>
+                </div>
+              </div>
+              <div className="energia-campos">
+                <div className="field">
+                  <label htmlFor="en-peso-alvo">Peso desejado (kg)</label>
+                  <input
+                    id="en-peso-alvo"
+                    inputMode="decimal"
+                    value={targetWeight}
+                    onChange={(e) => setTargetWeight(e.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="en-data-alvo">Até a data</label>
+                  <input
+                    id="en-data-alvo"
+                    type="date"
+                    value={targetDate}
+                    onChange={(e) => setTargetDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="energia-secao">
               <NotesField
                 label="Observações"
                 value={notes}
@@ -442,8 +491,12 @@ function Editor({
             </div>
           </section>
 
-          <Result plan={result} onToPlan={(kcal) =>
-            navigate(`/prescriptions/new?patientId=${patientId}&target=${Math.round(kcal)}`)} />
+          <Result
+            plan={result}
+            onToPlan={(target) =>
+              navigate(`/prescriptions/new?patientId=${patientId}&target=${Math.round(target)}`)
+            }
+          />
         </div>
       )}
     </>
@@ -456,7 +509,9 @@ function Editor({
  * O painel de resultado, fixo ao lado do formulário.
  *
  * Fica à direita e acompanha a rolagem pelo mesmo motivo que o cliente pede no
- * cardápio: ele quer ver o que a alteração causou sem descer a página.
+ * cardápio: ele quer ver o que a alteração causou sem descer a página. No
+ * telefone, onde não há lado, o resultado calculado vem antes do formulário e
+ * o convite para calcular fica depois dele.
  */
 function Result({
   plan,
@@ -467,58 +522,60 @@ function Result({
 }) {
   if (!plan) {
     return (
-      <aside className="energia-resultado">
-        <p className="empty" style={{ margin: 0 }}>
-          Preencha e calcule para ver o resultado aqui.
-        </p>
+      <aside className="card energia-resultado vazio">
+        <div className="empty">
+          <span className="empty-icon">
+            <Flame aria-hidden="true" />
+          </span>
+          <span className="empty-hint">Preencha e calcule para ver o resultado aqui.</span>
+        </div>
       </aside>
     );
   }
 
   return (
-    <aside className="energia-resultado">
-      <span className="minusculo">Prescrito</span>
-      <p className="energia-kcal">
-        {Math.round(plan.prescribedKcal).toLocaleString("pt-BR")}
-        <span> kcal/dia</span>
-      </p>
+    <aside className="card energia-resultado">
+      <div className="stat energia-prescrito">
+        <span className="stat-label">Prescrito</span>
+        <p className="energia-kcal readout strong">
+          {kcal(plan.prescribedKcal)}
+          <span> kcal/dia</span>
+        </p>
+      </div>
 
       <dl className="energia-linhas">
         {plan.equations.map((result) => (
           <div key={result.equation}>
             <dt>{result.description}</dt>
-            <dd>
-              {Math.round(result.totalKcal).toLocaleString("pt-BR")} kcal
+            <dd className="readout strong">
+              {kcal(result.totalKcal)} kcal
               {result.basalKcal !== undefined && (
-                <span className="minusculo">
-                  {" "}
-                  (basal {Math.round(result.basalKcal).toLocaleString("pt-BR")})
-                </span>
+                <span className="minusculo"> (basal {kcal(result.basalKcal)})</span>
               )}
             </dd>
           </div>
         ))}
         {plan.equations.length > 1 && (
-          <div>
+          <div className="energia-media">
             <dt>Média</dt>
-            <dd>{Math.round(plan.averageKcal).toLocaleString("pt-BR")} kcal</dd>
+            <dd className="readout strong">{kcal(plan.averageKcal)} kcal</dd>
           </div>
         )}
         {plan.adjustmentKcal !== undefined && plan.adjustmentKcal !== null && (
           <div>
             <dt>Programação de peso</dt>
-            <dd className={plan.adjustmentKcal < 0 ? "negativo" : undefined}>
+            <dd className={plan.adjustmentKcal < 0 ? "readout strong negativo" : "readout strong"}>
               {plan.adjustmentKcal > 0 ? "+" : ""}
-              {Math.round(plan.adjustmentKcal).toLocaleString("pt-BR")} kcal
+              {kcal(plan.adjustmentKcal)} kcal
             </dd>
           </div>
         )}
       </dl>
 
       {plan.healthyWeight && (
-        <div className="energia-faixa">
-          <span className="minusculo">Faixa de peso saudável</span>
-          <p>
+        <div className="stat energia-faixa">
+          <span className="stat-label">Faixa de peso saudável</span>
+          <p className="readout strong">
             {plan.healthyWeight.minimumKg.toLocaleString("pt-BR")} a{" "}
             {plan.healthyWeight.maximumKg.toLocaleString("pt-BR")} kg
           </p>
@@ -530,11 +587,8 @@ function Result({
         </div>
       )}
 
-      <button
-        className="button"
-        style={{ marginTop: "1rem", width: "100%" }}
-        onClick={() => onToPlan(plan.prescribedKcal)}
-      >
+      <button className="button w-full energia-montar" onClick={() => onToPlan(plan.prescribedKcal)}>
+        <ClipboardList aria-hidden="true" />
         Montar cardápio com esta meta
       </button>
     </aside>

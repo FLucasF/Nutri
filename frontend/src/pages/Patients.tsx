@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { Plus, Upload, Users } from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
@@ -7,9 +8,11 @@ import { useFeedback } from "../components/Feedback";
 import type { PatientSummary, ResultImport } from "../api/types";
 import { count, plural } from "../text";
 import { Avatar } from "../components/Avatar";
+import { useIsNarrow } from "../hooks/useMediaQuery";
 
 export default function Patients() {
   const navigate = useNavigate();
+  const narrow = useIsNarrow();
 
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [total, setTotal] = useState(0);
@@ -44,7 +47,7 @@ export default function Patients() {
   }, [find, term]);
 
   return (
-    <>
+    <div className="patients-page">
       <div className="header-page">
         <div>
           <h1>Pacientes</h1>
@@ -53,119 +56,182 @@ export default function Patients() {
             {activeOnly ? plural(total, " ativo", " ativos") : " no total"}
           </p>
         </div>
-        <div className="row">
+        <div className="header-page-actions">
           <button
+            type="button"
             className="button secundario"
+            aria-expanded={panel === "importAll"}
             onClick={() => setPanel(panel === "importAll" ? "none" : "importAll")}
           >
+            <Upload aria-hidden="true" />
             Importar planilha
           </button>
           <button
+            type="button"
             className="button"
+            aria-expanded={panel === "novo"}
             onClick={() => setPanel(panel === "novo" ? "none" : "novo")}
           >
+            <Plus aria-hidden="true" />
             Novo paciente
           </button>
         </div>
       </div>
 
-      {panel === "importAll" && (
-        <PanelImport onClose={() => setPanel("none")} onImport={find} />
-      )}
-      {panel === "novo" && (
-        <FormNovoPatient
-          onClose={() => setPanel("none")}
-          onCreate={(id) => navigate(`/patients/${id}`)}
-        />
-      )}
+      <div className="patients-body">
+        {panel === "importAll" && (
+          <PanelImport onClose={() => setPanel("none")} onImport={find} />
+        )}
+        {panel === "novo" && (
+          <FormNovoPatient
+            onClose={() => setPanel("none")}
+            onCreate={(id) => navigate(`/patients/${id}`)}
+          />
+        )}
 
-      <div className="card" style={{ marginBottom: "0.9rem" }}>
-        <div className="row">
-          <div className="field" style={{ flex: 1, minWidth: 220 }}>
+        <div className="card patients-toolbar">
+          <div className="field grow">
             <label htmlFor="search">Buscar</label>
-            <input
-              id="search"
-              value={term}
-              onChange={(e) => setTerm(e.target.value)}
-              placeholder="Nome, e-mail ou telefone"
-            />
+            <div className="input-search">
+              <input
+                id="search"
+                type="search"
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                placeholder="Nome, e-mail ou telefone"
+                autoComplete="off"
+              />
+            </div>
           </div>
-          <label className="row" style={{ gap: "0.4rem", paddingTop: "1.1rem" }}>
+          <label className="patients-filter">
             <input
               type="checkbox"
               checked={activeOnly}
               onChange={(e) => setActiveOnly(e.target.checked)}
-              style={{ width: "auto" }}
             />
-            <span className="discreto">Somente ativos</span>
+            <span>Somente ativos</span>
           </label>
         </div>
+
+        {error && (
+          <div className="warning error" role="alert">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <p className="loading">Carregando…</p>
+        ) : patients.length === 0 ? (
+          <div className="card empty">
+            <span className="empty-icon">
+              <Users aria-hidden="true" />
+            </span>
+            {term ? (
+              <>
+                <span className="empty-title">Nenhum paciente encontrado para "{term}".</span>
+                <span className="empty-hint">Tente parte do nome, do e-mail ou do telefone.</span>
+              </>
+            ) : (
+              <>
+                <span className="empty-title">Nenhum paciente ainda.</span>
+                <span className="empty-hint">Use Novo paciente para cadastrar o primeiro.</span>
+              </>
+            )}
+          </div>
+        ) : narrow ? (
+          <PatientRows patients={patients} onOpen={(id) => navigate(`/patients/${id}`)} />
+        ) : (
+          <PatientTable patients={patients} onOpen={(id) => navigate(`/patients/${id}`)} />
+        )}
       </div>
-
-      {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        <p className="loading">Carregando…</p>
-      ) : patients.length === 0 ? (
-        <div className="card empty">
-          {term
-            ? `Nenhum paciente encontrado para "${term}". Tente parte do nome, do e-mail ou do telefone.`
-            : "Nenhum paciente ainda. Use Novo paciente para cadastrar o primeiro."}
-        </div>
-      ) : (
-        <div className="rolagem">
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>E-mail</th>
-                <th className="num">Idade</th>
-                <th>Situação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {patients.map((p) => (
-                <tr
-                  key={p.id}
-                  className="clicavel"
-                  onClick={() => navigate(`/patients/${p.id}`)}
-                >
-                  <td>
-                    <div className="row linha-paciente">
-                      <Avatar name={p.name} />
-                      <div>
-                        <strong>{p.name}</strong>
-                        {p.tags.length > 0 && (
-                          <div className="tags-paciente">
-                            {p.tags.map((tag) => (
-                              <span className="tag-paciente" key={tag}>
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="discreto">{p.email ?? "—"}</td>
-                  <td className="num">{p.age ?? "—"}</td>
-                  <td>
-                    <span className={`tag ${p.active ? "verde" : ""}`}>
-                      {p.active ? "ativo" : "inativo"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
+    </div>
   );
+}
+
+type ListProps = { patients: PatientSummary[]; onOpen: (id: number) => void };
+
+/** The list on the desk: one row per patient, the whole row opens the record. */
+function PatientTable({ patients, onOpen }: ListProps) {
+  return (
+    <div className="rolagem">
+      <table className="patients-table">
+        <colgroup>
+          <col />
+          <col className="col-email" />
+          <col className="col-age" />
+          <col className="col-status" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th className="num">Idade</th>
+            <th>Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {patients.map((p) => (
+            <tr key={p.id} className="clicavel" onClick={() => onOpen(p.id)}>
+              <td>
+                <div className="linha-paciente">
+                  <Avatar name={p.name} />
+                  <div className="linha-paciente-texto">
+                    <strong>{p.name}</strong>
+                    {p.tags.length > 0 && <PatientTagList tags={p.tags} />}
+                  </div>
+                </div>
+              </td>
+              <td className="discreto">{p.email ?? "—"}</td>
+              <td className="num">{p.age ?? "—"}</td>
+              <td>
+                <StatusTag active={p.active} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** The same list on the phone: rows instead of columns, nothing clipped. */
+function PatientRows({ patients, onOpen }: ListProps) {
+  return (
+    <div className="list-rows patients-list">
+      {patients.map((p) => (
+        <button type="button" key={p.id} className="list-row" onClick={() => onOpen(p.id)}>
+          <span className="list-row-lead">
+            <Avatar name={p.name} size={36} />
+          </span>
+          <span className="list-row-body">
+            <span className="list-row-title">{p.name}</span>
+            {p.tags.length > 0 && <PatientTagList tags={p.tags} />}
+            <span className="list-row-meta">{p.email ?? "—"}</span>
+          </span>
+          <span className="list-row-trail">
+            <span className="patients-age">{p.age !== undefined ? `${p.age} anos` : "—"}</span>
+            <StatusTag active={p.active} />
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PatientTagList({ tags }: { tags: string[] }) {
+  return (
+    <span className="tags-paciente">
+      {tags.map((tag) => (
+        <span className="tag tag-paciente" key={tag}>
+          {tag}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function StatusTag({ active }: { active: boolean }) {
+  return <span className={active ? "tag verde" : "tag neutra"}>{active ? "ativo" : "inativo"}</span>;
 }
 
 /**
@@ -211,70 +277,74 @@ function PanelImport({
   }
 
   return (
-    <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
-      <h2>Importar planilha de pacientes</h2>
-      <p className="discreto" style={{ margin: "0.3rem 0 0.9rem" }}>
-        Só a coluna <code>nome</code> é obrigatória. São reconhecidas também{" "}
-        <code>email</code>, <code>telefone</code>, <code>nascimento</code>, <code>sexo</code>,{" "}
-        <code>cpf</code>, <code>profissao</code>, <code>objetivo</code> e{" "}
-        <code>observacoes</code> — sem diferenciar acento nem maiúscula. Uma linha com problema
-        é anotada e as outras entram.
-      </p>
-
-      {error && (
-        <div className="warning error" style={{ marginBottom: "0.85rem" }}>
-          {error}
-        </div>
-      )}
-
-      {result && (
-        <div
-          className={`warning ${result.imported > 0 ? "ok" : "attention"}`}
-          style={{ marginBottom: "0.85rem" }}
-        >
-          <strong>
-            {count(result.imported, "paciente importado", "pacientes importados")}
-            {result.ignored > 0
-              ? `, ${count(result.ignored, "linha ignorada", "linhas ignoradas")}`
-              : ""}
-            .
-          </strong>
-          {result.warnings.length > 0 && (
-            <ul style={{ margin: "0.4rem 0 0", paddingLeft: "1.1rem" }}>
-              {result.warnings.slice(0, 8).map((warning, i) => (
-                <li key={i}>{warning}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      <div className="row">
-        <div className="field" style={{ flex: 2, minWidth: 220 }}>
-          <label htmlFor="imp-pac-arquivo">Arquivo CSV</label>
-          <input id="imp-pac-arquivo" type="file" accept=".csv,text/csv" ref={input} />
-        </div>
-        <div className="field" style={{ width: 120 }}>
-          <label htmlFor="imp-pac-sep">Separador</label>
-          <select
-            id="imp-pac-sep"
-            value={separator}
-            onChange={(e) => setSeparator(e.target.value)}
-          >
-            <option value=",">Vírgula</option>
-            <option value=";">Ponto e vírgula</option>
-            <option value={"	"}>Tabulação</option>
-          </select>
+    <form className="card patients-panel" onSubmit={send}>
+      <div className="card-head">
+        <div>
+          <h2 className="card-title">Importar planilha de pacientes</h2>
+          <p className="card-sub">
+            Só a coluna <code>nome</code> é obrigatória. São reconhecidas também{" "}
+            <code>email</code>, <code>telefone</code>, <code>nascimento</code>, <code>sexo</code>,{" "}
+            <code>cpf</code>, <code>profissao</code>, <code>objetivo</code> e{" "}
+            <code>observacoes</code> — sem diferenciar acento nem maiúscula. Uma linha com problema
+            é anotada e as outras entram.
+          </p>
         </div>
       </div>
 
-      <div className="row end" style={{ marginTop: "0.9rem" }}>
-        <button type="button" className="button secundario" onClick={onClose}>
-          Fechar
-        </button>
-        <button className="button" type="submit" disabled={sending}>
-          {sending ? "Importando…" : "Importar"}
-        </button>
+      <div className="stack">
+        {error && (
+          <div className="warning error" role="alert">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div className={`warning ${result.imported > 0 ? "ok" : "attention"}`}>
+            <strong>
+              {count(result.imported, "paciente importado", "pacientes importados")}
+              {result.ignored > 0
+                ? `, ${count(result.ignored, "linha ignorada", "linhas ignoradas")}`
+                : ""}
+              .
+            </strong>
+            {result.warnings.length > 0 && (
+              <ul className="problems-list">
+                {result.warnings.slice(0, 8).map((warning, i) => (
+                  <li key={i}>{warning}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="patients-import-fields">
+          <div className="field grow">
+            <label htmlFor="imp-pac-arquivo">Arquivo CSV</label>
+            <input id="imp-pac-arquivo" type="file" accept=".csv,text/csv" ref={input} />
+          </div>
+          <div className="field patients-import-sep">
+            <label htmlFor="imp-pac-sep">Separador</label>
+            <select
+              id="imp-pac-sep"
+              value={separator}
+              onChange={(e) => setSeparator(e.target.value)}
+            >
+              <option value=",">Vírgula</option>
+              <option value=";">Ponto e vírgula</option>
+              <option value={"	"}>Tabulação</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="row end">
+          <button type="button" className="button secundario" onClick={onClose}>
+            Fechar
+          </button>
+          <button className="button" type="submit" disabled={sending}>
+            <Upload aria-hidden="true" />
+            {sending ? "Importando…" : "Importar"}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -326,82 +396,87 @@ function FormNovoPatient({
   }
 
   return (
-    <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
-      <h2 style={{ marginBottom: "0.85rem" }}>Novo paciente</h2>
-
-      {error && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.85rem" }}>
-          {error}
-        </div>
-      )}
-
-      <div className="grid two">
-        <div className="field">
-          <label htmlFor="np-nome">Nome</label>
-          <input
-            id="np-nome"
-            name="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            {...fields.props("name")}
-          />
-          <FieldError field="name" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="np-email">E-mail</label>
-          <input
-            id="np-email"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            {...fields.props("email")}
-          />
-          <FieldError field="email" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="np-tel">Telefone</label>
-          <input
-            id="np-tel"
-            name="phone"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            {...fields.props("phone")}
-          />
-          <FieldError field="phone" errors={fields.errors} />
-        </div>
-        <div className="field">
-          <label htmlFor="np-nasc">Data de nascimento</label>
-          <input
-            id="np-nasc"
-            type="date"
-            value={dateBirth}
-            max={new Date().toISOString().slice(0, 10)}
-            onChange={(e) => setDateBirth(e.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="np-sexo">Sexo</label>
-          <select id="np-sexo" value={sex} onChange={(e) => setSex(e.target.value)}>
-            <option value="">Não informado</option>
-            <option value="FEMALE">Feminino</option>
-            <option value="MALE">Masculino</option>
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="np-obj">Objetivo</label>
-          <input id="np-obj" value={goal} onChange={(e) => setGoal(e.target.value)} />
-        </div>
+    <form className="card patients-panel" onSubmit={send}>
+      <div className="card-head">
+        <h2 className="card-title">Novo paciente</h2>
       </div>
 
-      <div className="row end" style={{ marginTop: "0.9rem" }}>
-        <button type="button" className="button secundario" onClick={onClose}>
-          Cancelar
-        </button>
-        <button className="button" type="submit" disabled={sending}>
-          {sending ? "Salvando…" : "Cadastrar"}
-        </button>
+      <div className="stack">
+        {error && (
+          <div className="warning error" role="alert">
+            {error}
+          </div>
+        )}
+
+        <div className="grid two">
+          <div className="field">
+            <label htmlFor="np-nome">Nome</label>
+            <input
+              id="np-nome"
+              name="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoFocus
+              {...fields.props("name")}
+            />
+            <FieldError field="name" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="np-email">E-mail</label>
+            <input
+              id="np-email"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              {...fields.props("email")}
+            />
+            <FieldError field="email" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="np-tel">Telefone</label>
+            <input
+              id="np-tel"
+              name="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              {...fields.props("phone")}
+            />
+            <FieldError field="phone" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="np-nasc">Data de nascimento</label>
+            <input
+              id="np-nasc"
+              type="date"
+              value={dateBirth}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setDateBirth(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="np-sexo">Sexo</label>
+            <select id="np-sexo" value={sex} onChange={(e) => setSex(e.target.value)}>
+              <option value="">Não informado</option>
+              <option value="FEMALE">Feminino</option>
+              <option value="MALE">Masculino</option>
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="np-obj">Objetivo</label>
+            <input id="np-obj" value={goal} onChange={(e) => setGoal(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="row end">
+          <button type="button" className="button secundario" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button" type="submit" disabled={sending}>
+            {sending ? "Salvando…" : "Cadastrar"}
+          </button>
+        </div>
       </div>
     </form>
   );

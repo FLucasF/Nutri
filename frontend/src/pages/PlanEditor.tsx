@@ -1,5 +1,38 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  ArrowDown,
+  ArrowLeftRight,
+  ArrowUp,
+  Calculator,
+  Camera,
+  CameraOff,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  CircleAlert,
+  CircleDot,
+  Clock,
+  Copy,
+  ExternalLink,
+  FileText,
+  GripVertical,
+  LoaderCircle,
+  Lock,
+  PenLine,
+  Plus,
+  Send,
+  Star,
+  Trash2,
+  TriangleAlert,
+  X,
+} from "lucide-react";
+import { MacroRing } from "../components/MacroRing";
+import { Sheet } from "../components/Sheet";
+import { useIsCompact } from "../hooks/useMediaQuery";
+import { useScrolled } from "../hooks/useScrolled";
 import FoodSearch from "../components/FoodSearch";
 import { QuickFood, QuickMeasure } from "../components/QuickFood";
 import { RichTextEditor } from "../components/RichText/LazyEditor";
@@ -8,7 +41,7 @@ import { emptyDoc, isEmptyDoc, parseRichDoc } from "../components/RichText/docum
 import { ErrorApi, api } from "../api/client";
 import { explainError, whereLook } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
-import { COLORS_MACRO, MACROS_PRINCIPAIS, NUTRIENTS, formatNutrient, labelDe } from "../api/nutrients";
+import { MACROS_PRINCIPAIS, NUTRIENTS, formatNutrient, labelDe } from "../api/nutrients";
 import { count } from "../text";
 import { NotesField, NotesView } from "../components/RichText/NotesField";
 import type {
@@ -995,56 +1028,163 @@ export default function PlanEditor() {
     return map;
   }, [plan]);
 
+  // Below 900px the rail lives in a bottom sheet and the page header is the
+  // only bar on screen; both hooks stay above the early return.
+  const compact = useIsCompact();
+  const scrolled = useScrolled();
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   if (loading) return <p className="loading">Carregando…</p>;
 
   const podeEdit = !plan || plan.status !== "CLOSED";
+  const kcalDay = totalSaved?.composition.energyKcal;
+  const distributionDay = totalSaved?.distribution;
+
+  /*
+    The rail is one set of cards rendered once: beside the meals on the desk,
+    inside a bottom sheet on tablet and phone. Rendering it twice would double
+    every text node the tests and screen readers see.
+  */
+  const rail = (
+    <>
+      <PanelTotals total={totalSaved} dirty={dirty} target={targetEnergy} />
+      <PanelDistribution
+        comparison={totalSaved?.comparison ?? []}
+        weightKg={plan?.targetWeightKg}
+      />
+      {plan && <PanelHandouts planId={plan.id} onlyRead={!podeEdit} />}
+      {plan && !plan.template && (
+        <PanelPublication plan={plan} onRun={action} onFlush={flush} />
+      )}
+      {plan && (
+        <div className="card">
+          <div className="card-head">
+            <h3 className="card-title">Ações</h3>
+          </div>
+          <div className="cluster">
+            {compact && patientId && !template && (
+              <button
+                type="button"
+                className="button secundario pequeno"
+                onClick={() => void openAnamnesisPdf()}
+                title="Abre em outra guia"
+              >
+                <FileText aria-hidden="true" />
+                Ver anamnese
+              </button>
+            )}
+            <button
+              type="button"
+              className="button secundario pequeno"
+              onClick={() =>
+                action(
+                  () => api.prescriptions.duplicate(plan.id, plan.patientId ?? undefined),
+                  "Cópia criada como rascunho.",
+                ).then(() => navigate("/prescriptions"))
+              }
+            >
+              <Copy aria-hidden="true" />
+              Duplicar
+            </button>
+            <button
+              type="button"
+              className="button perigo pequeno"
+              onClick={async () => {
+                if (!confirm("Remover este plano definitivamente?")) return;
+                await api.prescriptions.remove(plan.id);
+                navigate("/prescriptions");
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              Remover
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  const savingState = (
+    <SavingState
+      dirty={dirty}
+      saving={saving}
+      savedAt={savedAt}
+      saveable={saveable()}
+      closed={!podeEdit}
+    />
+  );
 
   return (
-    <>
-      <div className="header-page">
-        <div>
-          <Link to="/prescriptions" className="minusculo">
-            ← Prescrições
+    <div className="editor-page">
+      {/*
+        The header is sticky at every width: the save state is the answer to
+        "did my last change go in?", and it has to be on screen wherever the
+        person is in a plan of seven meals.
+      */}
+      <header
+        className="header-page sticky editor-header"
+        data-scrolled={scrolled ? "true" : "false"}
+      >
+        {compact && (
+          <Link
+            to="/prescriptions"
+            className="button icon ghost header-page-back"
+            aria-label="Voltar"
+            title="Voltar"
+          >
+            <ChevronLeft aria-hidden="true" />
           </Link>
-          <h1 style={{ marginTop: "0.2rem" }}>{planId ? title || "Plano" : "Novo plano"}</h1>
-          <p>
-            {plan ? (
-              <>
-                {plan.statusDescription}
-                {plan.patientName ? ` · ${plan.patientName}` : ""}
-              </>
-            ) : (
-              "Monte as refeições. Os totais vão sendo calculados enquanto você edita."
-            )}
+        )}
+        <div className="editor-header-main">
+          {!compact && (
+            <Link to="/prescriptions" className="migalha">
+              <ChevronLeft aria-hidden="true" />
+              Prescrições
+            </Link>
+          )}
+          <h1>{planId ? title || "Plano" : "Novo plano"}</h1>
+          <p className="editor-header-sub">
+            <span>
+              {plan ? (
+                <>
+                  {plan.statusDescription}
+                  {plan.patientName ? ` · ${plan.patientName}` : ""}
+                </>
+              ) : (
+                "Monte as refeições. Os totais vão sendo calculados enquanto você edita."
+              )}
+            </span>
+            {compact && savingState}
           </p>
         </div>
-        <div className="row">
-          <SavingState
-            dirty={dirty}
-            saving={saving}
-            savedAt={savedAt}
-            saveable={saveable()}
-            closed={!podeEdit}
-          />
-          {patientId && !template && (
+        <div className="header-page-actions editor-header-actions">
+          {!compact && savingState}
+          {!compact && patientId && !template && (
             <button
+              type="button"
               className="button secundario"
               onClick={() => void openAnamnesisPdf()}
               title="Abre em outra guia"
             >
+              <FileText aria-hidden="true" />
               Ver anamnese
             </button>
           )}
-          <button className="button" onClick={() => void save()} disabled={saving || !podeEdit}>
+          <button
+            type="button"
+            className={`button${dirty && podeEdit ? " has-dot" : ""}`}
+            onClick={() => void save()}
+            disabled={saving || !podeEdit}
+          >
             {saving ? "Salvando…" : "Salvar"}
           </button>
         </div>
-      </div>
+      </header>
 
-      {error && <div className="warning error" style={{ marginBottom: "0.9rem" }}>{error}</div>}
+      {error && <div className="warning error mb-2">{error}</div>}
 
       {problems.length > 0 && (
-        <div className="warning error" role="alert" style={{ marginBottom: "0.9rem" }}>
+        <div className="warning error mb-2" role="alert">
           <strong>O plano não foi salvo. Corrija {problems.length === 1 ? "isto" : "estes pontos"}:</strong>
           <ul className="problems-list">
             {problems.map((p, i) => (
@@ -1054,8 +1194,8 @@ export default function PlanEditor() {
         </div>
       )}
       {!podeEdit && (
-        <div className="warning attention" style={{ marginBottom: "0.9rem" }}>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+        <div className="warning attention mb-2">
+          <div className="closed-notice">
             <span>Este plano está encerrado e não aceita alterações.</span>
             {/*
               A saída fica no mesmo aviso que dá a notícia. Ela existia, mas no
@@ -1064,8 +1204,9 @@ export default function PlanEditor() {
               é um beco.
             */}
             {plan && (
-              <div className="row">
+              <div className="cluster">
                 <button
+                  type="button"
                   className="button secundario pequeno"
                   onClick={() =>
                     void action(
@@ -1077,6 +1218,7 @@ export default function PlanEditor() {
                   Reabrir como rascunho
                 </button>
                 <button
+                  type="button"
                   className="button secundario pequeno"
                   onClick={() =>
                     void action(
@@ -1094,11 +1236,11 @@ export default function PlanEditor() {
       )}
 
       <div className="editor-plan">
-        <div>
+        <div className="editor-main">
           {/* ------------------------------------------------------- plan header */}
-          <div className="card" style={{ marginBottom: "0.9rem" }}>
-            <div className="grid two">
-              <div className="field" style={{ gridColumn: "span 2" }}>
+          <div className="card plan-settings">
+            <div className="plan-grid">
+              <div className="field span-6">
                 <label htmlFor="pl-titulo">Título do plano</label>
                 <input
                   id="pl-titulo"
@@ -1113,7 +1255,7 @@ export default function PlanEditor() {
                 />
               </div>
 
-              <div className="field">
+              <div className={`field ${!planId && !template ? "span-3" : "span-6"}`}>
                 <label htmlFor="pl-paciente">Paciente</label>
                 <select
                   id="pl-paciente"
@@ -1131,11 +1273,11 @@ export default function PlanEditor() {
                     </option>
                   ))}
                 </select>
-                {template && <span className="minusculo">Modelo não pertence a um paciente.</span>}
+                {template && <span className="field-hint">Modelo não pertence a um paciente.</span>}
               </div>
 
               {!planId && !template && (
-                <div className="field">
+                <div className="field span-3">
                   <label htmlFor="pl-modelo">Modelo</label>
                   <select
                     id="pl-modelo"
@@ -1150,14 +1292,14 @@ export default function PlanEditor() {
                     ))}
                   </select>
                   {templates.length === 0 && (
-                    <span className="minusculo">
+                    <span className="field-hint">
                       Você ainda não salvou modelos. Marque “Salvar como modelo” num plano.
                     </span>
                   )}
                 </div>
               )}
 
-              <div className="field">
+              <div className="field span-3">
                 <label htmlFor="pl-meta">Meta energética (kcal/dia)</label>
                 <input
                   id="pl-meta"
@@ -1173,15 +1315,16 @@ export default function PlanEditor() {
                 {patientId && !template && (
                   <button
                     type="button"
-                    className="link-voltar minusculo"
+                    className="button link pequeno plan-import"
                     onClick={() => void importFromEnergy()}
                   >
+                    <Calculator aria-hidden="true" />
                     Importar do cálculo energético
                   </button>
                 )}
               </div>
 
-              <div className="field">
+              <div className="field span-3">
                 <label htmlFor="pl-peso">Peso programado (kg)</label>
                 <input
                   id="pl-peso"
@@ -1194,13 +1337,13 @@ export default function PlanEditor() {
                   }}
                   placeholder="80"
                 />
-                <span className="minusculo">Base do g/kg no relatório.</span>
+                <span className="field-hint">Base do g/kg no relatório.</span>
               </div>
 
-              <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <div className="field span-3 plan-dist">
                 <label>Distribuição planejada (% da energia)</label>
                 <div className="distribuicao-metas">
-                  <label className="minusculo" htmlFor="pl-ptn">
+                  <label htmlFor="pl-ptn">
                     PTN
                     <input
                       id="pl-ptn"
@@ -1214,7 +1357,7 @@ export default function PlanEditor() {
                       placeholder="30"
                     />
                   </label>
-                  <label className="minusculo" htmlFor="pl-cho">
+                  <label htmlFor="pl-cho">
                     CHO
                     <input
                       id="pl-cho"
@@ -1228,7 +1371,7 @@ export default function PlanEditor() {
                       placeholder="50"
                     />
                   </label>
-                  <label className="minusculo" htmlFor="pl-lip">
+                  <label htmlFor="pl-lip">
                     LIP
                     <input
                       id="pl-lip"
@@ -1250,7 +1393,7 @@ export default function PlanEditor() {
                 </div>
               </div>
 
-              <div className="field">
+              <div className="field span-3 plan-dates">
                 <label>Vigência</label>
                 <div className="dates-par">
                   <input
@@ -1263,6 +1406,9 @@ export default function PlanEditor() {
                     aria-label="Início da vigência"
                     disabled={!podeEdit}
                   />
+                  <span className="dates-sep" aria-hidden="true">
+                    –
+                  </span>
                   <input
                     type="date"
                     value={validityEnd}
@@ -1277,7 +1423,7 @@ export default function PlanEditor() {
               </div>
             </div>
 
-            <label className="row" style={{ gap: "0.4rem", marginTop: "0.8rem" }}>
+            <label className="plan-template-toggle">
               <input
                 type="checkbox"
                 checked={template}
@@ -1286,42 +1432,41 @@ export default function PlanEditor() {
                   setTemplate(e.target.checked);
                   touch();
                 }}
-                style={{ width: "auto" }}
               />
-              <span className="discreto">
-                Salvar como modelo reaproveitável (sem paciente vinculado)
-              </span>
+              <span>Salvar como modelo reaproveitável (sem paciente vinculado)</span>
             </label>
 
-            <NotesField
-              label="Orientações ao paciente"
-              value={handouts}
-              onChange={(next) => {
-                setHandouts(next);
-                touch();
-              }}
-              minHeight="9rem"
-              help="Aparece no plano que o paciente abre e no PDF."
-              onDemand
-              disabled={!podeEdit}
-            />
+            <div className="plan-texts">
+              <NotesField
+                label="Orientações ao paciente"
+                value={handouts}
+                onChange={(next) => {
+                  setHandouts(next);
+                  touch();
+                }}
+                minHeight="7rem"
+                help="Aparece no plano que o paciente abre e no PDF."
+                onDemand
+                disabled={!podeEdit}
+              />
 
-            <NotesField
-              label="Anotações internas"
-              value={internalNotes}
-              onChange={(next) => {
-                setInternalNotes(next);
-                touch();
-              }}
-              minHeight="9rem"
-              help="Nunca sai no link do paciente."
-              onDemand
-              disabled={!podeEdit}
-            />
+              <NotesField
+                label="Anotações internas"
+                value={internalNotes}
+                onChange={(next) => {
+                  setInternalNotes(next);
+                  touch();
+                }}
+                minHeight="7rem"
+                help="Nunca sai no link do paciente."
+                onDemand
+                disabled={!podeEdit}
+              />
+            </div>
           </div>
 
           {quick && (
-            <div style={{ marginBottom: "0.9rem" }}>
+            <div className="mb-2">
               {quick.what === "food" ? (
                 <QuickFood onCreated={useCreatedFood} onClose={() => setQuick(null)} />
               ) : (
@@ -1345,12 +1490,11 @@ export default function PlanEditor() {
 
           {/* ----------------------------------------------------------- meals */}
           {meals.length === 0 && podeEdit && (
-            <div className="card" style={{ marginBottom: "0.9rem" }}>
-              <p className="discreto" style={{ marginTop: 0 }}>
-                Nenhuma refeição neste plano.
-              </p>
+            <div className="card meals-empty">
+              <p className="discreto">Nenhuma refeição neste plano.</p>
               <button
-                className="button secundario pequeno"
+                type="button"
+                className="button secundario"
                 onClick={() => MEALS_DEFAULT.forEach((name) => addMeal(name))}
               >
                 Trazer as seis refeições
@@ -1390,48 +1534,52 @@ export default function PlanEditor() {
             próxima, e o cardápio só voltava recarregando a página.
           */}
           {podeEdit && (
-            <div className="row">
-              <button className="button secundario" onClick={() => addMeal()}>
+            <div className="meals-actions">
+              <button type="button" className="button secundario" onClick={() => addMeal()}>
                 + Adicionar refeição
               </button>
               <button
+                type="button"
                 className="button secundario"
                 onClick={() => setShowingFavorites((v) => !v)}
               >
+                <Star aria-hidden="true" />
                 Refeições salvas ({favorites.length})
               </button>
             </div>
           )}
 
           {showingFavorites && podeEdit && (
-            <div className="card" style={{ marginTop: "0.8rem" }}>
-              <h3 style={{ marginTop: 0 }}>Refeições salvas</h3>
+            <div className="card mt-3">
+              <div className="card-head">
+                <h3 className="card-title">Refeições salvas</h3>
+              </div>
               {favorites.length === 0 ? (
-                <p className="empty" style={{ margin: 0 }}>
+                <p className="empty">
                   Você ainda não salvou nenhuma. Use “Favoritar” numa refeição montada.
                 </p>
               ) : (
-                <div className="card-list">
+                <div className="stack tight">
                   {favorites.map((favorite) => (
-                    <div className="row favorita" key={favorite.id}>
-                      <div>
+                    <div className="favorita" key={favorite.id}>
+                      <div className="favorita-text">
                         <strong>{favorite.name}</strong>
                         <span className="minusculo">
-                          {" "}
-                          {favorite.mealName} ·{" "}
-                          {count(favorite.itemsTotal, "item", "itens")}
+                          {favorite.mealName} · {count(favorite.itemsTotal, "item", "itens")}
                           {favorite.energyKcal !== undefined &&
                             ` · ${Math.round(favorite.energyKcal)} kcal`}
                         </span>
                       </div>
-                      <div className="row">
+                      <div className="favorita-actions">
                         <button
+                          type="button"
                           className="button secundario pequeno"
                           onClick={() => void insertFavorite(favorite.id)}
                         >
                           Inserir
                         </button>
                         <button
+                          type="button"
                           className="button perigo pequeno"
                           onClick={async () => {
                             if (!confirm(`Remover "${favorite.name}" das salvas?`)) return;
@@ -1450,48 +1598,51 @@ export default function PlanEditor() {
           )}
         </div>
 
-        {/* ------------------------------------------------------- totals panel */}
-        <aside className="panel-totals">
-          <PanelTotals total={totalSaved} dirty={dirty} target={targetEnergy} />
-          <PanelDistribution
-            comparison={totalSaved?.comparison ?? []}
-            weightKg={plan?.targetWeightKg}
-          />
-          {plan && <PanelHandouts planId={plan.id} onlyRead={!podeEdit} />}
-          {plan && !plan.template && (
-            <PanelPublication plan={plan} onRun={action} onFlush={flush} />
-          )}
-          {plan && (
-            <div className="card">
-              <h3>Ações</h3>
-              <div className="row" style={{ marginTop: "0.5rem" }}>
-                <button
-                  className="button secundario pequeno"
-                  onClick={() =>
-                    action(
-                      () => api.prescriptions.duplicate(plan.id, plan.patientId ?? undefined),
-                      "Cópia criada como rascunho.",
-                    ).then(() => navigate("/prescriptions"))
-                  }
-                >
-                  Duplicar
-                </button>
-                <button
-                  className="button perigo pequeno"
-                  onClick={async () => {
-                    if (!confirm("Remover este plano definitivamente?")) return;
-                    await api.prescriptions.remove(plan.id);
-                    navigate("/prescriptions");
-                  }}
-                >
-                  Remover
-                </button>
-              </div>
-            </div>
-          )}
-        </aside>
+        {/* ------------------------------------------------------- totals rail */}
+        {!compact && <aside className="panel-totals">{rail}</aside>}
       </div>
-    </>
+
+      {compact && (
+        <>
+          <div className="editor-bottom-bar">
+            <button
+              type="button"
+              className="editor-readout"
+              onClick={() => setSheetOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={sheetOpen}
+            >
+              <MacroRing
+                size={24}
+                stroke={4}
+                protein={distributionDay?.proteinPct ?? 0}
+                carbohydrate={distributionDay?.carbohydratePct ?? 0}
+                fat={distributionDay?.lipidPct ?? 0}
+              />
+              <span className="editor-readout-text">
+                <span className="readout strong">
+                  {kcalDay === undefined ? "— kcal" : `${Math.round(kcalDay)} kcal`}
+                  {totalSaved?.adequacyEnergyPct !== undefined
+                    ? ` · ${Math.round(totalSaved.adequacyEnergyPct)}% da meta`
+                    : ""}
+                </span>
+                <span className="editor-readout-label">Totais e entrega</span>
+              </span>
+              <ChevronUp aria-hidden="true" />
+            </button>
+          </div>
+          <Sheet
+            open={sheetOpen}
+            onClose={() => setSheetOpen(false)}
+            title="Totais e entrega"
+            side="bottom"
+            className="editor-sheet"
+          >
+            <div className="panel-totals">{rail}</div>
+          </Sheet>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -1544,29 +1695,45 @@ function BlockMeal({
   onQuick: (keyItem: string, what: "food" | "measure") => void;
 }) {
   const quantifies = method !== "QUALITATIVE";
+  const notesEmpty = isEmptyDoc(parseRichDoc(meal.notes) ?? emptyDoc());
+  const toggleLabel = meal.collapsed ? "Expandir refeição" : "Resumir refeição";
 
   return (
-    <div className={`meal${meal.inCalculation ? "" : " fora-da-conta"}`}>
+    <div
+      className={`meal${meal.inCalculation ? "" : " fora-da-conta"}${
+        meal.collapsed ? " collapsed" : ""
+      }`}
+    >
       <div className="meal-top">
         <button
           type="button"
-          className="button secundario pequeno"
+          className="button icon ghost meal-toggle"
           aria-expanded={!meal.collapsed}
-          aria-label={meal.collapsed ? "Expandir refeição" : "Resumir refeição"}
+          aria-label={toggleLabel}
+          title={toggleLabel}
           onClick={() => onChange({ collapsed: !meal.collapsed })}
         >
-          {meal.collapsed ? "\u25b8" : "\u25be"}
+          {meal.collapsed ? (
+            <ChevronRight aria-hidden="true" />
+          ) : (
+            <ChevronDown aria-hidden="true" />
+          )}
         </button>
-        <input
-          type="time"
-          value={meal.time}
-          onChange={(e) => onChange({ time: e.target.value })}
-          disabled={onlyRead}
-          aria-label="Horário"
-          className="meal-hora"
-        />
+        {/* The hour chip of the day ruler, with the time input inside it. */}
+        <span className="meal-hora-chip">
+          <Clock aria-hidden="true" />
+          <input
+            type="time"
+            value={meal.time}
+            onChange={(e) => onChange({ time: e.target.value })}
+            disabled={onlyRead}
+            aria-label="Horário"
+            className="meal-hora"
+          />
+        </span>
         <input
           type="text"
+          className="meal-name"
           value={meal.name}
           onChange={(e) => onChange({ name: e.target.value })}
           disabled={onlyRead}
@@ -1575,27 +1742,23 @@ function BlockMeal({
         />
         <MacroTags composition={total?.composition} />
         {!onlyRead && (
-          <div className="row meal-acoes">
-            <label className="row" style={{ gap: "0.3rem", whiteSpace: "nowrap" }}>
+          <div className="meal-acoes">
+            <label className="switch meal-calc" title="Desligue para prescrever uma opção substituta">
               <input
                 type="checkbox"
                 checked={meal.inCalculation}
-                style={{ width: "auto" }}
                 onChange={(e) => onChange({ inCalculation: e.target.checked })}
               />
-              <span
-                className="minusculo"
-                title="Desligue para prescrever uma opção substituta"
-              >
-                Calcular
-              </span>
+              <span>Calcular</span>
             </label>
             <button
-              className="button secundario pequeno"
+              type="button"
+              className="button icon ghost"
               onClick={onFavorite}
-              title="Salvar esta refeição para usar em outros cardápios"
+              aria-label="Favoritar"
+              title="Favoritar: salvar esta refeição para usar em outros cardápios"
             >
-              Favoritar
+              <Star aria-hidden="true" />
             </button>
             <MealPhotoButton
               meal={meal}
@@ -1603,11 +1766,23 @@ function BlockMeal({
               onPhoto={onPhoto}
               onRemovePhoto={onRemovePhoto}
             />
-            <button className="button secundario pequeno" onClick={onDuplicate}>
-              Duplicar
+            <button
+              type="button"
+              className="button icon ghost"
+              onClick={onDuplicate}
+              aria-label="Duplicar"
+              title="Duplicar"
+            >
+              <Copy aria-hidden="true" />
             </button>
-            <button className="button perigo pequeno" onClick={onRemove}>
-              Remover
+            <button
+              type="button"
+              className="button icon ghost perigo"
+              onClick={onRemove}
+              aria-label="Remover"
+              title="Remover"
+            >
+              <Trash2 aria-hidden="true" />
             </button>
           </div>
         )}
@@ -1615,6 +1790,7 @@ function BlockMeal({
 
       {!meal.inCalculation && (
         <p className="aviso-substituta">
+          <TriangleAlert aria-hidden="true" />
           Fora da contabilização do dia. Os totais desta refeição continuam sendo calculados.
         </p>
       )}
@@ -1622,37 +1798,42 @@ function BlockMeal({
       {!meal.collapsed && (
         <>
           {meal.items.length === 0 ? (
-            <p className="empty" style={{ padding: "1rem" }}>
-              Busque um alimento abaixo para montar esta refeição.
-            </p>
+            <p className="empty meal-empty">Busque um alimento abaixo para montar esta refeição.</p>
           ) : (
             meal.items.map((item, index) =>
               item.kind === "SEPARATOR" ? (
                 <div className="separador-item" key={item.key}>
                   <span />
                   {!onlyRead && (
-                    <div className="row">
+                    <div className="item-acoes">
                       <button
-                        className="button secundario pequeno"
+                        type="button"
+                        className="button icon ghost pequeno"
                         aria-label="Subir separador"
+                        title="Subir separador"
                         disabled={index === 0}
                         onClick={() => onMoveItem(item.key, -1)}
                       >
-                        {"\u2191"}
+                        <ArrowUp aria-hidden="true" />
                       </button>
                       <button
-                        className="button secundario pequeno"
+                        type="button"
+                        className="button icon ghost pequeno"
                         aria-label="Descer separador"
+                        title="Descer separador"
                         disabled={index === meal.items.length - 1}
                         onClick={() => onMoveItem(item.key, 1)}
                       >
-                        {"\u2193"}
+                        <ArrowDown aria-hidden="true" />
                       </button>
                       <button
-                        className="button perigo pequeno"
+                        type="button"
+                        className="button icon ghost pequeno perigo"
+                        aria-label="Remover"
+                        title="Remover separador"
                         onClick={() => onRemoveItem(item.key)}
                       >
-                        Remover
+                        <X aria-hidden="true" />
                       </button>
                     </div>
                   )}
@@ -1680,17 +1861,28 @@ function BlockMeal({
           <MealNotes meal={meal} onlyRead={onlyRead} onChange={onChange} />
 
           {!onlyRead && (
-            <div className="row" style={{ padding: "0.6rem 0.9rem" }}>
-              <button className="button secundario pequeno" onClick={onAddItem}>
+            <div className="meal-foot">
+              <button type="button" className="button ghost meal-add" onClick={onAddItem}>
                 + Adicionar item
               </button>
               <button
-                className="button secundario pequeno"
+                type="button"
+                className="button ghost pequeno"
                 onClick={onAddSeparator}
                 title="Separa o que deve ser comido junto"
               >
                 + Separador
               </button>
+              {notesEmpty && !meal.editingNotes && (
+                <button
+                  type="button"
+                  className="button link pequeno meal-notes-open"
+                  onClick={() => onChange({ editingNotes: true })}
+                >
+                  <PenLine aria-hidden="true" />
+                  Escrever observações
+                </button>
+              )}
             </div>
           )}
         </>
@@ -1722,7 +1914,9 @@ function MealNotes({
   const doc = useMemo(() => parseRichDoc(meal.notes) ?? emptyDoc(), [meal.notes]);
   const empty = isEmptyDoc(doc);
 
-  if (onlyRead && empty) return null;
+  // Nothing written and nobody writing: the footer of the meal offers
+  // "Escrever observações", and this block stays out of the way.
+  if (empty && !(meal.editingNotes && !onlyRead)) return null;
 
   return (
     <div className="observacao-refeicao">
@@ -1737,27 +1931,26 @@ function MealNotes({
             }
           />
           <button
-            className="link-voltar minusculo"
+            type="button"
+            className="button link pequeno"
             onClick={() => onChange({ editingNotes: false })}
           >
             Fechar observações
           </button>
         </>
       ) : (
-        <div className="row" style={{ alignItems: "flex-start", gap: "0.6rem" }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {empty ? (
-              <span className="minusculo">Sem observações.</span>
-            ) : (
-              <RichTextView doc={doc} />
-            )}
+        <div className="observacao-view">
+          <div className="observacao-text">
+            <RichTextView doc={doc} />
           </div>
           {!onlyRead && (
             <button
-              className="button secundario pequeno"
+              type="button"
+              className="button link pequeno"
               onClick={() => onChange({ editingNotes: true })}
             >
-              {empty ? "Escrever observações" : "Editar"}
+              <PenLine aria-hidden="true" />
+              Editar
             </button>
           )}
         </div>
@@ -1790,11 +1983,13 @@ function MealPhotoButton({
   if (meal.photoName) {
     return (
       <button
-        className="button secundario pequeno"
+        type="button"
+        className="button icon ghost"
         onClick={onRemovePhoto}
-        title={meal.photoName}
+        aria-label="Tirar foto"
+        title={`Tirar foto: ${meal.photoName}`}
       >
-        Tirar foto
+        <CameraOff aria-hidden="true" />
       </button>
     );
   }
@@ -1802,15 +1997,16 @@ function MealPhotoButton({
   return (
     <>
       <label
-        className={`button secundario pequeno${available ? "" : " desabilitado"}`}
+        className={`button icon ghost${available ? "" : " desabilitado"}`}
         htmlFor={inputId}
+        aria-label="Foto"
         title={
           available
-            ? "Sai no PDF do cardápio"
-            : "Salve o plano para poder anexar a foto"
+            ? "Foto: sai no PDF do cardápio"
+            : "Foto: salve o plano para poder anexar a foto"
         }
       >
-        Foto
+        <Camera aria-hidden="true" />
       </label>
       <input
         id={inputId}
@@ -1839,14 +2035,12 @@ function MacroTags({ composition }: { composition?: Composition }) {
   const grams = (value?: number) => (value === undefined ? "\u2014" : Math.round(value));
   return (
     <div className="macro-tags">
-      <span title="Proteínas">PTN {grams(composition.proteinG)}</span>
-      <span title="Lipídeos">LIP {grams(composition.fatG)}</span>
-      <span title="Carboidratos">CHO {grams(composition.carbohydrateG)}</span>
-      <span className="kcal" title="Energia">
-        {composition.energyKcal === undefined
-          ? "\u2014"
-          : Math.round(composition.energyKcal)}{" "}
-        kcal
+      <span className="readout macro-readout" title="Proteínas · Lipídeos · Carboidratos">
+        PTN {grams(composition.proteinG)} · LIP {grams(composition.fatG)} · CHO{" "}
+        {grams(composition.carbohydrateG)}
+      </span>
+      <span className="readout strong macro-kcal" title="Energia">
+        {composition.energyKcal === undefined ? "\u2014" : Math.round(composition.energyKcal)} kcal
       </span>
     </div>
   );
@@ -1887,48 +2081,43 @@ function RowItem({
       : Number.isFinite(quantity)
         ? quantity
         : undefined;
+  const showSubstitutions = admitsSubstitutions && !!item.foodId;
 
   return (
     <div className="item-row">
+      <span className="item-handle" aria-hidden="true">
+        <GripVertical />
+      </span>
+
       <div className="description-item">
         {item.foodId ? (
+          <strong>{item.description}</strong>
+        ) : (
           <>
-            <strong>{item.description}</strong>
+            <FoodSearch
+              freeValue={item.description}
+              onFreeType={(text) => onChange({ description: text })}
+              onChoose={onChooseFood}
+              disabled={onlyRead}
+            />
             {!onlyRead && (
-              <small>
-                <button
-                  className="button secundario pequeno"
-                  style={{ marginTop: "0.2rem" }}
-                  onClick={() => onChange({ foodId: undefined, measureId: undefined, measures: [] })}
-                >
-                  trocar alimento
-                </button>
-              </small>
+              <button
+                type="button"
+                className="button link pequeno"
+                onClick={onNewFood}
+                title="Cadastrar sem sair do cardápio"
+              >
+                Não achei: cadastrar alimento
+              </button>
             )}
           </>
-        ) : (
-          <FoodSearch
-            freeValue={item.description}
-            onFreeType={(text) => onChange({ description: text })}
-            onChoose={onChooseFood}
-            disabled={onlyRead}
-          />
-        )}
-        {!onlyRead && !item.foodId && (
-          <button
-            type="button"
-            className="link-voltar minusculo"
-            onClick={onNewFood}
-            title="Cadastrar sem sair do cardápio"
-          >
-            Não achei: cadastrar alimento
-          </button>
         )}
       </div>
 
       {quantifies ? (
         <>
           <input
+            className="item-qty"
             inputMode="decimal"
             value={item.quantity}
             onChange={(e) => onChange({ quantity: e.target.value })}
@@ -1937,6 +2126,7 @@ function RowItem({
             aria-label="Quantidade"
           />
           <select
+            className="item-unit"
             value={item.measureId ?? ""}
             onChange={(e) =>
               onChange({ measureId: e.target.value ? Number(e.target.value) : undefined })
@@ -1951,65 +2141,78 @@ function RowItem({
               </option>
             ))}
           </select>
-          {!onlyRead && item.foodId && (
+          {!onlyRead && item.foodId ? (
             <button
               type="button"
-              className="button secundario pequeno"
+              className="button icon ghost pequeno item-measure"
               onClick={onNewMeasure}
-              title="Cadastrar uma medida caseira para este alimento"
+              aria-label="+ medida"
+              title="+ medida: cadastrar uma medida caseira para este alimento"
             >
-              + medida
+              <Plus aria-hidden="true" />
             </button>
+          ) : (
+            <span className="item-measure" />
           )}
-          <span className="mono discreto" style={{ textAlign: "right" }}>
+          <span className="readout item-grams">
             {grams !== undefined && grams > 0 ? `${round(grams)} g` : "—"}
           </span>
         </>
       ) : (
-        <>
-          <span className="discreto" style={{ gridColumn: "span 3" }}>
-            à vontade / sem quantificar
-          </span>
-        </>
+        <span className="discreto item-free">à vontade / sem quantificar</span>
       )}
 
       {!onlyRead ? (
-        <div className="row item-acoes">
+        <div className="item-acoes">
           <button
-            className="button secundario pequeno"
+            type="button"
+            className="button icon ghost pequeno"
             aria-label="Subir item"
+            title="Subir item"
             disabled={first}
             onClick={() => onMove(-1)}
           >
-            {"↑"}
+            <ArrowUp aria-hidden="true" />
           </button>
           <button
-            className="button secundario pequeno"
+            type="button"
+            className="button icon ghost pequeno"
             aria-label="Descer item"
+            title="Descer item"
             disabled={last}
             onClick={() => onMove(1)}
           >
-            {"↓"}
+            <ArrowDown aria-hidden="true" />
           </button>
-          <button className="button perigo pequeno" onClick={onRemove} aria-label="Remover item">
-            {"×"}
+          <button
+            type="button"
+            className="button icon ghost pequeno perigo"
+            onClick={onRemove}
+            aria-label="Remover item"
+            title="Remover item"
+          >
+            <X aria-hidden="true" />
           </button>
         </div>
       ) : (
-        <span />
+        <span className="item-acoes" />
       )}
 
-      {item.kind !== "SEPARATOR" && (
-        <div style={{ gridColumn: "1 / -1", paddingLeft: "0.4rem" }}>
-          <ItemNotes item={item} onlyRead={onlyRead} onChange={onChange} />
-        </div>
-      )}
-
-      {admitsSubstitutions && item.foodId && (
-        <div style={{ gridColumn: "1 / -1", paddingLeft: "0.4rem" }}>
+      <div className="item-extra">
+        {!onlyRead && item.foodId && (
+          <button
+            type="button"
+            className="button link pequeno"
+            onClick={() => onChange({ foodId: undefined, measureId: undefined, measures: [] })}
+          >
+            trocar alimento
+          </button>
+        )}
+        <ItemNotes item={item} onlyRead={onlyRead} onChange={onChange} />
+        {showSubstitutions && (
           <Substitutions item={item} onlyRead={onlyRead} onChange={onChange} />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -2105,31 +2308,34 @@ function Substitutions({
     }
   }
 
+  if (onlyRead && item.substitutions.length === 0) return null;
+
   return (
-    <div style={{ borderLeft: "2px solid var(--line-strong)", paddingLeft: "0.6rem", marginTop: "0.3rem" }}>
-      <span className="minusculo">Substituições</span>
+    <div className="subs">
       {item.substitutions.map((substitution) => (
-        <div className="row" key={substitution.key} style={{ gap: "0.4rem", marginTop: "0.25rem" }}>
-          <div style={{ flex: 2, minWidth: 150 }}>
+        <div className="sub-row" key={substitution.key}>
+          <span className="sub-mark" aria-hidden="true">
+            <ArrowLeftRight />
+            ou
+          </span>
+          <div className="sub-food">
             {substitution.foodId ? (
               <>
-                <strong className="minusculo">{substitution.description}</strong>
+                <strong>{substitution.description}</strong>
                 {!onlyRead && (
-                  <div>
-                    <button
-                      className="button secundario pequeno"
-                      style={{ marginTop: "0.2rem" }}
-                      onClick={() =>
-                        patch(substitution.key, {
-                          foodId: undefined,
-                          measureId: undefined,
-                          measures: [],
-                        })
-                      }
-                    >
-                      trocar alimento
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="button link pequeno"
+                    onClick={() =>
+                      patch(substitution.key, {
+                        foodId: undefined,
+                        measureId: undefined,
+                        measures: [],
+                      })
+                    }
+                  >
+                    trocar alimento
+                  </button>
                 )}
               </>
             ) : (
@@ -2143,7 +2349,7 @@ function Substitutions({
             )}
           </div>
           <input
-            style={{ width: 80 }}
+            className="sub-qty"
             inputMode="decimal"
             value={substitution.quantity}
             placeholder="qtd"
@@ -2152,7 +2358,7 @@ function Substitutions({
             onChange={(e) => patch(substitution.key, { quantity: e.target.value })}
           />
           <select
-            style={{ width: 120 }}
+            className="sub-unit"
             value={substitution.measureId ?? ""}
             disabled={onlyRead || substitution.measures.length === 0}
             aria-label="Medida da substituição"
@@ -2169,10 +2375,12 @@ function Substitutions({
               </option>
             ))}
           </select>
-          {!onlyRead && (
+          {!onlyRead ? (
             <button
-              className="button perigo pequeno"
+              type="button"
+              className="button icon ghost pequeno perigo sub-remove"
               aria-label="Remover substituição"
+              title="Remover substituição"
               onClick={() =>
                 onChange((current) => ({
                   substitutions: current.substitutions.filter(
@@ -2181,15 +2389,17 @@ function Substitutions({
                 }))
               }
             >
-              ×
+              <X aria-hidden="true" />
             </button>
+          ) : (
+            <span className="sub-remove" />
           )}
         </div>
       ))}
       {!onlyRead && (
         <button
-          className="button secundario pequeno"
-          style={{ marginTop: "0.3rem" }}
+          type="button"
+          className="button link pequeno"
           onClick={() =>
             onChange((current) => ({
               substitutions: [
@@ -2233,51 +2443,56 @@ function PanelDistribution({
 
   return (
     <div className="card">
-      <h3>Distribuição</h3>
-      <p className="minusculo" style={{ marginTop: "0.2rem" }}>
-        Prescrito contra o planejado. Dentro de 95 a 105% está no alvo.
-      </p>
+      <div className="card-head">
+        <div>
+          <h3 className="card-title">Distribuição</h3>
+          <p className="card-sub">Prescrito contra o planejado. Dentro de 95 a 105% está no alvo.</p>
+        </div>
+      </div>
 
-      <table className="tabela-distribuicao">
-        <thead>
-          <tr>
-            <th>Macro</th>
-            <th className="num">Prescrito</th>
-            <th className="num">Teórico</th>
-            <th className="num">Diferença</th>
-          </tr>
-        </thead>
-        <tbody>
-          {comparison.map((row) => (
-            <tr key={row.macro}>
-              <td>
-                {row.description}
-                {weightKg !== undefined && row.prescribedPerKg !== undefined && (
-                  <span className="minusculo">
-                    {" "}
-                    {row.prescribedPerKg.toLocaleString("pt-BR")} g/kg
-                  </span>
-                )}
-              </td>
-              <td className="num">{gram(row.prescribedG)}</td>
-              <td className="num discreto">{gram(row.theoreticalG)}</td>
-              <td className="num">
-                <span className={`faixa ${bandClass(row.band)}`}>
-                  {row.differenceG === undefined || row.differenceG === null
-                    ? "\u2014"
-                    : `${row.differenceG > 0 ? "+" : ""}${Math.round(row.differenceG)} g`}
-                  {row.adequacyPct !== undefined && (
-                    <span className="minusculo"> {Math.round(row.adequacyPct)}%</span>
-                  )}
-                </span>
-              </td>
+      {/* Numeric-table rule B: on a narrow rail the four columns do not fit,
+          so the table scrolls sideways with the macro column held. */}
+      <div className="table-scroll">
+        <table className="tabela-distribuicao">
+          <thead>
+            <tr>
+              <th>Macro</th>
+              <th className="num">Prescrito</th>
+              <th className="num">Teórico</th>
+              <th className="num">Diferença</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {comparison.map((row) => (
+              <tr key={row.macro}>
+                <td>
+                  {row.description}
+                  {weightKg !== undefined && row.prescribedPerKg !== undefined && (
+                    <span className="readout dist-perkg">
+                      {row.prescribedPerKg.toLocaleString("pt-BR")} g/kg
+                    </span>
+                  )}
+                </td>
+                <td className="num">{gram(row.prescribedG)}</td>
+                <td className="num discreto">{gram(row.theoreticalG)}</td>
+                <td className="num">
+                  <span className={`faixa ${bandClass(row.band)}`}>
+                    {row.differenceG === undefined || row.differenceG === null
+                      ? "\u2014"
+                      : `${row.differenceG > 0 ? "+" : ""}${Math.round(row.differenceG)} g`}
+                    {row.adequacyPct !== undefined && (
+                      <span className="faixa-pct"> {Math.round(row.adequacyPct)}%</span>
+                    )}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {weightKg !== undefined && (
-        <p className="minusculo" style={{ marginBottom: 0 }}>
+        <p className="minusculo dist-note">
           g/kg sobre o peso programado de {weightKg.toLocaleString("pt-BR")} kg.
         </p>
       )}
@@ -2316,15 +2531,42 @@ function SavingState({
   // O plano encerrado vem primeiro: é a razão mais forte para nada estar sendo
   // gravado, e dizer "falta título" no lugar dela manda procurar o problema
   // onde ele não está.
-  if (closed) return <span className="tag">plano encerrado</span>;
-  if (saving) return <span className="tag">salvando…</span>;
-  if (dirty && !saveable) {
-    return <span className="tag ambar">falta título ou paciente para salvar</span>;
+  if (closed) {
+    return (
+      <span className="tag saving-state">
+        <Lock aria-hidden="true" />
+        plano encerrado
+      </span>
+    );
   }
-  if (dirty) return <span className="tag">alterações pendentes</span>;
+  if (saving) {
+    return (
+      <span className="tag saving-state">
+        <LoaderCircle aria-hidden="true" className="spin" />
+        salvando…
+      </span>
+    );
+  }
+  if (dirty && !saveable) {
+    return (
+      <span className="tag ambar saving-state">
+        <CircleAlert aria-hidden="true" />
+        falta título ou paciente para salvar
+      </span>
+    );
+  }
+  if (dirty) {
+    return (
+      <span className="tag saving-state">
+        <CircleDot aria-hidden="true" />
+        alterações pendentes
+      </span>
+    );
+  }
   if (savedAt) {
     return (
-      <span className="tag verde">
+      <span className="tag verde saving-state">
+        <Check aria-hidden="true" />
         salvo às{" "}
         {savedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
       </span>
@@ -2336,14 +2578,16 @@ function SavingState({
 function PanelTotals({ total, dirty, target }: { total?: Total; dirty: boolean; target: string }) {
   if (!total) {
     return (
-      <div className="card">
-        <h3>Totais do dia</h3>
+      <div className="card totals-card">
+        <div className="card-head">
+          <h3 className="card-title">Totais do dia</h3>
+        </div>
         {/*
           O total agora acompanha a edição sozinho. Quando ele não está aqui é
           porque falta o que identifica o plano — e é isso que a frase precisa
           dizer, em vez de mandar salvar.
         */}
-        <p className="discreto" style={{ marginBottom: 0 }}>
+        <p className="discreto totals-empty">
           Dê um título ao plano e escolha o paciente para os totais começarem a
           aparecer.
         </p>
@@ -2353,58 +2597,85 @@ function PanelTotals({ total, dirty, target }: { total?: Total; dirty: boolean; 
 
   const distribution = total.distribution;
   const targetNumber = target ? Number(target.replace(",", ".")) : undefined;
+  const kcal = total.composition.energyKcal;
+  const delta =
+    targetNumber !== undefined && Number.isFinite(targetNumber) && kcal !== undefined
+      ? kcal - targetNumber
+      : undefined;
 
   return (
-    <div className="card">
-      <h3>Totais do dia</h3>
+    <div className="card totals-card">
+      <div className="card-head">
+        <h3 className="card-title">Totais do dia</h3>
+      </div>
 
       {dirty && (
-        <div className="warning attention" style={{ margin: "0.5rem 0", fontSize: "0.8rem" }}>
+        <div className="warning attention totals-dirty">
           Há alterações não salvas. Os números abaixo referem-se à última versão salva.
         </div>
       )}
 
-      <div style={{ marginTop: "0.5rem" }}>
-        {MACROS_PRINCIPAIS.map((key) => {
-          const definition = NUTRIENTS.find((n) => n.key === key)!;
-          const value = total.composition[key];
-          const missing = value === undefined || value === null;
-          return (
-            <div key={key} className={`nutrient-row ${missing ? "missing" : ""}`}>
-              <span>{definition.label}</span>
-              <span>{formatNutrient(value, definition.unit)}</span>
-            </div>
-          );
-        })}
+      <div className="totals-hero">
+        <MacroRing
+          size={96}
+          stroke={9}
+          protein={distribution?.proteinPct ?? 0}
+          carbohydrate={distribution?.carbohydratePct ?? 0}
+          fat={distribution?.lipidPct ?? 0}
+          label={
+            distribution
+              ? `Distribuição energética: ${distribution.proteinPct}% proteína, ${distribution.carbohydratePct}% carboidrato, ${distribution.lipidPct}% gordura`
+              : undefined
+          }
+        >
+          <span className="totals-kcal">{kcal === undefined ? "\u2014" : Math.round(kcal)}</span>
+          <span className="totals-unit" aria-hidden="true" />
+        </MacroRing>
+        <div className="totals-lines">
+          {MACROS_PRINCIPAIS.map((key) => {
+            const definition = NUTRIENTS.find((n) => n.key === key)!;
+            const value = total.composition[key];
+            const missing = value === undefined || value === null;
+            return (
+              <div key={key} className={`nutrient-row ${missing ? "missing" : ""}`}>
+                <span>{definition.label}</span>
+                <span>{formatNutrient(value, definition.unit)}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {distribution && (
-        <div style={{ marginTop: "0.9rem" }}>
-          <span className="minusculo">Distribuição energética</span>
-          <div className="bar-macro" style={{ marginTop: "0.3rem" }}>
-            <i style={{ width: `${distribution.proteinPct}%`, background: COLORS_MACRO.protein }} />
-            <i style={{ width: `${distribution.carbohydratePct}%`, background: COLORS_MACRO.carbohydrate }} />
-            <i style={{ width: `${distribution.lipidPct}%`, background: COLORS_MACRO.lipid }} />
-          </div>
-          <div className="legenda-macro" style={{ marginTop: "0.35rem" }}>
-            <span>
-              <i style={{ background: COLORS_MACRO.protein }} />
-              Prot. {distribution.proteinPct}%
-            </span>
-            <span>
-              <i style={{ background: COLORS_MACRO.carbohydrate }} />
-              Carb. {distribution.carbohydratePct}%
-            </span>
-            <span>
-              <i style={{ background: COLORS_MACRO.lipid }} />
-              Gord. {distribution.lipidPct}%
-            </span>
-          </div>
+        <div className="legenda-macro">
+          <span>
+            <i className="sw sw-prot" />
+            Prot. {distribution.proteinPct}%
+          </span>
+          <span>
+            <i className="sw sw-carb" />
+            Carb. {distribution.carbohydratePct}%
+          </span>
+          <span>
+            <i className="sw sw-fat" />
+            Gord. {distribution.lipidPct}%
+          </span>
         </div>
       )}
 
+      {/* The reading against the goal: what the nutritionist adjusts against. */}
+      {delta !== undefined && targetNumber !== undefined && (
+        <p className="totals-meta readout">
+          <span>meta {targetNumber.toLocaleString("pt-BR")}</span>
+          <span className={`totals-delta ${bandClass(total.energyBand)}`}>
+            {delta > 0 ? "+" : ""}
+            {Math.round(delta)}
+          </span>
+        </p>
+      )}
+
       {total.adequacyEnergyPct !== undefined && targetNumber ? (
-        <p className="discreto" style={{ marginTop: "0.8rem", marginBottom: 0 }}>
+        <p className="discreto totals-adequacy">
           <strong>{total.adequacyEnergyPct}%</strong> da meta de {targetNumber} kcal.
         </p>
       ) : null}
@@ -2415,7 +2686,7 @@ function PanelTotals({ total, dirty, target }: { total?: Total; dirty: boolean; 
         exact number would mislead the professional.
       */}
       {total.nutrientsIncomplete.length > 0 && (
-        <div className="warning attention" style={{ marginTop: "0.8rem", fontSize: "0.8rem" }}>
+        <div className="warning attention totals-partial">
           <strong>Total parcial.</strong> Nem todos os itens têm dado para{" "}
           {total.nutrientsIncomplete.slice(0, 4).map(labelDe).join(", ")}
           {total.nutrientsIncomplete.length > 4
@@ -2426,7 +2697,7 @@ function PanelTotals({ total, dirty, target }: { total?: Total; dirty: boolean; 
       )}
 
       {total.itemsOutsideCalculation > 0 && (
-        <p className="minusculo" style={{ marginTop: "0.6rem", marginBottom: 0 }}>
+        <p className="minusculo totals-outside">
           {total.itemsOutsideCalculation} item(ns) without quantity não entraram no cálculo.
         </p>
       )}
@@ -2498,22 +2769,20 @@ function PanelHandouts({
 
   return (
     <div className="card">
-      <h3>Orientações</h3>
+      <div className="card-head">
+        <h3 className="card-title">Orientações</h3>
+      </div>
 
-      {error && (
-        <div className="warning error" style={{ margin: "0.5rem 0" }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="warning error mb-2">{error}</div>}
 
       {attached.length === 0 ? (
-        <p className="minusculo" style={{ marginTop: "0.4rem" }}>
+        <p className="minusculo handout-none">
           Nenhuma anexada. O paciente recebe estes textos junto do plano, no link e no PDF.
         </p>
       ) : (
         attached.map((a) => (
-          <div className="row" key={a.id} style={{ marginTop: "0.5rem", gap: "0.4rem" }}>
-            <span style={{ flex: 1, fontSize: "0.88rem" }}>{a.title}</span>
+          <div className="handout-row" key={a.id}>
+            <span>{a.title}</span>
             {/* The figure was copied along: whoever builds the plan needs to know
                 that the patient will receive the drawing, not only the text. */}
             {a.hasImage && <span className="tag">com figura</span>}
@@ -2528,22 +2797,12 @@ function PanelHandouts({
         ))
       )}
 
-      <div
-        className="row"
-        style={{ marginTop: "0.7rem", gap: "0.4rem", display: onlyRead ? "none" : undefined }}
-      >
+      <div className={`handout-attach${onlyRead ? " hidden" : ""}`}>
         <select
           value={escolhida}
           disabled={onlyRead}
           onChange={(e) => setEscolhida(e.target.value)}
           aria-label="Orientação da biblioteca"
-          style={{
-            flex: 1,
-            fontSize: "0.84rem",
-            padding: "0.3rem 0.45rem",
-            border: "1px solid var(--outline-field)",
-            borderRadius: "var(--radius)",
-          }}
         >
           <option value="">Escolher da biblioteca…</option>
           {available.map((o) => (
@@ -2554,7 +2813,7 @@ function PanelHandouts({
         </select>
         <button
           type="button"
-          className="button secundario pequeno"
+          className="button secundario"
           onClick={attach}
           disabled={!escolhida}
         >
@@ -2615,41 +2874,43 @@ function PanelPublication({
 
   return (
     <div className="card">
-      <h3>Entrega ao paciente</h3>
+      <div className="card-head">
+        <h3 className="card-title">Entrega ao paciente</h3>
+      </div>
 
       {/* The printout comes before the link: the patient has no account in the
           system, and leaves the appointment with the sheet in hand. */}
       <button
         type="button"
-        className="button secundario"
-        style={{ width: "100%", justifyContent: "center", marginTop: "0.5rem" }}
+        className="button secundario w-full"
         onClick={openPdf}
         disabled={generatingPdf}
       >
+        <FileText aria-hidden="true" />
         {generatingPdf ? "Gerando…" : "Plano em PDF"}
       </button>
 
       {plan.status === "DRAFT" ? (
         <>
-          <p className="discreto" style={{ marginTop: "0.7rem" }}>
+          <p className="discreto publication-note">
             O plano ainda é um rascunho: quem abrir o link não encontra nada, e o PDF sai marcado
             como rascunho.
           </p>
           <button
-            className="button"
-            style={{ width: "100%", justifyContent: "center" }}
+            type="button"
+            className="button w-full"
             onClick={() => onRun(() => api.prescriptions.publish(plan.id), "Plano publicado.")}
           >
+            <Send aria-hidden="true" />
             Publicar plano
           </button>
         </>
       ) : (
         <>
-          <p className="minusculo" style={{ marginTop: "0.4rem", wordBreak: "break-all" }}>
-            {address}
-          </p>
-          <div className="row" style={{ marginTop: "0.5rem" }}>
-            <button className="button secundario pequeno" onClick={copy}>
+          <code className="readout link-address">{address}</code>
+          <div className="publication-actions">
+            <button type="button" className="button secundario pequeno" onClick={copy}>
+              <Copy aria-hidden="true" />
               {copied ? "Copiado!" : "Copiar link"}
             </button>
             <a
@@ -2658,13 +2919,15 @@ function PanelPublication({
               target="_blank"
               rel="noreferrer"
             >
+              <ExternalLink aria-hidden="true" />
               Abrir
             </a>
           </div>
 
-          <div className="row" style={{ marginTop: "0.6rem" }}>
+          <div className="publication-actions">
             {plan.status === "ACTIVE" && (
               <button
+                type="button"
                 className="button secundario pequeno"
                 onClick={() =>
                   onRun(() => api.prescriptions.close(plan.id), "Plano encerrado.")
@@ -2674,6 +2937,7 @@ function PanelPublication({
               </button>
             )}
             <button
+              type="button"
               className="button secundario pequeno"
               onClick={() =>
                 onRun(
@@ -2687,8 +2951,8 @@ function PanelPublication({
           </div>
 
           <button
-            className="button perigo pequeno"
-            style={{ marginTop: "0.5rem", width: "100%", justifyContent: "center" }}
+            type="button"
+            className="button perigo pequeno w-full publication-regenerate"
             onClick={() => {
               if (!confirm("Gerar um novo link invalida o que o paciente já recebeu. Continuar?")) return;
               void onRun(
