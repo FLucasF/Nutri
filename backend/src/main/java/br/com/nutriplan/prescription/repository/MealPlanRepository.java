@@ -14,12 +14,19 @@ public interface MealPlanRepository extends JpaRepository<MealPlan, Long> {
 
     Optional<MealPlan> findByIdAndAccountId(Long id, Long accountId);
 
+    /*
+     * O termo de busca vai com tipo declarado.
+     *
+     * Sem o cast, um termo nulo dentro do concat faz o PostgreSQL assumir
+     * bytea e recusar a consulta inteira. So aparece no banco de verdade: o H2
+     * em modo de compatibilidade assume texto e responde normalmente.
+     */
     @Query("""
            select p from MealPlan p
            where p.accountId = :accountId
              and (:patientId is null or p.patientId = :patientId)
              and (:template is null or p.template = :template)
-             and (:term is null or lower(p.title) like lower(concat('%', :term, '%')))
+             and (cast(:term as string) is null or lower(p.title) like lower(concat('%', cast(:term as string), '%')))
            """)
     Page<MealPlan> find(@Param("accountId") Long accountId,
                                 @Param("patientId") Long patientId,

@@ -22,11 +22,18 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
      * The term is compared against search_description, already without accents
      * and in lowercase, so that "acucar" finds "Açúcar".
      */
+    /*
+     * O termo de busca vai com tipo declarado.
+     *
+     * Sem o cast, um termo nulo dentro do concat faz o PostgreSQL assumir
+     * bytea e recusar a consulta inteira. So aparece no banco de verdade: o H2
+     * em modo de compatibilidade assume texto e responde normalmente.
+     */
     @Query("""
            select a from Food a
            where a.active = true
              and (a.accountId is null or a.accountId = :accountId)
-             and (:term is null or a.descriptionSearch like concat('%', :term, '%'))
+             and (cast(:term as string) is null or a.descriptionSearch like concat('%', cast(:term as string), '%'))
              and (:group is null or a.group = :group)
              and (:source is null or a.source = :source)
            """)
@@ -68,7 +75,7 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
            select a from Food a
            where a.active = true
              and (a.accountId is null or a.accountId = :accountId)
-             and a.descriptionSearch like concat('%', :term, '%')
+             and a.descriptionSearch like concat('%', cast(:term as string), '%')
              and (:group is null or a.group = :group)
              and (:source is null or a.source = :source)
            order by
@@ -139,7 +146,7 @@ public interface FoodRepository extends JpaRepository<Food, Long> {
            where a.active = true
              and a.source = br.com.nutriplan.food.domain.DataSource.RECIPE
              and a.accountId = :accountId
-             and (:term is null or a.descriptionSearch like concat('%', :term, '%'))
+             and (cast(:term as string) is null or a.descriptionSearch like concat('%', cast(:term as string), '%'))
            order by a.description
            """)
     Page<Food> findRecipes(@Param("accountId") Long accountId,

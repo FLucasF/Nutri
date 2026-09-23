@@ -17,8 +17,20 @@ public interface LabtestPanelRepository extends JpaRepository<LabtestPanel, Long
      * Os próprios vêm primeiro. Ele criou aquele painel porque usa, e o que se
      * usa todo dia não deveria estar abaixo de 25 que se usam raramente.
      */
+    /*
+     * Sem `distinct`, de proposito.
+     *
+     * O PostgreSQL exige que toda expressao do ORDER BY apareca na lista de
+     * selecao quando ha DISTINCT, e o `case when` daqui nao aparece — a
+     * consulta devolvia 500. O H2 aceitava, e por isso o defeito so surgiu no
+     * banco de verdade.
+     *
+     * Tirar o distinct nao traz linha repetida: desde o Hibernate 6, o join
+     * fetch ja elimina as raizes duplicadas na montagem do resultado, e o
+     * distinct servia justamente para isso.
+     */
     @Query("""
-           select distinct p from LabtestPanel p
+           select p from LabtestPanel p
            left join fetch p.parameters pp
            left join fetch pp.parameter
            where p.active = true and (p.accountId is null or p.accountId = :accountId)

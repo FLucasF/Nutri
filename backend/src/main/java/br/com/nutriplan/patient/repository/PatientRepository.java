@@ -18,14 +18,21 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     Optional<Patient> findByIdAndAccountId(Long id, Long accountId);
 
+    /*
+     * O termo de busca vai com tipo declarado.
+     *
+     * Sem o cast, um termo nulo dentro do concat faz o PostgreSQL assumir
+     * bytea e recusar a consulta inteira. So aparece no banco de verdade: o H2
+     * em modo de compatibilidade assume texto e responde normalmente.
+     */
     @Query("""
            select p from Patient p
            where p.accountId = :accountId
              and (:active is null or p.active = :active)
-             and (:term is null
-                  or lower(p.name)     like lower(concat('%', :term, '%'))
-                  or lower(p.email)    like lower(concat('%', :term, '%'))
-                  or p.phone        like concat('%', :term, '%'))
+             and (cast(:term as string) is null
+                  or lower(p.name)     like lower(concat('%', cast(:term as string), '%'))
+                  or lower(p.email)    like lower(concat('%', cast(:term as string), '%'))
+                  or p.phone        like concat('%', cast(:term as string), '%'))
            """)
     Page<Patient> find(@Param("accountId") Long accountId,
                           @Param("term") String term,

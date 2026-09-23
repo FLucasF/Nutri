@@ -23,7 +23,14 @@ spring:
       write-dates-as-timestamps: false
 
 server:
-  port: 8080
+  # A porta vem do ambiente quando ele a informa.
+  #
+  # Plataformas de hospedagem escolhem a porta e a entregam em PORT — o Render
+  # usa 10000. Ficar fixo em 8080 faz o serviço subir sem ninguem encontra-lo:
+  # a aplicacao responde, o roteador bate noutra porta, e a tela fica em
+  # "Application loading" ate o deploy ser dado como falho. Em desenvolvimento
+  # nada muda, porque ali a variavel nao existe.
+  port: ${PORT:8080}
   error:
     include-message: always
 
