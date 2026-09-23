@@ -1,0 +1,79 @@
+/* ================================================================== handouts
+   What is specific to Orientações: the editor's file picker, the figure and
+   the handout attached to a plan (PatientDetail, PatientPlan). The library
+   card itself lives in library.css, shared with Questionários. */
+
+/* The native file input, dressed as a field: a dashed outline and the pick
+   button drawn like a small secondary button. */
+.handout-editor input[type="file"] {
+  display: block;
+  width: 100%;
+  min-height: var(--h-input);
+  padding: 4px;
+  border: 1px dashed var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: border-color var(--motion), box-shadow var(--motion);
+}
+.handout-editor input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-input);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--motion);
+}
+.handout-editor input[type="file"]:hover::file-selector-button {
+  background: var(--surface-2);
+}
+.handout-editor input[type="file"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* The handout figure — a divided plate, a drawn shopping list. It is worth
+   more than the paragraph describing it, and so it takes the full width in the
+   patient's plan; in the library list it stays a thumbnail, so that the list
+   can go on being a list. */
+.figure-handout {
+  display: block;
+  margin-top: 12px;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.figure-handout.recolhida {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+}
+
+/* Handouts attached to the plan, on the patient's page and in the editor. */
+.handout-attached {
+  margin-top: 16px;
+  padding-left: 14px;
+  border-left: 2px solid var(--primary);
+}
+.handout-attached h3 {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.handout-attached p {
+  margin: 0;
+  white-space: pre-line;
+  font-size: 14px;
+  color: var(--ink-2);
+}

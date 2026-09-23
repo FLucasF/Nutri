@@ -30,8 +30,55 @@ export function themeGuardado(): Theme {
   }
 }
 
+/**
+ * The browser chrome colour (address bar, PWA title bar) follows the theme the
+ * app is actually showing, not only the device scheme: a user who pins "Escuro"
+ * on a light OS would otherwise get a dark app under a light bar. The two
+ * values repeat --canvas from tokens.css; the pre-paint script in index.html
+ * repeats them too, for the same reason it repeats the key.
+ */
+const THEME_COLOR = { light: "#F6F5F2", dark: "#121411" } as const;
+const DARK_SCHEME = "(prefers-color-scheme: dark)";
+
+let current: Theme = "system";
+let listening = false;
+
+function effectiveScheme(theme: Theme): "light" | "dark" {
+  if (theme !== "system") return theme;
+  return typeof window.matchMedia === "function" && window.matchMedia(DARK_SCHEME).matches
+    ? "dark"
+    : "light";
+}
+
+function syncThemeColor(): void {
+  document
+    .querySelector('meta[name="theme-color"]:not([media])')
+    ?.setAttribute("content", THEME_COLOR[effectiveScheme(current)]);
+}
+
+function listenToDevice(): void {
+  // While the theme is "system", the device may switch at nightfall; the meta has to follow.
+  if (listening || typeof window.matchMedia !== "function") return;
+  listening = true;
+  window.matchMedia(DARK_SCHEME).addEventListener("change", () => {
+    if (current === "system") syncThemeColor();
+  });
+}
+
+/**
+ * Called once at start-up. The pre-paint script already set `data-theme` and
+ * the meta; this takes over from there — the saved choice becomes the current
+ * one and the device is followed while nothing is pinned.
+ */
+export function watchTheme(): void {
+  current = themeGuardado();
+  syncThemeColor();
+  listenToDevice();
+}
+
 export function applyTheme(theme: Theme): void {
   const root = document.documentElement;
+  current = theme;
   if (theme === "system") {
     root.removeAttribute("data-theme");
   } else {
@@ -46,4 +93,6 @@ export function applyTheme(theme: Theme): void {
   } catch {
     // Without persistence the choice holds only for this tab, which is better than failing.
   }
+  syncThemeColor();
+  listenToDevice();
 }

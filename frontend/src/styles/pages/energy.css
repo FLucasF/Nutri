@@ -1,0 +1,341 @@
+/* ======================================================= cálculo energético
+   A lista de cálculos salvos e o editor com o resultado ao lado.
+
+   O resultado fica numa coluna fixa à direita, e não embaixo do formulário.
+   É o mesmo pedido que o cliente faz para o cardápio: ver o que a alteração
+   causou sem ter que descer a página toda vez. No telefone, onde não há lado,
+   o resultado calculado vem ANTES do formulário (order: -1) e o convite vazio
+   fica depois dele. */
+
+/* ---------------------------------------------------------------- header */
+
+/* The breadcrumb is a button in the editor (it leaves without a route). It
+   reuses .migalha from the shell; the h1 sits 4px under it. */
+.energia-header .migalha {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.energia-header .migalha + h1 {
+  margin-top: 4px;
+}
+@media (pointer: coarse) {
+  /* the 44px target, without the 44px of height in the layout */
+  .energia-header button.migalha {
+    padding: 10px 0;
+    margin: -10px 0;
+  }
+}
+@media (max-width: 600px) {
+  /* stacked full-width buttons: the primary action goes first */
+  .energia-header .header-page-actions .button.secundario {
+    order: 1;
+  }
+}
+
+/* ----------------------------------------------------------------- list */
+
+.plano-energia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px 24px;
+}
+.plano-energia-body {
+  min-width: 0;
+}
+.plano-energia-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.plano-energia-meta > time {
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.equacao-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-chip);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.plano-energia-kcal {
+  align-items: flex-end;
+  text-align: right;
+}
+.plano-energia-kcal .readout.strong {
+  font-size: 20px;
+  line-height: 1.2;
+}
+.plano-energia-kcal .readout > span {
+  font-family: var(--f-text);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.plano-energia-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 760px) {
+  .plano-energia {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 16px;
+  }
+  .plano-energia-body {
+    grid-column: 1 / -1;
+  }
+  .plano-energia-kcal {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+/* --------------------------------------------------------------- editor */
+
+.energia-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 1180px) {
+  .energia-layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+@media (max-width: 900px) {
+  .energia-layout {
+    display: flex;
+    flex-direction: column;
+    /* stretch, not the grid's start: a card sized to its own content would
+       be as wide as its longest sentence and push the page sideways */
+    align-items: stretch;
+    gap: 16px;
+  }
+  .energia-form,
+  .energia-resultado {
+    width: 100%;
+  }
+  .energia-resultado {
+    order: -1;
+  }
+  .energia-resultado.vazio {
+    order: 1;
+  }
+}
+
+/* One card, four sections divided by a rule: the measures, the equations
+   with their factors, the weight programme, the notes. */
+.energia-form {
+  min-width: 0;
+}
+.energia-secao + .energia-secao {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.energia-secao > .card-head {
+  margin-bottom: 12px;
+}
+
+/* Two explicit columns (auto-fit would leave an orphan on a wide desk);
+   `.largo` takes the whole row. Down to the phone the pairs stay side by
+   side: kg next to cm reads as one measurement. */
+.energia-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+.energia-campos > .largo {
+  grid-column: 1 / -1;
+}
+/* The two factors carry a long label and a hint: side by side on the phone
+   their inputs would fall out of line, so each takes a row of its own. */
+@media (max-width: 600px) {
+  .energia-campos > .fator {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 360px) {
+  .energia-campos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The equation picker: selectable rows on --surface-2, the chosen ones on
+   --primary-soft. The control stays a native checkbox (label + aria-label). */
+.equacoes {
+  display: grid;
+  gap: 6px;
+}
+.equacoes > .equacao {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: background-color var(--motion), box-shadow var(--motion);
+}
+.equacoes > .equacao:hover {
+  background: var(--surface-3);
+}
+.equacoes > .equacao:has(> input:checked) {
+  background: var(--primary-soft);
+}
+.equacoes > .equacao:has(> input:focus-visible) {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.equacoes > .equacao > input {
+  margin-top: 2px;
+}
+.equacoes > .equacao > input:focus {
+  /* the ring is drawn on the row */
+  box-shadow: none;
+}
+.equacao-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.equacao-texto > strong {
+  font-size: 14px;
+  color: var(--ink);
+}
+.equacao:has(> input:checked) .equacao-texto > strong {
+  color: var(--on-soft);
+}
+.equacao-nota {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+.equacao:has(> input:checked) .equacao-nota {
+  color: var(--ink-2);
+}
+@media (max-width: 600px) {
+  .equacoes > .equacao {
+    padding: 12px;
+  }
+}
+
+/* --------------------------------------------------------------- result */
+
+.energia-resultado {
+  position: sticky;
+  top: 24px;
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  .energia-resultado {
+    position: static;
+  }
+}
+.energia-resultado > .empty {
+  padding: 20px 0;
+}
+
+/* The prescribed kcal: the one number on the page, in DM Mono, on a quiet
+   nested panel. */
+.energia-prescrito {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.energia-resultado .energia-kcal {
+  margin: 4px 0 0;
+  font-size: 32px;
+  line-height: 1.1;
+  color: var(--ink);
+  white-space: normal;
+}
+.energia-kcal > span {
+  font-family: var(--f-text);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.energia-linhas {
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+}
+.energia-linhas > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 40px;
+  padding: 8px 0;
+}
+.energia-linhas > div + div {
+  border-top: 1px solid var(--border);
+}
+.energia-linhas dt {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.energia-linhas dd {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin: 0;
+  text-align: right;
+}
+.energia-linhas dd > .minusculo {
+  font-family: var(--f-text);
+  white-space: nowrap;
+}
+.energia-linhas dd.negativo {
+  color: var(--danger);
+}
+.energia-linhas .energia-media dt {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.energia-faixa {
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.energia-faixa > .readout {
+  margin: 2px 0 4px;
+  font-size: 16px;
+}
+.energia-faixa > .minusculo {
+  line-height: 1.4;
+}
+
+.energia-resultado .energia-montar {
+  margin-top: 16px;
+}
+
+/* tabular figures for the kcal in the list card (legacy hook kept) */
+.kcal-destaque {
+  font-variant-numeric: tabular-nums;
+}

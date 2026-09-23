@@ -1,0 +1,264 @@
+/* ================================================================== anamnese
+   A listagem é de cartões e não de linhas de tabela porque cada anamnese
+   carrega os campos de destaque embaixo do nome. Numa tabela eles virariam
+   colunas vazias sempre que o consultório declarasse um campo a mais.
+
+   Cada cartão: data como eyebrow, nome como título, ações à direita, e os
+   destaques numa grade de definição sobre --surface-2 (contêiner aninhado:
+   preenchimento, nunca uma segunda borda). */
+
+/* ----------------------------------------------------------- cabeçalho */
+
+/* Na listagem o botão primário vem antes do secundário quando os dois
+   empilham no telefone; na mesa a ordem do DOM (secundário, primário) fica. */
+@media (max-width: 600px) {
+  .acoes-anamneses > .button:not(.secundario) {
+    order: -1;
+  }
+}
+
+/* Cancelar / Salvar e Fechar / Salvar campos: um par de opostos lê melhor
+   lado a lado do que empilhado, mesmo no telefone. */
+@media (max-width: 600px) {
+  .header-page-actions.acoes-par {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+}
+
+/* ------------------------------------------------------------- cartão */
+
+.card-anamnese-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+}
+.card-anamnese-titulo {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.card-anamnese-data {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-anamnese-data > svg {
+  width: 14px;
+  height: 14px;
+}
+.card-anamnese-acoes {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+/* The destructive action stands a step apart from the three routine ones. */
+.card-anamnese-acoes > .perigo {
+  margin-left: 4px;
+}
+
+/* Grade de definição: rótulo em eyebrow, valor embaixo, tantas colunas
+   quantas couberem — 1, 2 ou 5 destaques assentam do mesmo jeito. */
+.destaques {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 24px;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.destaque {
+  min-width: 0;
+}
+.destaques dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.destaques dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------- confirmação (DELETAR) */
+
+.confirmacao-exclusao {
+  margin-top: 16px;
+}
+.confirmacao-texto {
+  margin: 0 0 10px;
+}
+.confirmacao-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.confirmacao-input {
+  flex: 1 1 160px;
+  max-width: 12rem;
+  min-width: 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.confirmacao-input::placeholder {
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------- editor */
+
+.editor-anamnese {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.editor-anamnese .stack {
+  gap: 16px;
+}
+/* The highlight fields hold a sentence, not a number: wider tracks than
+   .grid.two's 200px, so five of them on a wide screen still show their text. */
+.grid.campos-anamnese {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.registro-anamnese {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ------------------------------------------------- campos do consultório */
+
+.campos-destaque {
+  margin-bottom: 20px;
+}
+.campos-destaque .card-head {
+  margin-bottom: 16px;
+}
+.campos-destaque-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+.campo-destaque {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px 12px;
+}
+.campo-destaque > input[type="text"] {
+  width: 100%;
+  min-width: 0;
+}
+.campo-destaque-listagem {
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.campo-destaque-ordem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.campo-destaque-ordem > .perigo {
+  margin-left: 4px;
+}
+.campos-destaque-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.campos-destaque-fim {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------- telefone */
+
+@media (max-width: 600px) {
+  /* Four actions in one row: text only, equal columns, nothing wraps. */
+  .card-anamnese-acoes {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .card-anamnese-acoes > .button {
+    padding: 0 6px;
+    min-height: var(--h-md);
+  }
+  .card-anamnese-acoes > .button > svg {
+    display: none;
+  }
+  .card-anamnese-acoes > .perigo {
+    margin-left: 0;
+  }
+
+  .destaques {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .confirmacao-acoes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .confirmacao-input {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+  .confirmacao-acoes > .button {
+    min-height: var(--h-lg);
+  }
+
+  /* Rótulo numa linha; "Na listagem" e a ordem na linha de baixo. Each item
+     is two lines now, so the list needs a clearer gap between them. */
+  .campos-destaque-lista {
+    gap: 16px;
+  }
+  .campo-destaque {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .campo-destaque > input[type="text"] {
+    grid-column: 1 / -1;
+  }
+  .campo-destaque-ordem {
+    justify-self: end;
+  }
+
+  .campos-destaque-rodape {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .campos-destaque-rodape > .button {
+    width: 100%;
+    min-height: var(--h-lg);
+  }
+  .campos-destaque-fim {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-left: 0;
+  }
+  .campos-destaque-fim > .button {
+    width: 100%;
+    min-height: var(--h-lg);
+  }
+}

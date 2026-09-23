@@ -1,0 +1,451 @@
+/* =============================================================== public plan
+   The pages the patient opens from a link: this file styles the plan and also
+   the shell both public pages share (root, 640px column, cover card, empty
+   state); public-form.css builds on it.
+
+   Read on a phone, mostly: body 16, generous leading, one column, and colour
+   spent only on data — the hour chips, the readouts, the macro ring. */
+
+/* ------------------------------------------------------------------- shell */
+
+.page-patient {
+  /* The practice color, when there is one, arrives in --theme-account. In the
+     dark theme it is lightened: a dark brand would disappear against the dark
+     background. It marks the cover only — the plan itself reads in the tokens. */
+  --theme-base: var(--theme-account, var(--primary));
+  --theme: var(--theme-base);
+  --theme: light-dark(var(--theme-base), color-mix(in oklab, var(--theme-base) 60%, white));
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 20px 0 48px;
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.plan-patient {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: calc(640px + 2 * 16px);
+  margin: 0 auto;
+  padding: 0 16px;
+}
+.plan-patient-empty {
+  padding-top: 48px;
+}
+@media (min-width: 601px) {
+  .page-patient {
+    padding-top: 32px;
+  }
+  .plan-patient {
+    gap: 20px;
+  }
+}
+
+/* An empty / not-found state, as a card. */
+.card-centered {
+  padding: 40px 24px;
+  text-align: center;
+}
+.card-centered .empty-icon {
+  margin-bottom: 16px;
+}
+.card-centered .empty-icon.ok {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.card-centered h1 {
+  font-size: 20px;
+}
+.card-centered h2 {
+  font-size: 18px;
+}
+.card-centered .discreto {
+  max-width: 36ch;
+  margin: 8px auto 0;
+  font-size: 14px;
+}
+
+/* ------------------------------------------------------------------- cover */
+
+/* A card on --primary-soft, not a bleed: the page is one column and the cover
+   is its first card. In the dark theme the soft green is mixed into the
+   surface so the card stays a card and not a coloured slab; --on-soft carries
+   the eyebrow, --ink and --ink-2 the rest — every pair above 4.5:1. */
+.cover-plan {
+  --cover-bg: var(--primary-soft);
+  --cover-bg: light-dark(
+    var(--primary-soft),
+    color-mix(in oklab, var(--primary-soft) 60%, var(--surface))
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  background: var(--cover-bg);
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+  border-radius: var(--radius-card);
+  color: var(--ink);
+}
+@media (min-width: 601px) {
+  .cover-plan {
+    padding: 28px 32px;
+  }
+}
+.cover-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cover-dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--theme);
+}
+.cover-plan .eyebrow {
+  color: var(--on-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cover-plan h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+}
+@media (max-width: 600px) {
+  .cover-plan h1 {
+    font-size: 24px;
+  }
+}
+.cover-plan .cover-greeting {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.cover-crn {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.cover-plan .validity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in oklab, var(--primary) 18%, transparent);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.cover-plan .validity > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--on-soft);
+}
+
+/* --------------------------------------------------------------- handouts */
+
+/* Rich text the nutritionist wrote: the size is the author's (pt), the
+   colour and the list indent are the page's. */
+.plan-prose {
+  color: var(--ink);
+}
+.plan-prose .richtext-view {
+  line-height: 1.55;
+}
+.plan-prose .richtext-view ul,
+.plan-prose .richtext-view ol {
+  padding-left: 1.25rem;
+}
+.plan-prose .richtext-view li + li {
+  margin-top: 4px;
+}
+/* The ingredient table cannot widen the card: it scrolls on its own. The 1px
+   of padding keeps the scroller from clipping the table's collapsed outer
+   border, which sits half outside the table box. */
+.plan-prose {
+  overflow-x: auto;
+  margin: 0 -1px;
+  padding: 0 1px;
+}
+.plan-prose .richtext-table th,
+.plan-prose .richtext-table td {
+  border-color: var(--border);
+  padding: 8px 12px;
+}
+.plan-prose .richtext-table th {
+  color: var(--ink-2);
+}
+
+/* Attached handouts and recipes: stacked, a divider between them, no frame
+   of their own (the card is the frame). */
+.plan-handout,
+.recipe-patient {
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.plan-handout:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: 0;
+}
+/* the first recipe follows the card head, which already separates it */
+.card-head + .recipe-patient {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: 0;
+}
+.plan-handout h3,
+.recipe-patient h3 {
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+.plan-figure {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+/* ------------------------------------------------------------------ ruler */
+
+/* The ruler comes from components.css; the list markup is the page's. */
+ol.ruler-day {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+/* The hour the patient is in: ringed in accent so it reads as "now". */
+.ruler-hour.atual {
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 3px var(--accent);
+}
+
+.meal-patient h2 {
+  font-size: 17px;
+  line-height: 1.25;
+}
+.meal-patient .note-meal {
+  margin-top: 6px;
+  color: var(--ink-2);
+}
+.plan-note .richtext-view {
+  font-size: 14px;
+  line-height: 1.5;
+  color: inherit;
+}
+.plan-note .richtext-view ul,
+.plan-note .richtext-view ol {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.plan-note .richtext-view p {
+  margin: 0;
+}
+
+.meal-items {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.item-patient {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.item-patient:first-child {
+  margin-top: 4px;
+}
+.item-patient:last-child {
+  padding-bottom: 0;
+}
+
+/* Name at the left, quantities at the right in a column of their own. The
+   quantity column takes what it needs up to 45% of the row and wraps past
+   that; the name wraps in the space that is left. The readouts always line
+   up on the right edge, whatever the name does. */
+.plan-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) fit-content(45%);
+  align-items: baseline;
+  column-gap: 16px;
+}
+.plan-item-row .name-food {
+  min-width: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.plan-item-row .serving {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px 8px;
+  min-width: 0;
+  text-align: right;
+}
+.plan-item-row .serving .readout {
+  white-space: normal;
+  line-height: 1.3;
+}
+.plan-item-row .serving .readout.strong {
+  font-size: 14px;
+}
+.plan-item-row .serving .weight {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.item-patient .observacao-item {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* Substitutions: "ou …" rows under the item, quieter, indented by a rule. */
+.substitutions {
+  margin-top: 8px;
+}
+.substitutions ul {
+  margin: 0;
+  padding: 0 0 0 12px;
+  list-style: none;
+  border-left: 2px solid var(--surface-3);
+}
+.substitutions .sub-row {
+  padding: 3px 0;
+}
+.substitutions .sub-row .name-food {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.substitutions .sub-ou {
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------------- summary */
+
+.summary-body {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.summary-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.summary-ring .macro-ring-center {
+  font-size: 15px;
+}
+.summary-ring-unit {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.summary-legend {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+.summary-legend .prot {
+  color: var(--macro-prot-text);
+}
+.summary-legend .carb {
+  color: var(--macro-carb-text);
+}
+.summary-legend .fat {
+  color: var(--macro-fat-text);
+}
+
+.summary-day {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.summary-day .stat {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.summary-day dt,
+.summary-day dd {
+  margin: 0;
+}
+.summary-day .stat-value {
+  font-size: 20px;
+}
+.summary-note {
+  margin: 12px 0 0;
+}
+@media (max-width: 480px) {
+  .summary-body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .summary-ring {
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
+  }
+}
+
+/* ----------------------------------------------------------------- footer */
+
+.plan-footer {
+  padding-top: 8px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ----------------------------------------------------------------- motion */
+
+/* The only animation in the product: the meals rise along the ruler in the
+   order the day happens. */
+@media (prefers-reduced-motion: no-preference) {
+  .page-patient .ruler-item > * {
+    animation: subir 420ms cubic-bezier(0.2, 0.7, 0.3, 1) backwards;
+    animation-delay: calc(var(--order, 0) * 55ms);
+  }
+}
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ------------------------------------------------------------------ print */
+
+@media print {
+  .page-patient {
+    padding: 0;
+    background: none;
+  }
+  .cover-plan,
+  .ruler-body,
+  .card {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}

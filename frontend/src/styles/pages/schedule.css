@@ -1,0 +1,447 @@
+/* ================================================================== schedule
+   The agenda: a toolbar (view segmented + date stepper), the day as a ruler
+   of appointment cards, the week as seven columns on a wide screen and seven
+   stacked days below 900px. Everything here styles the page's own classes;
+   the ruler, the segmented, the tags and the buttons come from components.css.
+   ========================================================================== */
+
+/* ---------------------------------------------------------- header actions */
+
+/* Two buttons side by side on the phone, instead of two full-width rows that
+   push the toolbar and the first appointment below the fold. */
+@media (max-width: 600px) {
+  .schedule-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .header-page .schedule-actions .button {
+    padding-inline: 10px;
+    font-size: 13px;
+    line-height: 1.15;
+    white-space: normal;
+    text-align: center;
+  }
+  .schedule-actions .button > svg {
+    display: none;
+  }
+}
+
+/* ----------------------------------------------------------------- toolbar */
+
+.schedule-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.toolbar-caption {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Previous · date · next, joined as one control. The buttons take the input's
+   height so that the three edges line up; the focused piece rises over its
+   neighbours so its ring is never covered. */
+.date-stepper {
+  display: inline-flex;
+  align-items: stretch;
+}
+.date-stepper > .button.icon {
+  --btn-h: var(--h-input);
+  position: relative;
+}
+.date-stepper > .button:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+.date-stepper > .button:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.date-stepper > .button:focus-visible {
+  z-index: 2;
+}
+.date-stepper > input {
+  position: relative;
+  width: 160px;
+  min-width: 0;
+  margin-inline: -1px;
+  border-radius: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.date-stepper > input:focus {
+  z-index: 1;
+}
+
+@media (max-width: 600px) {
+  .schedule-toolbar {
+    gap: 10px 8px;
+    padding: 12px;
+  }
+  .schedule-toolbar > .segmented {
+    flex: 1 1 100%;
+    display: flex;
+  }
+  .schedule-toolbar > .segmented > button {
+    flex: 1;
+  }
+  .date-stepper {
+    flex: 1 1 auto;
+  }
+  .date-stepper > input {
+    flex: 1;
+    width: auto;
+  }
+  .toolbar-caption {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+}
+
+/* ------------------------------------------------------------- appointment */
+
+.appointment-who {
+  display: flex;
+  align-items: center;
+  gap: 6px 10px;
+  flex-wrap: wrap;
+}
+.appointment-name {
+  min-width: 0;
+  font-family: var(--f-display);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.appointment.cancelado .appointment-name {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+
+/* Time range in the mono face, the type as text, the duration in mono again;
+   a middle dot between them. */
+.appointment-target {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.appointment-target > :not(:last-child)::after {
+  content: "·";
+  margin-left: 8px;
+  font-family: var(--f-text);
+  color: var(--ink-3);
+}
+.appointment-type {
+  color: var(--ink-2);
+}
+.appointment-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.appointment-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+/* The appointment happening now: its chip gets an inner stroke, its stop on
+   the rule a halo. Colour spent on data, as everywhere else. */
+.page-schedule .ruler-hour.atual {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+.page-schedule .ruler-item:has(> .ruler-hour.atual) .ruler-body::before {
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent-soft);
+}
+
+@media (max-width: 600px) {
+  /* "07:00" needs no 64px column; the body gets the width back. */
+  .page-schedule .ruler-day {
+    --ruler-col: 56px;
+    --ruler-gap: 14px;
+  }
+  /* The app bar is sticky above the page: the chip sticks under it, not behind it. */
+  .page-schedule .ruler-hour.atual {
+    top: calc(var(--appbar-h) + 8px);
+  }
+  /* Four actions never fit one line at this width: two by two, on purpose. */
+  .appointment-actions:not(.compact) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .appointment-actions:not(.compact) > .button {
+    width: 100%;
+  }
+}
+
+/* -------------------------------------------------------------------- week */
+
+.week-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.week-head > button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 2px 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--motion), color var(--motion);
+}
+.week-head > button:hover {
+  background: var(--surface-2);
+}
+.week-head > button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.week-head > .minusculo {
+  flex: none;
+  white-space: nowrap;
+}
+.label-day {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.date-day {
+  font-family: var(--f-display);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.week-day.today .date-day {
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-soft);
+  color: var(--on-soft);
+}
+.week-day.today .label-day {
+  color: var(--on-soft);
+}
+
+/* Stacked (≤ 900): seven sections, each a header row and, when there is
+   something in it, the full ruler. Days stay in place even when free. */
+.week.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.week.stacked > .week-day {
+  min-width: 0;
+}
+.week.stacked .week-head {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.week.stacked .ruler-day {
+  margin-top: 12px;
+}
+
+/* Columns (> 900): one surface, seven tracks, headers on --surface-2 like a
+   table head, the items as quiet nested boxes. */
+.week.columns {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
+}
+.week.columns > .week-day {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-left: 1px solid var(--border);
+}
+.week.columns > .week-day:first-child {
+  border-left: 0;
+}
+.week.columns .week-head {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 56px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.week.columns > .week-day:first-child .week-head {
+  border-top-left-radius: 11px;
+}
+.week.columns > .week-day:last-child .week-head {
+  border-top-right-radius: 11px;
+}
+.week.columns .week-head > button {
+  margin-left: -8px;
+}
+.week.columns .week-head > button:hover {
+  background: var(--surface-3);
+}
+.week.columns .week-head > .minusculo {
+  white-space: normal;
+}
+.week.columns > .week-day.today .week-head {
+  background: var(--primary-soft);
+}
+.week.columns > .week-day.today .week-head > .minusculo {
+  color: var(--on-soft);
+}
+.week.columns > .week-day.today .week-head > button:hover {
+  background: var(--surface);
+}
+.week.columns > .week-day.today .date-day {
+  padding: 0;
+  background: none;
+}
+.week-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.week-appt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.week-appt.atual {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+.week-appt-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+.week-appt-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.week-appt.cancelado .week-appt-name {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+.week-appt-meta {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-3);
+}
+/* Two lines of the note; the whole of it in the tooltip. */
+.week-appt-note {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.appointment-actions.compact {
+  gap: 4px;
+  margin-top: 4px;
+}
+.appointment-actions.compact .button.icon {
+  --btn-h: 28px;
+  width: 28px;
+}
+@media (pointer: coarse) {
+  .appointment-actions.compact .button.icon {
+    --btn-h: 44px;
+    width: 44px;
+  }
+}
+
+/* ------------------------------------------------------------ subscription */
+
+/* The title wraps before "Fechar" leaves the row. */
+.schedule-subscription > .card-head {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.copy-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.copy-row > input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--f-mono);
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+.copy-row > .button {
+  flex: none;
+}
+.subscription-lead {
+  max-width: 60ch;
+  margin: 0;
+}
+.subscription-note {
+  margin: 0;
+}
+
+/* -------------------------------------------------------------------- form */
+
+.form-appointment-grid {
+  display: grid;
+  gap: 12px;
+}
+.form-appointment-grid.who {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+.form-appointment-grid.when {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 600px) {
+  .form-appointment-grid.who {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .form-appointment-grid.when {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .form-appointment-grid.when > .field:first-child {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,1755 @@
+/* ============================================================================
+   Components — the contract every page is built on
+   ----------------------------------------------------------------------------
+   Legacy class names are kept and restyled (.button.secundario, .field, .tag,
+   .rolagem, .warning.error, .feedback-banner, .ruler-hour…); new ones follow
+   the same Portuguese-modifier convention (.verde, .pequeno, .atual).
+
+   Sections: buttons · fields · checkbox / switch · segmented · tags · cards ·
+   tables · list rows · empty · banners · toast · stat / readout · ruler ·
+   macro ring · sheet · rich text · shared containers · utilities · touch
+   ========================================================================== */
+
+/* ===================================================================== buttons */
+
+.button {
+  --btn-h: var(--h-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--btn-h);
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--primary-fill);
+  color: var(--ink-on-primary);
+  font-family: var(--f-display);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--motion), border-color var(--motion), color var(--motion);
+}
+.button > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.button:hover:not(:disabled):not(.desabilitado) {
+  background: var(--primary-hover);
+}
+.button:disabled,
+.button.desabilitado {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button.secundario {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--border-input);
+}
+.button.secundario:hover:not(:disabled):not(.desabilitado) {
+  background: var(--surface-2);
+  border-color: var(--ink-3);
+}
+
+.button.perigo {
+  background: var(--surface);
+  color: var(--danger);
+  border-color: var(--border-input);
+}
+.button.perigo:hover:not(:disabled):not(.desabilitado) {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.button.ghost {
+  background: transparent;
+  color: var(--ink-2);
+  border-color: transparent;
+}
+.button.ghost:hover:not(:disabled):not(.desabilitado) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.button.pequeno {
+  --btn-h: var(--h-sm);
+  padding: 0 10px;
+  font-size: 13px;
+}
+.button.grande {
+  --btn-h: var(--h-lg);
+  padding: 0 18px;
+  font-size: 15px;
+}
+
+/* Icon only. MUST carry aria-label AND title. */
+.button.icon {
+  width: var(--btn-h);
+  padding: 0;
+}
+
+/* Text-link look on a button element. */
+.button.link {
+  min-height: 24px;
+  padding: 0 4px;
+  background: none;
+  border-color: transparent;
+  color: var(--primary);
+  font-family: var(--f-text);
+  font-weight: 500;
+}
+.button.link:hover:not(:disabled) {
+  background: none;
+  color: var(--primary-hover);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* A label that behaves as a button (file picker). */
+label.button {
+  cursor: pointer;
+}
+
+/* Table text that acts as a link, without becoming a fake anchor. */
+.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* A button that behaves as a back link, for an editor to leave without a route. */
+.link-voltar {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ====================================================================== fields */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* has to be able to shrink with the track hosting it; otherwise a 350px
+     field inside a 200px track leaks out of the card */
+  min-width: 0;
+}
+.field > label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+
+/* Base look for every text-like control, inside a .field or bare. :where()
+   keeps the specificity at zero so any page rule still wins. */
+:where(
+    input:not(
+        [type="checkbox"],
+        [type="radio"],
+        [type="range"],
+        [type="file"],
+        [type="color"],
+        [type="submit"],
+        [type="button"],
+        [type="reset"]
+      ),
+    select,
+    textarea
+  ) {
+  min-height: var(--h-input);
+  padding: 0 12px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.3;
+  transition: border-color var(--motion), box-shadow var(--motion);
+}
+:where(textarea) {
+  min-height: 96px;
+  padding: 8px 12px;
+  line-height: 1.45;
+  resize: vertical;
+}
+:where(select:not([multiple], [size])) {
+  appearance: none;
+  padding-right: 36px;
+  background-image: var(--icon-chevron-down);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+}
+:where(input, select, textarea)::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+:where(input, select, textarea):disabled {
+  background-color: var(--surface-3);
+  color: var(--ink-2);
+  cursor: not-allowed;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* The field that refused the value: the outline changes and the message sits
+   underneath it — not in a single sentence at the top of the form. */
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+input[aria-invalid="true"]:focus,
+select[aria-invalid="true"]:focus,
+textarea[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger) 30%, transparent);
+}
+.field-hint {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+.field-message {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--danger);
+}
+
+/* Search icon inside the input padding. Wrap only the input. */
+.input-search {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+.input-search > input {
+  width: 100%;
+  padding-left: 36px;
+}
+.input-search::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  translate: 0 -50%;
+  background-color: var(--ink-3);
+  -webkit-mask: var(--mask-search) center / 16px 16px no-repeat;
+  mask: var(--mask-search) center / 16px 16px no-repeat;
+  pointer-events: none;
+}
+
+/* Start and end side by side while they fit, stacked when they do not. */
+.dates-par {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 8px;
+}
+.dates-par input {
+  /* a date field has an intrinsic width of its own; without this it ignores the track */
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 480px) {
+  .dates-par {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================ checkbox / switch */
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary);
+  /* target-sized, not text-sized: never shrinks in a flexible row */
+  flex: none;
+  cursor: pointer;
+}
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+  border-radius: 3px;
+}
+input[type="radio"]:focus {
+  border-radius: 50%;
+}
+label:has(> input[type="checkbox"]),
+label:has(> input[type="radio"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  cursor: pointer;
+}
+
+/* A native checkbox drawn as a 36×20 switch. The label text stays. */
+input[type="checkbox"].switch,
+.switch > input[type="checkbox"] {
+  appearance: none;
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  transition: background-color var(--motion), border-color var(--motion);
+}
+input[type="checkbox"].switch::before,
+.switch > input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(25, 28, 26, 0.2);
+  transition: translate var(--motion), background-color var(--motion);
+}
+input[type="checkbox"].switch:checked,
+.switch > input[type="checkbox"]:checked {
+  background: var(--primary-fill);
+  border-color: var(--primary-fill);
+}
+input[type="checkbox"].switch:checked::before,
+.switch > input[type="checkbox"]:checked::before {
+  translate: 16px 0;
+  background: var(--ink-on-primary);
+}
+input[type="checkbox"].switch:focus,
+.switch > input[type="checkbox"]:focus {
+  border-radius: var(--radius-pill);
+}
+
+/* =================================================================== segmented */
+
+/* Track on --surface-2; the pressed segment lifts to --surface. Selection
+   state is aria-pressed, never a class. */
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.segmented > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--motion), color var(--motion), box-shadow var(--motion);
+}
+.segmented > button > svg {
+  width: 18px;
+  height: 18px;
+}
+.segmented > button:hover {
+  color: var(--ink);
+}
+.segmented > button[aria-pressed="true"] {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-1);
+}
+/* icon-only segments (theme picker): square, with a visually-hidden label */
+.segmented.icons > button {
+  width: 32px;
+  padding: 0;
+}
+.segmented.grow {
+  display: flex;
+}
+.segmented.grow > button {
+  flex: 1;
+}
+
+/* ======================================================================== tags */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-chip);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.tag > svg {
+  width: 12px;
+  height: 12px;
+}
+.tag.neutra {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.tag.verde {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.tag.ambar {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.tag.vermelha {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.tag.azul {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+/* ======================================================================= cards */
+
+/* L1: surface + 1px border + shadow-1 (dark: border-strong, no shadow). */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  box-shadow: var(--shadow-1);
+}
+@media (max-width: 600px) {
+  .card {
+    padding: 16px;
+  }
+}
+/* Nested containers use --surface-2 fill, never a second border. */
+.card .card {
+  background: var(--surface-2);
+  border-color: transparent;
+  box-shadow: none;
+}
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.card-head > :first-child {
+  min-width: 0;
+}
+.card-title {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.card-sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* A quieter box inside a card (forms that open in place, side panels). */
+.painel {
+  background: var(--surface-2);
+  /* transparent and not 0: .quick-form paints this border to mark itself */
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.card-list {
+  display: grid;
+  gap: 12px;
+}
+
+/* ====================================================================== tables */
+
+.rolagem {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  height: 40px;
+  padding: 0 16px;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  height: var(--h-row);
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tbody tr:last-child td {
+  border-bottom: none;
+}
+tbody tr.clicavel {
+  cursor: pointer;
+  transition: background-color var(--motion);
+}
+tbody tr.clicavel:hover {
+  background: var(--surface-2);
+}
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Numeric-table rule B: scrolls sideways, first column stays, right edge
+   fades. Set data-scroll-end="true" from the page when scrolled to the end
+   and the fade goes away. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+.table-scroll[data-scroll-end="true"] {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.table-scroll > table {
+  min-width: 520px;
+}
+.table-scroll th:first-child,
+.table-scroll td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.table-scroll th:first-child {
+  background: var(--surface-2);
+}
+.table-scroll tbody tr.clicavel:hover td:first-child {
+  background: var(--surface-2);
+}
+
+/* =================================================================== list rows */
+
+/* Entity lists on ≤760: one row per entity, the whole row is the link. Render
+   EITHER the table OR the list (useIsNarrow()), never both. The trailing
+   chevron is drawn here — do not add one. */
+.list-rows {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
+}
+.list-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--motion), box-shadow var(--motion);
+}
+.list-rows > .list-row:first-child {
+  border-radius: 11px 11px 0 0;
+}
+.list-rows > .list-row:last-child {
+  border-bottom: 0;
+  border-radius: 0 0 11px 11px;
+}
+.list-rows > .list-row:only-child {
+  border-radius: 11px;
+}
+.list-row:hover {
+  z-index: 1;
+  background: var(--surface-2);
+  box-shadow: var(--shadow-2);
+}
+.list-row::after {
+  content: "";
+  width: 16px;
+  height: 16px;
+  flex: none;
+  background-color: var(--ink-3);
+  -webkit-mask: var(--mask-chevron-right) center / 16px 16px no-repeat;
+  mask: var(--mask-chevron-right) center / 16px 16px no-repeat;
+}
+.list-row-lead {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.list-row-lead > svg {
+  width: 18px;
+  height: 18px;
+}
+.list-row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.list-row-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-row-meta {
+  font-size: 13px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-row-trail {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+
+/* ======================================================================= empty */
+
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--on-soft);
+}
+.empty-icon > svg {
+  width: 22px;
+  height: 22px;
+}
+.empty-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.empty-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.empty > .button {
+  margin-top: 16px;
+}
+
+.loading {
+  padding: 32px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+/* ===================================================================== banners */
+
+/* The icon is an absolutely positioned pseudo-element and the box stays a
+   plain block: a banner can hold a sentence with <strong>, a paragraph and a
+   row of buttons, and none of that should be blockified by flex or grid. */
+.warning {
+  position: relative;
+  padding: 10px 12px 10px 38px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.warning::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 11px;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask: var(--mask-info) center / 16px 16px no-repeat;
+  mask: var(--mask-info) center / 16px 16px no-repeat;
+}
+.warning p:last-child {
+  margin-bottom: 0;
+}
+.warning.error {
+  background: var(--danger-soft);
+  border-color: color-mix(in oklab, var(--danger) 30%, transparent);
+  color: var(--danger);
+}
+.warning.error::before {
+  -webkit-mask-image: var(--mask-circle-alert);
+  mask-image: var(--mask-circle-alert);
+}
+.warning.attention {
+  background: var(--warning-soft);
+  border-color: color-mix(in oklab, var(--warning) 30%, transparent);
+  color: var(--warning);
+}
+.warning.attention::before {
+  -webkit-mask-image: var(--mask-triangle-alert);
+  mask-image: var(--mask-triangle-alert);
+}
+.warning.ok {
+  background: var(--success-soft);
+  border-color: color-mix(in oklab, var(--success) 30%, transparent);
+  color: var(--success);
+}
+.warning.ok::before {
+  -webkit-mask-image: var(--mask-circle-check);
+  mask-image: var(--mask-circle-check);
+}
+.warning.info {
+  background: var(--info-soft);
+  border-color: color-mix(in oklab, var(--info) 30%, transparent);
+  color: var(--info);
+}
+
+/* The list of problems with the plan: one per row, not one running sentence. */
+.problems-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.problems-list li + li {
+  margin-top: 4px;
+}
+
+/* ======================================================================= toast */
+
+/* Pinned to the window: a confirmation at the top of a scrolled page is not
+   seen by somebody at the bottom of it. Bottom-right on the desk, centred
+   above the tab bar on the phone. */
+.feedback-anchor {
+  position: fixed;
+  right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: var(--z-toast);
+  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.feedback-region:empty {
+  display: none;
+}
+.feedback-banner {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-pop);
+}
+.feedback-icon {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  margin-top: 1px;
+  color: var(--success);
+}
+.feedback-icon > svg {
+  width: 20px;
+  height: 20px;
+}
+.feedback-banner.error .feedback-icon {
+  color: var(--danger);
+}
+.feedback-text {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+/* The hour answers the real question after a long edit: did my last change
+   go in? */
+.feedback-hour {
+  grid-column: 2;
+  grid-row: 2;
+  margin-top: 2px;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.feedback-close {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -6px 0 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color var(--motion), color var(--motion);
+}
+.feedback-close > svg {
+  width: 16px;
+  height: 16px;
+}
+.feedback-close:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .feedback-banner {
+    animation: toast-in var(--motion-toast) ease-out;
+  }
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (max-width: 600px) {
+  .feedback-anchor {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ============================================================== stat / readout */
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.stat-label {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.stat-value {
+  font-family: var(--f-display);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.stat-delta {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+.stat-delta.positivo {
+  color: var(--success);
+}
+.stat-delta.negativo {
+  color: var(--danger);
+}
+.stat-delta.fora {
+  color: var(--accent-text);
+}
+
+/* DM Mono, only for readouts: "70 g", "P 33 · C 107 · G 19". */
+.readout {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.readout.strong {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+/* ======================================================================= ruler */
+
+/* A column of hour chips and one continuous vertical rule; the bodies hang
+   from it as cards. Shared by the public plan, the schedule and lab tests. */
+.ruler-day {
+  --ruler-col: 72px;
+  --ruler-gap: 20px;
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--ruler-col) minmax(0, 1fr);
+  column-gap: var(--ruler-gap);
+}
+.ruler-day::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: calc(var(--ruler-col) + var(--ruler-gap) / 2 - 1px);
+  width: 2px;
+  border-radius: 1px;
+  background: var(--border);
+}
+.ruler-item {
+  display: contents;
+}
+.ruler-hour {
+  grid-column: 1;
+  justify-self: end;
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  margin-top: 10px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.ruler-hour.without-hour {
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-family: var(--f-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ruler-body {
+  grid-column: 2;
+  position: relative;
+  min-width: 0;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
+}
+.ruler-item:last-child .ruler-body,
+.ruler-day > .ruler-body:last-child {
+  margin-bottom: 0;
+}
+/* The index dot sits on the rule, ringed in canvas so it reads as a stop. */
+.ruler-body::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--ruler-gap) / -2 - 4px);
+  top: 17px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--canvas);
+}
+.ruler-item:has(> .ruler-hour.without-hour) .ruler-body::before {
+  background: var(--border-strong);
+}
+@media (max-width: 600px) {
+  .ruler-day {
+    --ruler-col: 64px;
+    --ruler-gap: 16px;
+  }
+  .ruler-body {
+    padding: 12px;
+  }
+  /* the current hour stays in view while its meal scrolls */
+  .ruler-hour.atual {
+    position: sticky;
+    top: 8px;
+    z-index: 1;
+  }
+}
+
+/* ================================================================== macro ring */
+
+/* Three arcs on a --surface-3 track (see components/MacroRing.tsx). */
+.macro-ring {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  vertical-align: middle;
+  line-height: 0;
+}
+.macro-ring > * {
+  grid-area: 1 / 1;
+}
+.macro-ring-track {
+  stroke: var(--surface-3);
+}
+.macro-ring-prot {
+  stroke: var(--macro-prot);
+}
+.macro-ring-carb {
+  stroke: var(--macro-carb);
+}
+.macro-ring-fat {
+  stroke: var(--macro-fat);
+}
+.macro-ring-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--f-mono);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  color: var(--ink);
+}
+
+/* ======================================================================= sheet */
+
+/* L3. Left = the navigation drawer (288px); bottom = 85dvh with a handle.
+   The React primitive in components/Sheet.tsx owns focus, Escape and the
+   body scroll lock (body.sheet-open). */
+body.sheet-open {
+  overflow: hidden;
+}
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  background: var(--backdrop);
+}
+.sheet {
+  position: fixed;
+  z-index: calc(var(--z-sheet) + 1);
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+  outline: none;
+}
+.sheet.left {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--drawer-w);
+  max-width: calc(100vw - 48px);
+  border-radius: 0 var(--radius-sheet) var(--radius-sheet) 0;
+}
+.sheet.bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 85vh;
+  max-height: 85dvh;
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.sheet-handle {
+  flex: none;
+  width: 36px;
+  height: 4px;
+  margin: 8px auto 0;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+.sheet-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 8px 20px;
+}
+.sheet-title {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: 16px;
+  font-weight: 600;
+}
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 20px 20px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sheet-backdrop {
+    animation: sheet-fade var(--motion-sheet) ease-out;
+  }
+  .sheet.left {
+    animation: sheet-in-left var(--motion-sheet) cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  .sheet.bottom {
+    animation: sheet-in-bottom var(--motion-sheet) cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+}
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sheet-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes sheet-in-bottom {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* =================================================================== rich text
+
+   The editor and its read-only twin. Text size in here is always in points,
+   never em or rem: a "corpo 12" written in a note has to stay corpo 12 inside
+   the menu and inside the PDF, and pt is absolute, so it never inherits the
+   scale of the block that holds it.
+
+   Structure: .richtext (frame) > .richtext-bar (toolbar) > .richtext-group
+   (lucide 16 in 32px ghost buttons); .richtext-area is the contenteditable,
+   .richtext-view the static rendering (public plan, closed plan, PDF preview).
+   The minimum height is a prop of the page, passed as --richtext-min-h on
+   the frame. */
+
+.richtext {
+  --richtext-min-h: 12rem;
+  min-width: 0;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden; /* clips the toolbar and the selection tint to the radius */
+  transition: border-color var(--motion), box-shadow var(--motion);
+}
+.richtext:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* --------------------------------------------------------------- toolbar */
+
+/* One strip, 36px on --surface-2. It never wraps: where it does not fit —
+   a phone, the item note on a tablet — it scrolls sideways under the finger,
+   instead of stacking into three rows that read as three unrelated bars. */
+.richtext-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  min-width: 0;
+  padding: 2px 6px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.richtext-group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+/* A hairline between groups, 20px tall, never a full-height wall. */
+.richtext-group + .richtext-group::before {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 20px;
+  margin-right: 6px;
+  background: var(--border-strong);
+}
+
+.richtext-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--f-display);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--motion), color var(--motion);
+}
+.richtext-button > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.richtext-button:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.richtext-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.richtext-button.ativo {
+  background: var(--primary-soft);
+  color: var(--on-soft);
+}
+/* Icon + word: the row and column removers, where a bin alone would not say
+   what goes. */
+.richtext-button.rotulado {
+  gap: 4px;
+  padding: 0 7px 0 5px;
+}
+.richtext-button.perigo:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Font size: a small select, 32px like the buttons, no field outline until it
+   is hovered or focused — it belongs to the strip, not to the form. Qualified
+   by the bar so that a page's own `.item-row select` rule does not turn it
+   back into a full-width form field. */
+.richtext-group-size {
+  gap: 0;
+}
+.richtext-size-icon {
+  width: 16px;
+  height: 16px;
+  margin: 0 2px 0 4px;
+  color: var(--ink-3);
+}
+.richtext-bar .richtext-size {
+  width: auto;
+  min-width: 0;
+  min-height: 32px;
+  height: 32px;
+  padding: 0 24px 0 6px;
+  border-color: transparent;
+  border-radius: 6px;
+  background-color: transparent;
+  background-position: right 4px center;
+  font-family: var(--f-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.richtext-bar .richtext-size:hover {
+  background-color: var(--surface-3);
+  color: var(--ink);
+}
+.richtext-bar .richtext-size:focus {
+  border-color: var(--primary);
+  box-shadow: none;
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* ------------------------------------------------------------------ text */
+
+.richtext-area,
+.richtext-view {
+  /* 11pt is the text that declares no size. Absolute, like every other. */
+  font-family: var(--f-text);
+  font-size: 11pt;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.richtext-area {
+  min-height: var(--richtext-min-h);
+  padding: 12px 14px;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+.richtext-area p,
+.richtext-view p {
+  margin: 0 0 0.5rem;
+}
+.richtext-area p:last-child,
+.richtext-view p:last-child {
+  margin-bottom: 0;
+}
+.richtext-area ul,
+.richtext-area ol,
+.richtext-view ul,
+.richtext-view ol {
+  margin: 0 0 0.5rem;
+  padding-left: 1.5rem;
+}
+.richtext-area ul:last-child,
+.richtext-area ol:last-child,
+.richtext-view ul:last-child,
+.richtext-view ol:last-child {
+  margin-bottom: 0;
+}
+.richtext-area li,
+.richtext-view li {
+  padding-left: 0.15rem;
+}
+.richtext-area li::marker,
+.richtext-view li::marker {
+  color: var(--ink-3);
+}
+.richtext-area li p,
+.richtext-view li p {
+  margin-bottom: 0.15rem;
+}
+.richtext-area strong,
+.richtext-view strong {
+  font-weight: 600;
+}
+.richtext-area u,
+.richtext-view u {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- tables */
+
+/* Both wrappers scroll sideways: TipTap's .tableWrapper in the editor and
+   .richtext-table-wrap in the view. On the phone a four-column table is a
+   scroll, not four words per line. */
+.richtext-area .tableWrapper,
+.richtext-table-wrap {
+  margin: 0.6rem 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.richtext-area .tableWrapper:first-child,
+.richtext-table-wrap:first-child {
+  margin-top: 0;
+}
+.richtext-area .tableWrapper:last-child,
+.richtext-table-wrap:last-child {
+  margin-bottom: 0;
+}
+.richtext-area table,
+.richtext-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0;
+  table-layout: fixed;
+  font-size: inherit;
+}
+/* The view lays columns out by content: cells keep a readable floor and the
+   wrapper scrolls when they no longer fit. The editor keeps the fixed layout
+   its column resizing depends on. */
+.richtext-table {
+  table-layout: auto;
+}
+.richtext-area th,
+.richtext-area td,
+.richtext-table th,
+.richtext-table td {
+  height: auto;
+  min-width: 5.5rem;
+  border: 1px solid var(--border-strong);
+  padding: 6px 8px;
+  vertical-align: top;
+  position: relative;
+  font-size: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.4;
+  color: inherit;
+}
+.richtext-area th,
+.richtext-table th {
+  background: var(--surface-2);
+  font-weight: 600;
+  text-align: left;
+}
+.richtext-area td p,
+.richtext-area th p,
+.richtext-table td p,
+.richtext-table th p {
+  margin-bottom: 0.15rem;
+}
+/* The cell marked during a multi-cell selection, before merging. */
+.richtext-area .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--ring);
+  pointer-events: none;
+}
+.richtext-area .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--primary);
+  cursor: col-resize;
+}
+.richtext-area.resize-cursor {
+  cursor: col-resize;
+}
+
+/* ----------------------------------------------------- alert / loading */
+
+/* Stays inside the frame, right under the bar: it is about this text. */
+.richtext-alerta {
+  position: relative;
+  margin: 0;
+  padding: 8px 14px 8px 38px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-bottom: 1px solid color-mix(in oklab, var(--danger) 30%, transparent);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.richtext-alerta::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 9px;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask: var(--mask-circle-alert) center / 16px 16px no-repeat;
+  mask: var(--mask-circle-alert) center / 16px 16px no-repeat;
+}
+.richtext-loading {
+  min-height: var(--richtext-min-h);
+  margin: 0;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+/* ----------------------------------------------------------- notes field */
+
+/* The collapsed note: an "add" affordance, not a back link. */
+.richtext-abrir {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px 0 8px;
+  border: 1px dashed var(--border-input);
+  border-radius: 6px;
+  color: var(--primary);
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color var(--motion), border-color var(--motion), color var(--motion);
+}
+.richtext-abrir > svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.richtext-abrir:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--on-soft);
+  text-decoration: none;
+}
+/* Read-only note under its label (closed plan): a quiet panel, so that what
+   the author wrote reads as content and not as the form's own copy. */
+.richtext-field > .richtext-view {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.richtext-field > .field-hint {
+  margin-top: 2px;
+}
+
+/* ====================================================================== avatar */
+
+/* The hue comes from the name (components/Avatar.tsx sets --hue, width and
+   font-size inline); the lightness pair lives here so it follows the theme. */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 50%;
+  font-family: var(--f-display);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  user-select: none;
+  background: oklch(0.92 0.045 var(--hue, 160));
+  background: light-dark(oklch(0.92 0.045 var(--hue, 160)), oklch(0.3 0.05 var(--hue, 160)));
+  color: oklch(0.42 0.09 var(--hue, 160));
+  color: light-dark(oklch(0.42 0.09 var(--hue, 160)), oklch(0.88 0.08 var(--hue, 160)));
+}
+
+/* =================================================================== utilities */
+
+.grid {
+  display: grid;
+  gap: 12px;
+}
+.grid.two {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.grid.three {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.row,
+.cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.row.end,
+.cluster.end {
+  justify-content: flex-end;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.stack.tight {
+  gap: 6px;
+}
+
+.grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.w-full {
+  width: 100%;
+}
+.mt-1 {
+  margin-top: 4px;
+}
+.mt-2 {
+  margin-top: 8px;
+}
+.mt-3 {
+  margin-top: 16px;
+}
+.mb-1 {
+  margin-bottom: 4px;
+}
+.mb-2 {
+  margin-bottom: 8px;
+}
+.mb-3 {
+  margin-bottom: 16px;
+}
+.text-right {
+  text-align: right;
+}
+.nowrap {
+  white-space: nowrap;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* NOT monospace: tabular figures only (used by Anthropometry and WeightChart). */
+.mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.code {
+  font-family: var(--f-mono);
+  font-size: 0.92em;
+}
+.discreto {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.minusculo {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+/* Back links and the like are navigation, not running text: they get the
+   24px target the standard exempts only inline links from. */
+a.minusculo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ======================================================================= touch */
+
+/* No mouse pointer: every target fits the finger. */
+@media (pointer: coarse) {
+  .button,
+  .button.pequeno,
+  .button.grande,
+  .segmented > button,
+  .richtext-button,
+  .list-row,
+  .link-voltar,
+  .feedback-close {
+    min-height: 44px;
+  }
+  .button.icon {
+    width: 44px;
+  }
+  .segmented.icons > button {
+    width: 44px;
+  }
+  .richtext-button {
+    min-width: 44px;
+  }
+  :where(
+      input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"]),
+      select,
+      textarea
+    ) {
+    min-height: 44px;
+  }
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]) {
+    min-height: 44px;
+  }
+  .tag-escolha,
+  .title-handout {
+    min-height: 44px;
+  }
+}

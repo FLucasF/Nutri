@@ -3,6 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
+import { MacroRing } from "../components/MacroRing";
 import { useAuth } from "../auth/AuthContext";
 
 type Mode = "login" | "register" | "recover" | "reset";
@@ -108,144 +109,146 @@ export default function Access() {
 
   return (
     <div className="screen-access">
-      {/* The dark panel is the same rail that frames the practice after login:
-          whoever comes in already recognizes where they are. */}
+      {/* The soft green panel is the same tone as the active item of the rail
+          after login: whoever comes in already recognizes where they are. On the
+          phone it shrinks to a header so the first field is above the fold. */}
       <aside className="access-brand">
-        <div className="brand">
-          NutriPlan
-          <small>consultório</small>
+        <div className="access-logo">
+          <MacroRing size={40} className="access-mark" />
+          <span className="access-name">
+            NutriPlan
+            <span className="access-eyebrow">Consultório</span>
+          </span>
         </div>
-        <div>
+        <div className="access-pitch">
           <h2>Cada plano começa por um dia.</h2>
           <p>
             Monte a rotina do paciente hora a hora, com a medida que ele usa na
             cozinha — colher, concha, fatia — e não só o peso em gramas.
           </p>
         </div>
-        <footer>23.945 alimentos · TACO · IBGE · Open Food Facts</footer>
+        <footer className="access-foot">23.945 alimentos · TACO · IBGE · Open Food Facts</footer>
       </aside>
 
       <div className="access-form">
-      <form className="box-access" onSubmit={send}>
-        <div>
-          {/* The title names the screen; the button names the action. Repeating
-              "Entrar" in both would make one of them say nothing. */}
-          <h1>{TITLES[mode]}</h1>
-          <p className="discreto" style={{ margin: "0.4rem 0 0" }}>
-            {SUBTITLES[mode]}
-          </p>
-        </div>
-
-        {error && (
-          <div className="warning error" role="alert">
-            {error}
+        <form className="box-access card" onSubmit={send}>
+          <div className="access-head">
+            {/* The title names the screen; the button names the action. Repeating
+                "Entrar" in both would make one of them say nothing. */}
+            <h1>{TITLES[mode]}</h1>
+            <p className="discreto">{SUBTITLES[mode]}</p>
           </div>
-        )}
 
-        {warning && (
-          <div className="warning ok" role="status">
-            {warning}
-          </div>
-        )}
+          {error && (
+            <div className="warning error" role="alert">
+              {error}
+            </div>
+          )}
 
-        {mode === "register" && (
-          <div className="field">
-            <label htmlFor="name">Nome completo</label>
-            <input
-              id="name"
-              name="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoComplete="name"
-              {...fields.props("name")}
-            />
-            <FieldError field="name" errors={fields.errors} />
-          </div>
-        )}
+          {warning && (
+            <div className="warning ok" role="status">
+              {warning}
+            </div>
+          )}
 
-        {mode !== "reset" && (
-        <div className="field">
-          <label htmlFor="email">E-mail</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-            {...fields.props("email")}
-          />
-          <FieldError field="email" errors={fields.errors} />
-        </div>
-        )}
+          {mode === "register" && (
+            <div className="field">
+              <label htmlFor="name">Nome completo</label>
+              <input
+                id="name"
+                name="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+                {...fields.props("name")}
+              />
+              <FieldError field="name" errors={fields.errors} />
+            </div>
+          )}
 
-        {mode !== "recover" && (
-        <div className="field">
-          <label htmlFor="password">{mode === "reset" ? "Nova senha" : "Senha"}</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={mode === "login" ? undefined : 8}
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
-            {...fields.props("password")}
-          />
-          <FieldError field="password" errors={fields.errors} />
-          {mode !== "login" && <span className="minusculo">Mínimo de 8 caracteres.</span>}
-        </div>
-        )}
+          {mode !== "reset" && (
+            <div className="field">
+              <label htmlFor="email">E-mail</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                {...fields.props("email")}
+              />
+              <FieldError field="email" errors={fields.errors} />
+            </div>
+          )}
 
-        {mode === "register" && (
-          <div className="field">
-            <label htmlFor="crn">CRN (opcional)</label>
-            <input
-              id="crn"
-              name="crn"
-              value={crn}
-              onChange={(e) => setCrn(e.target.value)}
-              {...fields.props("crn")}
-            />
-            <FieldError field="crn" errors={fields.errors} />
-          </div>
-        )}
+          {mode !== "recover" && (
+            <div className="field">
+              <label htmlFor="password">{mode === "reset" ? "Nova senha" : "Senha"}</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={mode === "login" ? undefined : 8}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                {...fields.props("password")}
+              />
+              <FieldError field="password" errors={fields.errors} />
+              {mode !== "login" && <span className="field-hint">Mínimo de 8 caracteres.</span>}
+            </div>
+          )}
 
-        <button className="button" type="submit" disabled={sending}>
-          {sending ? "Aguarde…" : ACTIONS[mode]}
-        </button>
+          {mode === "register" && (
+            <div className="field">
+              <label htmlFor="crn">CRN (opcional)</label>
+              <input
+                id="crn"
+                name="crn"
+                value={crn}
+                onChange={(e) => setCrn(e.target.value)}
+                {...fields.props("crn")}
+              />
+              <FieldError field="crn" errors={fields.errors} />
+            </div>
+          )}
 
-        {mode === "login" && (
-          <button
-            type="button"
-            className="link minusculo"
-            style={{ alignSelf: "center" }}
-            onClick={() => {
-              setMode("recover");
-              setError(null);
-              setWarning(null);
-            }}
-          >
-            Esqueci minha senha
+          <button className="button grande" type="submit" disabled={sending}>
+            {sending ? "Aguarde…" : ACTIONS[mode]}
           </button>
-        )}
 
-        <button
-          type="button"
-          className="button secundario"
-          style={{ justifyContent: "center" }}
-          onClick={() => {
-            setMode(mode === "register" ? "login" : mode === "login" ? "register" : "login");
-            setError(null);
-            setWarning(null);
-          }}
-        >
-          {mode === "register" ? "Já tenho conta" : mode === "login" ? "Criar uma conta" : "Voltar"}
-        </button>
-      </form>
+          {mode === "login" && (
+            <button
+              type="button"
+              className="button link access-forgot"
+              onClick={() => {
+                setMode("recover");
+                setError(null);
+                setWarning(null);
+              }}
+            >
+              Esqueci minha senha
+            </button>
+          )}
+
+          <div className="access-switch">
+            <button
+              type="button"
+              className="button secundario"
+              onClick={() => {
+                setMode(mode === "register" ? "login" : mode === "login" ? "register" : "login");
+                setError(null);
+                setWarning(null);
+              }}
+            >
+              {mode === "register" ? "Já tenho conta" : mode === "login" ? "Criar uma conta" : "Voltar"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

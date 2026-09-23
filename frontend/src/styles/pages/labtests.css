@@ -1,0 +1,426 @@
+/* ==================================================================== exames
+   Per-patient lab tests: the history (table on the desk, cards ≤760), the
+   two forms that open in place (record a result / record an order), the
+   series of one parameter and the past orders. Shared parts — .card,
+   .card-head, .field, .input-search, .tag, .table-scroll — live in
+   components.css; only what is specific to this screen is here.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ header */
+
+/* Results outside the reference are the one thing the summary line has to
+   say; the delta colour marks them without shouting. */
+.labtest-off {
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+/* ------------------------------------------------------------------ search */
+
+.labtest-search {
+  max-width: 360px;
+}
+
+/* ------------------------------------------------------------------- table */
+
+.labtest-table th:first-child,
+.labtest-table td:first-child {
+  min-width: 200px;
+}
+.labtest-name {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.labtest-name > strong {
+  color: var(--ink);
+}
+.labtest-name:hover > strong {
+  color: var(--primary);
+}
+.labtest-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.labtest-unit {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+/* value and its classification on one line, the value first, both to the right */
+.labtest-result {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.labtest-actions-cell {
+  text-align: right;
+}
+.labtest-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+.labtest-change {
+  color: var(--ink-2);
+}
+
+/* ------------------------------------------------------------- cards ≤ 760 */
+
+.labtest-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.labtest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.labtest-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.labtest-card-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.labtest-card-title .labtest-name > strong {
+  font-size: 15px;
+}
+.labtest-card-result {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.labtest-card-result .labtest-value {
+  font-family: var(--f-display);
+  font-size: 22px;
+  line-height: 1.2;
+}
+.labtest-card-ref {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.labtest-card > .labtest-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  white-space: normal;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ------------------------------------------------------------------ series */
+
+/* A framed table inside the card: a quiet edge, never a second card. */
+.labtest-series {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.labtest-series > table {
+  min-width: 440px;
+}
+.labtest-series th:first-child {
+  border-top-left-radius: var(--radius);
+}
+.labtest-series th:last-child {
+  border-top-right-radius: var(--radius);
+}
+
+/* ------------------------------------------------------------------- forms */
+
+.labtest-form-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+.lt-span-2 {
+  grid-column: span 2;
+}
+.lt-span-3 {
+  grid-column: span 3;
+}
+.lt-span-6 {
+  grid-column: span 6;
+}
+.labtest-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* Date beside the note while they fit. */
+.labtest-order-meta {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 14px 16px;
+  margin-top: 16px;
+}
+
+@media (max-width: 760px) {
+  .labtest-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lt-span-2 {
+    grid-column: span 1;
+  }
+  .lt-span-3,
+  .lt-span-6 {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 480px) {
+  .labtest-form-grid,
+  .labtest-order-meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lt-span-2,
+  .lt-span-3,
+  .lt-span-6 {
+    grid-column: span 1;
+  }
+}
+@media (max-width: 600px) {
+  .labtest-form-actions > .button {
+    flex: 1 1 0;
+    min-height: 44px;
+  }
+}
+
+/* --------------------------------------------------------------- panels
+   The buttons that fill an order. The practice's own panel carries a mark:
+   there are 25 from the system, and theirs is the one pressed every day. */
+
+.paineis {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.paineis-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.paineis-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.paineis-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.paineis-botoes .button {
+  gap: 6px;
+}
+.button.meu-painel {
+  border-color: var(--primary);
+  color: var(--on-soft);
+}
+.button.meu-painel:hover:not(:disabled) {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+/* How many tests the panel adds: a small count, not a word. */
+.painel-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.button.meu-painel .painel-n {
+  background: var(--primary-soft);
+  color: var(--on-soft);
+}
+
+/* --------------------------------------------------------- order: choose */
+
+.labtest-order-search {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.labtest-order-search > .labtest-search {
+  flex: 1 1 240px;
+}
+.labtest-marked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--h-input);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-soft);
+}
+.labtest-marked > svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* The 150+ parameters in a bounded, scrolling well on the desk: the search
+   above and the date, note and submit below stay in reach. On the phone the
+   well opens up and the page scrolls instead. */
+.labtest-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: min(60vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.labtest-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.labtest-group-name {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.labtest-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+}
+/* One test = one chip; the whole chip is the target and the checkbox shows
+   the state a second time, for whoever does not read colour. */
+.labtest-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--motion), border-color var(--motion), color var(--motion);
+}
+.labtest-check:hover {
+  border-color: var(--border-strong);
+}
+.labtest-check:has(> input:checked) {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--on-soft);
+  font-weight: 500;
+}
+.labtest-check:has(> input:focus-visible) {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.labtest-check > input[type="checkbox"]:focus {
+  box-shadow: none;
+}
+.labtest-check > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.labtest-groups > .empty {
+  padding: 24px 12px;
+}
+@media (max-width: 600px) {
+  .labtest-groups {
+    max-height: none;
+    overflow: visible;
+    padding: 12px;
+  }
+  .labtest-checks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (pointer: coarse) {
+  .labtest-check {
+    min-height: 44px;
+  }
+}
+
+/* ------------------------------------------------------------------ orders */
+
+.labtest-orders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.labtest-order {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 4px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.labtest-order:last-child {
+  padding-bottom: 0;
+}
+.labtest-order-date {
+  color: var(--ink);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.labtest-order-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+@media (max-width: 480px) {
+  .labtest-order {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+/* --------------------------------------------------------- shared legacy
+   .sinal-sua is read by PatientProfile.tsx (the TAG created by the practice):
+   kept here, on tokens, until that page carries it. */
+.sinal-sua {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: var(--primary);
+}

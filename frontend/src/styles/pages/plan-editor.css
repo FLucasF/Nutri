@@ -1,0 +1,1140 @@
+/* ============================================================== plan editor
+   The densest screen of the product: a settings card, meal cards whose items
+   sit on one grid line each, and a rail of totals — sticky beside the meals
+   on the desk, inside a bottom sheet on tablet and phone. Colour is spent on
+   data only: the hour chip, the macro ring, the delta against the goal. */
+
+.editor-page {
+  min-width: 0;
+}
+
+.editor-plan {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+/* General defense: a grid child that cannot shrink punches through the whole
+   page, and the symptom shows up far from the cause. */
+.editor-plan > * {
+  min-width: 0;
+}
+.editor-main {
+  min-width: 0;
+}
+
+/* The rail scrolls on its own when it is taller than the window, so the
+   totals never leave the screen while the meal list goes on for metres. */
+.panel-totals {
+  position: sticky;
+  top: 88px;
+  max-height: calc(100dvh - 104px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.panel-totals .card {
+  min-width: 0;
+}
+.editor-sheet .panel-totals {
+  position: static;
+  max-height: none;
+  overflow: visible;
+}
+
+/* ------------------------------------------------------------------ header */
+
+/* Sticky at every width; compact once the page has scrolled under it. */
+.editor-header {
+  align-items: flex-start;
+  transition:
+    box-shadow var(--motion),
+    padding var(--motion);
+}
+.editor-header-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.editor-header-main h1 {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  transition: font-size var(--motion);
+}
+.editor-header-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.editor-header-actions {
+  align-self: center;
+}
+.editor-header[data-scrolled="true"] .migalha {
+  display: none;
+}
+.editor-header[data-scrolled="true"] h1 {
+  font-size: 18px;
+  margin-top: 0;
+}
+.editor-header[data-scrolled="true"] .editor-header-sub {
+  font-size: 13px;
+}
+.saving-state > svg {
+  width: 12px;
+  height: 12px;
+}
+@keyframes editor-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.saving-state > .spin {
+  animation: editor-spin 1s linear infinite;
+}
+/* The unsaved dot on the corner of Salvar: a second, glanceable signal. */
+.button.has-dot {
+  position: relative;
+}
+.button.has-dot::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--canvas);
+}
+.closed-notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------- settings */
+
+.plan-settings {
+  margin-bottom: 16px;
+}
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.plan-grid .span-2 {
+  grid-column: span 2;
+}
+.plan-grid .span-3 {
+  grid-column: span 3;
+}
+.plan-grid .span-4 {
+  grid-column: span 4;
+}
+.plan-grid .span-6 {
+  grid-column: span 6;
+}
+.plan-grid .span-12 {
+  grid-column: span 12;
+}
+.plan-import {
+  align-self: flex-start;
+  margin-top: 2px;
+  height: auto;
+  min-height: 0;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.3;
+}
+.distribuicao-metas {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.distribuicao-metas > label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.distribuicao-metas input {
+  width: 64px;
+}
+.soma-metas {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  color: var(--danger);
+  padding-bottom: 10px;
+  white-space: nowrap;
+}
+.soma-metas.certa {
+  color: var(--success);
+}
+.dates-par {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dates-par > input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.dates-sep {
+  color: var(--ink-3);
+  flex: none;
+}
+.plan-template-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.plan-texts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.meals-empty {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.meals-empty > p {
+  margin: 0;
+}
+
+/* -------------------------------------------------------------------- meal */
+
+.meal {
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
+  margin-bottom: 16px;
+}
+/* Out of the day's count: visibly quieter, still in the plan. */
+.meal.fora-da-conta {
+  border-style: dashed;
+  box-shadow: none;
+}
+.meal-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  min-height: 48px;
+  padding: 6px 12px 6px 8px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+}
+.meal.collapsed .meal-top {
+  border-bottom: 0;
+  border-radius: var(--radius-card);
+}
+.meal-toggle {
+  flex: none;
+}
+
+/* The hour chip — the same pill as the day ruler, with the time input inside. */
+.meal-hora-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-family: var(--f-mono);
+  font-size: 12px;
+  flex: none;
+}
+.meal-hora-chip > svg {
+  width: 14px;
+  height: 14px;
+}
+.meal-hora-chip > .meal-hora,
+.meal-hora-chip > .meal-hora:focus {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  width: 5.4em;
+  min-height: 0;
+  height: auto;
+  box-shadow: none;
+  outline: none;
+}
+.meal-hora-chip:focus-within {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.meal-hora::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* The meal name reads as a heading until it is hovered or focused. */
+.meal-top > .meal-name {
+  flex: 1 1 100px;
+  min-width: 100px;
+  min-height: 36px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: var(--f-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+}
+.meal-top > .meal-name:hover,
+.meal-top > .meal-name:focus {
+  border-color: var(--border-input);
+  background: var(--surface);
+}
+
+.macro-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.macro-readout {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meal-acoes {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+.meal-calc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+/* Danger as a ghost icon: colour without a box. */
+.meal-acoes .button.perigo,
+.item-acoes .button.perigo,
+.sub-row .button.perigo {
+  border-color: transparent;
+  background: transparent;
+  color: var(--danger);
+}
+.meal-acoes .button.perigo:hover:not(:disabled),
+.item-acoes .button.perigo:hover:not(:disabled),
+.sub-row .button.perigo:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: transparent;
+}
+
+.aviso-substituta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-bottom: 1px solid var(--border);
+}
+.aviso-substituta > svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.meal-empty {
+  padding: 16px;
+  margin: 0;
+}
+
+/* -------------------------------------------------------------------- item */
+
+/* One grid line per item: handle · food · qty · unit · +medida · grams ·
+   actions. Notes and substitutions open on a second line under the food. */
+.item-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) 84px 132px 36px 64px auto;
+  grid-template-areas:
+    "handle desc qty unit measure grams acoes"
+    "handle extra extra extra extra extra extra";
+  gap: 4px 8px;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 12px 6px 8px;
+  border-bottom: 1px solid var(--border);
+  transition: background-color var(--motion);
+}
+.item-row:hover {
+  background: var(--surface-2);
+}
+.item-handle {
+  grid-area: handle;
+  display: inline-flex;
+  color: var(--ink-3);
+}
+.item-handle > svg {
+  width: 14px;
+  height: 14px;
+}
+.description-item {
+  grid-area: desc;
+  min-width: 0;
+  font-size: 14px;
+}
+.description-item > strong {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.item-qty {
+  grid-area: qty;
+}
+.item-unit {
+  grid-area: unit;
+}
+.item-measure {
+  grid-area: measure;
+}
+.item-grams {
+  grid-area: grams;
+  text-align: right;
+  white-space: nowrap;
+}
+.item-free {
+  grid-column: qty-start / grams-end;
+  grid-row: 1;
+  font-size: 13px;
+}
+.item-acoes {
+  grid-area: acoes;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  justify-self: end;
+}
+.item-extra {
+  grid-area: extra;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 16px;
+  min-width: 0;
+}
+.item-extra > .subs,
+.item-extra > .richtext-field:not(:has(> .richtext-abrir)) {
+  flex-basis: 100%;
+}
+.item-extra:empty {
+  display: none;
+}
+/* Denser controls inside the row than the 38px of a form. */
+.item-row input,
+.item-row select,
+.sub-row input,
+.sub-row select {
+  min-height: 34px;
+  padding-block: 4px;
+  font-size: 13px;
+}
+
+/* The closed observation reads as one line: label · "+ escrever". */
+.item-extra .richtext-field:has(> .richtext-abrir) {
+  width: auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.item-extra .richtext-field > label {
+  font-size: 12px;
+  margin: 0;
+}
+.item-extra .richtext-view {
+  font-size: 13px;
+}
+
+/* -------------------------------------------------------------- substitutes */
+
+.subs {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent);
+  margin: 2px 0 4px;
+}
+.sub-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 84px 132px 36px;
+  grid-template-areas: "mark food qty unit remove";
+  gap: 4px 8px;
+  align-items: center;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 4px 8px 4px 6px;
+}
+.sub-mark {
+  grid-area: mark;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sub-mark > svg {
+  width: 14px;
+  height: 14px;
+}
+.sub-food {
+  grid-area: food;
+  min-width: 0;
+  font-size: 13px;
+}
+.sub-food > strong {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.sub-qty {
+  grid-area: qty;
+}
+.sub-unit {
+  grid-area: unit;
+}
+.sub-remove {
+  grid-area: remove;
+  justify-self: end;
+}
+
+/* ------------------------------------------------------------- meal footer */
+
+.observacao-refeicao {
+  padding: 8px 12px;
+  border-top: 1px dashed var(--border);
+}
+.observacao-view {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.observacao-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+}
+.meal-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 10px;
+}
+.meal-add {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  border: 1px dashed var(--border-input);
+  color: var(--ink-2);
+}
+.meal-add:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+.meal-notes-open {
+  margin-left: auto;
+}
+
+/* The separator: the "---" line he draws in Word. */
+.separador-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.separador-item > span:first-child {
+  flex: 1;
+  border-top: 2px solid var(--border-strong);
+}
+
+/* After the last meal. */
+.meals-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+.meals-actions > .button:first-child {
+  flex: 1 1 auto;
+  justify-content: center;
+  min-height: 44px;
+  border-style: dashed;
+}
+.favorita {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.favorita-text {
+  min-width: 0;
+}
+.favorita-text > strong {
+  display: block;
+}
+.favorita-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
+/* -------------------------------------------------------------------- rail */
+
+.totals-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.totals-lines {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.totals-kcal {
+  font-family: var(--f-mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1;
+}
+.totals-unit::after {
+  content: "kcal";
+}
+.totals-unit {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.totals-empty {
+  margin: 0;
+}
+.totals-dirty {
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+.nutrient-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.nutrient-row:last-child {
+  border-bottom: 0;
+}
+.nutrient-row > span:last-child {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+/* A nutrient not determined in the source is not zero; the difference has to
+   be visible without having to read the text. */
+.nutrient-row.missing > span:last-child {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.legenda-macro {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.legenda-macro > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sw {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.sw-prot {
+  background: var(--macro-prot);
+}
+.sw-carb {
+  background: var(--macro-carb);
+}
+.sw-fat {
+  background: var(--macro-fat);
+}
+.totals-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.totals-delta {
+  font-weight: 500;
+}
+.totals-delta.dentro {
+  color: var(--success);
+}
+.totals-delta.acima {
+  color: var(--accent-text);
+}
+.totals-delta.abaixo {
+  color: var(--warning);
+}
+.totals-adequacy {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.totals-partial {
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+.totals-outside {
+  margin: 8px 0 0;
+}
+
+/* Prescribed × theoretical × difference. */
+.tabela-distribuicao {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.tabela-distribuicao th,
+.tabela-distribuicao td {
+  height: auto;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  background: transparent;
+}
+.tabela-distribuicao th:first-child,
+.tabela-distribuicao td:first-child {
+  padding-left: 0;
+}
+.tabela-distribuicao th:last-child,
+.tabela-distribuicao td:last-child {
+  padding-right: 0;
+}
+.tabela-distribuicao tr:last-child td {
+  border-bottom: 0;
+}
+.tabela-distribuicao th {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.tabela-distribuicao th.num,
+.tabela-distribuicao td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dist-perkg {
+  display: block;
+  font-size: 11px;
+}
+.dist-note {
+  margin: 8px 0 0;
+}
+/* The rail is narrower than the table's four columns want on a laptop; the
+   fade and the held first column only exist where it actually scrolls. */
+.panel-totals .table-scroll {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.panel-totals .table-scroll > .tabela-distribuicao {
+  min-width: 100%;
+}
+.panel-totals .table-scroll th:first-child,
+.panel-totals .table-scroll td:first-child {
+  background: var(--surface);
+  border-right: 0;
+}
+@media (min-width: 901px) and (max-width: 1180px) {
+  .panel-totals .table-scroll {
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent);
+  }
+  .panel-totals .table-scroll th:first-child,
+  .panel-totals .table-scroll td:first-child {
+    border-right: 1px solid var(--border);
+  }
+}
+
+/* The three bands of page 32. Below and above get different colours because
+   they are different clinical situations. */
+.faixa {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  column-gap: 0.3em;
+  padding: 2px 6px;
+  border-radius: var(--radius-chip);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.faixa.dentro {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.faixa.abaixo {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.faixa.acima {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.faixa-pct {
+  font-weight: 500;
+}
+
+.handout-none {
+  margin: 0;
+}
+.handout-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+.handout-row > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.handout-attach {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.handout-attach.hidden {
+  display: none;
+}
+.handout-attach > select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.publication-note {
+  margin: 12px 0;
+  font-size: 13px;
+}
+.link-address {
+  display: block;
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.publication-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.publication-regenerate {
+  margin-top: 12px;
+}
+
+/* ---------------------------------------------------- bottom bar + sheet */
+
+/* Tablet and phone: the rail lives in a sheet, opened from a readout bar that
+   stays at the foot of the screen. */
+.editor-bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-sticky);
+  background: var(--surface);
+  border-top: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-pop);
+  padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px));
+}
+.editor-readout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.editor-readout:hover {
+  background: var(--surface-2);
+}
+.editor-readout-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.editor-readout-label {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.editor-readout > svg {
+  width: 18px;
+  height: 18px;
+  color: var(--ink-3);
+  flex: none;
+}
+
+/* ------------------------------------------------------------ breakpoints */
+
+@media (max-width: 1366px) {
+  .editor-plan {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .meal-calc {
+    position: relative;
+  }
+  .meal-calc > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1180px) {
+  .editor-plan {
+    grid-template-columns: minmax(0, 1fr) 288px;
+    gap: 16px;
+  }
+  .item-row {
+    grid-template-columns: 16px minmax(0, 1fr) 72px 120px 36px 56px auto;
+  }
+  .sub-row {
+    grid-template-columns: auto minmax(0, 1fr) 72px 120px 36px;
+  }
+}
+
+@media (max-width: 900px) {
+  .editor-plan {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .plan-texts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Room for the readout bar. */
+  .editor-page {
+    padding-bottom: 88px;
+  }
+  /* No app bar on a focused route: the editor header is the top of the screen. */
+  .editor-header.sticky {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    padding-block: 8px;
+  }
+  .editor-header.sticky .editor-header-main h1 {
+    font-size: 16px;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .editor-header.sticky .editor-header-sub {
+    font-size: 12px;
+    margin: 0;
+    gap: 6px;
+  }
+  .editor-header.sticky .editor-header-sub > span:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60vw;
+  }
+  .editor-header.sticky > .header-page-actions {
+    flex: none;
+    flex-direction: row;
+    grid-column: auto;
+  }
+  .editor-header.sticky .header-page-actions .button:not(.icon) {
+    width: auto;
+    min-height: 38px;
+    padding-inline: 14px;
+  }
+}
+
+@media (max-width: 760px) {
+  .plan-grid > .field {
+    grid-column: span 12;
+  }
+  .plan-grid > .span-3 {
+    grid-column: span 6;
+  }
+  .plan-grid > .plan-dist,
+  .plan-grid > .plan-dates {
+    grid-column: span 12;
+  }
+
+  /* Meal header on two lines: chip · name · kcal, then readout · actions. */
+  .meal-top {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    row-gap: 6px;
+  }
+  .meal-toggle {
+    order: 0;
+  }
+  .meal-hora-chip {
+    order: 1;
+  }
+  .meal-top > .meal-name {
+    order: 2;
+    flex: 1 1 80px;
+    min-width: 0;
+  }
+  .macro-tags {
+    display: contents;
+  }
+  .macro-kcal {
+    order: 3;
+    margin-left: auto;
+  }
+  .meal-top::after {
+    content: "";
+    order: 4;
+    flex-basis: 100%;
+    height: 0;
+  }
+  .macro-readout {
+    order: 5;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .meal-acoes {
+    order: 6;
+    margin-left: auto;
+  }
+
+  /* Item on two lines: name · actions, then qty · unit · +medida · grams. */
+  .item-row {
+    grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr) 36px 56px;
+    grid-template-areas:
+      "desc desc desc desc acoes"
+      "qty unit unit measure grams"
+      "extra extra extra extra extra";
+    padding: 8px 12px;
+  }
+  .item-handle {
+    display: none;
+  }
+  .item-free {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .description-item {
+    font-size: 15px;
+  }
+  .sub-row {
+    grid-template-columns: 84px minmax(0, 1fr) 36px;
+    grid-template-areas:
+      "mark food remove"
+      "qty unit unit";
+  }
+  .meals-actions {
+    flex-wrap: wrap;
+  }
+  .meals-actions > .button {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+  .totals-hero {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .meal-foot {
+    flex-wrap: wrap;
+  }
+  .meal-add {
+    flex-basis: 100%;
+  }
+  .closed-notice > .cluster > .button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+@media (pointer: coarse) {
+  .meal-acoes .button.icon,
+  .item-acoes .button.icon,
+  .sub-row .button.icon,
+  .item-measure.button {
+    width: 40px;
+    min-height: 40px;
+  }
+}

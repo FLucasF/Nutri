@@ -1,0 +1,524 @@
+/* ============================================================ ficha do paciente
+   /patients/:id and the components mounted there (PatientTags, PatientNotes,
+   PatientAttachments, PatientAppointment), plus the TAG chips shared with the
+   patient list. `.avatar` is a component and lives in components.css. */
+
+/* ------------------------------------------------------------- TAG chips */
+
+/* A patient TAG is a `.tag` with a second class so the two pages can be told
+   apart in the markup; it looks exactly like every other tag. */
+.tags-paciente {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* ------------------------------------------------------------ page frame */
+
+/* Margins, not gap: WeightChart brings its own bottom margin inline and the
+   two would add up. An empty appointment slot takes no room at all. */
+.patient-body > * {
+  margin-bottom: 16px;
+}
+.patient-body > :last-child {
+  margin-bottom: 0;
+}
+.patient-appointment-slot:empty {
+  display: none;
+}
+
+/* ----------------------------------------------------------------- header */
+
+.patient-header .migalha {
+  margin-bottom: 10px;
+}
+/* Avatar beside the name on every width: the text shrinks, the row never wraps. */
+.patient-identity {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 14px;
+  min-width: 0;
+}
+.patient-identity-text {
+  min-width: 0;
+}
+.patient-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.patient-title h1 {
+  overflow-wrap: anywhere;
+}
+.patient-header p {
+  margin-top: 2px;
+}
+
+.bloco-tags {
+  margin-top: 10px;
+}
+.bloco-tags-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-height: 24px;
+}
+.bloco-tags-row > .eyebrow {
+  display: inline-block;
+}
+.bloco-tags-row > .button.link {
+  min-height: 24px;
+  font-size: 13px;
+}
+
+/* The chooser: a small panel under the chips, pills with aria-pressed. */
+.escolha-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 720px;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
+}
+.tag-escolha {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--motion), border-color var(--motion), color var(--motion);
+}
+.tag-escolha:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.tag-escolha:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.tag-escolha.ativa {
+  background: var(--primary-soft);
+  border-color: transparent;
+  color: var(--on-soft);
+  font-weight: 600;
+}
+.tag-escolha.nova {
+  border-style: dashed;
+  color: var(--primary);
+}
+.tag-escolha .sinal-sua {
+  width: 6px;
+  height: 6px;
+  margin-left: 2px;
+  background: var(--primary);
+}
+
+/* Actions: one wrapping row on the desk; on the phone the shell stacks the
+   primary full width and the rest ride the scroll strip. Above 600 the strip
+   dissolves and its buttons join the row. */
+.patient-actions {
+  align-items: center;
+  /* The strip scrolls; the header must not grow to the strip's content. */
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.patient-actions > .scroll-strip {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (min-width: 601px) {
+  .patient-actions > .scroll-strip {
+    display: contents;
+  }
+}
+
+/* -------------------------------------------------------------- info card */
+
+.patient-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 24px;
+  margin: 0;
+}
+.patient-fact {
+  min-width: 0;
+}
+.patient-fact-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.patient-fact-value {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .patient-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Phone: one column, label and value on the same line — seven short values
+   do not deserve seven stacked pairs. */
+@media (max-width: 600px) {
+  .patient-facts {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .patient-fact {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .patient-fact:first-child {
+    padding-top: 0;
+  }
+  .patient-fact-label {
+    flex: none;
+    margin: 0;
+  }
+  .patient-fact-value {
+    text-align: right;
+  }
+}
+.patient-notes-view {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.patient-notes-view > .patient-fact-label {
+  margin-bottom: 4px;
+}
+.patient-info-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ------------------------------------------------------------ sections */
+
+.patient-section-title {
+  margin-bottom: 10px;
+}
+.patient-plans .col-status {
+  width: 160px;
+}
+.patient-plans .col-num {
+  width: 110px;
+}
+
+/* ---------------------------------------------------------- appointment */
+
+.painel-consulta .card-head {
+  margin-bottom: 16px;
+}
+.consulta-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .consulta-footer .row > .button {
+    flex: 1 1 auto;
+  }
+}
+
+/* ----------------------------------------------------------------- notes */
+
+/* The editor grows; "Anotar" sits on its bottom edge. On the phone, once the
+   editor is open, the button goes under it. */
+.notes-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.notes-composer > .field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.notes-composer > .row {
+  flex: none;
+}
+@media (max-width: 600px) {
+  .notes-composer:has(.richtext-area) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.feed-anotacoes {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.feed-anotacoes > li {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+.anotacao-corpo {
+  font-size: 14px;
+}
+.anotacao-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.anotacao-meta > .button.link {
+  min-height: 24px;
+  padding: 0 2px;
+  font-size: 12px;
+}
+
+.notes-empty,
+.attachments-empty {
+  margin: 0;
+  padding: 16px;
+}
+.notes-empty .empty-icon,
+.attachments-empty .empty-icon {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 8px;
+}
+.notes-empty .empty-icon > svg,
+.attachments-empty .empty-icon > svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ------------------------------------------------------------ attachments */
+
+.patient-attachments .card-head-actions {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .patient-attachments .card-head-actions {
+    width: 100%;
+  }
+  .patient-attachments .card-head-actions > .button {
+    flex: 1 1 auto;
+  }
+}
+.painel-titulo {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+.lista-anexos {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.anexo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.anexo-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--on-soft);
+}
+.anexo-icone > svg {
+  width: 18px;
+  height: 18px;
+}
+.anexo-texto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.anexo-texto > strong {
+  display: block;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.anexo-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.anexo-nota {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.anexo-acoes {
+  flex: none;
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .anexo {
+    flex-wrap: wrap;
+  }
+  .anexo-acoes {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* The browser's file picker, dressed as a small outlined button. */
+.painel-anexo input[type="file"],
+.patients-import-fields input[type="file"] {
+  min-height: var(--h-input);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.painel-anexo input[type="file"]::file-selector-button,
+.patients-import-fields input[type="file"]::file-selector-button {
+  min-height: 32px;
+  margin-right: 10px;
+  padding: 0 10px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--motion);
+}
+.painel-anexo input[type="file"]::file-selector-button:hover,
+.patients-import-fields input[type="file"]::file-selector-button:hover {
+  background: var(--surface-2);
+}
+
+/* --------------------------------------------------------- questionnaires */
+
+.qz-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.qz-form > .button {
+  flex: none;
+}
+@media (max-width: 600px) {
+  .qz-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+.qz-empty {
+  margin: 0;
+}
+.qz-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+.qz-item {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.qz-item:last-child {
+  padding-bottom: 0;
+}
+.qz-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.qz-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.qz-title {
+  font-size: 14px;
+}
+.qz-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.qz-answers {
+  margin-top: 8px;
+}
+.qz-answers > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+}
+.qz-answers > summary:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.qz-answers .handout-attached {
+  margin-top: 12px;
+}
+
+/* ------------------------------------------------------------------ touch */
+
+/* Small text links keep the 44px target without stretching the line they
+   sit on: the box grows into its margins. */
+@media (pointer: coarse) {
+  .anotacao-meta > .button.link,
+  .bloco-tags-row > .button.link {
+    margin-block: -10px;
+  }
+  .qz-answers > summary {
+    min-height: 44px;
+  }
+}

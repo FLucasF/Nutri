@@ -1,0 +1,139 @@
+/* ============================================================ pacientes (lista)
+   The list page: header, the two panels that open in place (import, new
+   patient), the search toolbar, and the list itself — a table from 761px up,
+   `.list-rows` below (Patients.tsx chooses which with useIsNarrow()). */
+
+.patients-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ---------------------------------------------------------------- toolbar */
+
+/* Search grows; the filter sits on the input's baseline, not floating. */
+.patients-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 16px 20px;
+}
+.patients-toolbar input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+.patients-toolbar input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+.patients-filter {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--h-input);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* On the phone the label and the filter share the first line and the search
+   takes the whole second one: the placeholder needs the width more than the
+   checkbox does. */
+@media (max-width: 600px) {
+  .patients-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "label filter"
+      "search search";
+    row-gap: 6px;
+    column-gap: 12px;
+    align-items: center;
+    padding: 12px 16px 16px;
+  }
+  .patients-toolbar > .field {
+    display: contents;
+  }
+  .patients-toolbar > .field > label {
+    grid-area: label;
+  }
+  .patients-toolbar > .field > .input-search {
+    grid-area: search;
+  }
+  .patients-filter {
+    grid-area: filter;
+    justify-self: end;
+  }
+}
+
+/* ------------------------------------------------------------------ table */
+
+/* Explicit columns: e-mail gets a third, the two short ones are fixed, and
+   the name takes what is left — no void between name and e-mail. */
+.patients-table .col-email {
+  width: 32%;
+}
+.patients-table .col-age {
+  width: 96px;
+}
+.patients-table .col-status {
+  width: 120px;
+}
+.linha-paciente {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.linha-paciente-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.linha-paciente strong {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------------- list rows */
+
+.patients-list .list-row-body {
+  gap: 3px;
+}
+.patients-list .tags-paciente {
+  margin: 1px 0;
+}
+/* Age over status, so the name keeps its width. */
+.patients-list .list-row-trail {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.patients-age {
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------- panels */
+
+.patients-panel .card-head {
+  margin-bottom: 16px;
+}
+.patients-panel .card-sub {
+  max-width: 72ch;
+}
+.patients-import-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+.patients-import-sep {
+  flex: 0 0 180px;
+}
+@media (max-width: 600px) {
+  .patients-import-sep {
+    flex: 1 1 100%;
+  }
+}

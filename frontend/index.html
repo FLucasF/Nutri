@@ -2,34 +2,46 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#131c18" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0c1310" media="(prefers-color-scheme: dark)" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Um so, sem media: o script abaixo e src/theme.ts o mantem igual ao tema
+         da aplicacao (fixado ou do sistema), nao so ao esquema do aparelho. -->
+    <meta name="theme-color" content="#F6F5F2" />
     <title>NutriPlan</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Fraunces:SOFT,WONK,opsz,wght@0..100,0..1,9..144,400..700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400..700&family=Inter:wght@400..600&display=swap"
     />
   </head>
   <body>
     <!--
       Aplica o tema escolhido antes da primeira pintura. Se isto esperasse o
       React, quem fixou "dark" veria um lampejo claro a cada carregamento.
-      A chave repete a de src/tema.ts de proposito: este script precisa rodar
+      A chave repete a de src/theme.ts de proposito: este script precisa rodar
       sem carregar modulo nenhum.
     -->
     <script>
       (function () {
+        var t = null;
         try {
-          var t = localStorage.getItem("nutriplan.theme");
-          if (t === "light" || t === "dark") {
-            document.documentElement.setAttribute("data-theme", t);
-          }
+          t = localStorage.getItem("nutriplan.theme");
         } catch (e) {
           /* armazenamento bloqueado: segue o sistema */
         }
+        if (t === "light" || t === "dark") {
+          document.documentElement.setAttribute("data-theme", t);
+        }
+        /* A cor do navegador acompanha o tema efetivo: o fixado, ou o do
+           sistema quando nenhum foi fixado. Os valores repetem --canvas. */
+        var dark =
+          t === "dark" ||
+          (t !== "light" &&
+            !!window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", dark ? "#121411" : "#F6F5F2");
       })();
     </script>
     <div id="root"></div>

@@ -1,0 +1,139 @@
+/* ============================================================== access screen
+   Desktop: a brand panel on --primary-soft at the left, the form as an L1 card
+   (400px) centred over --canvas at the right. ≤900: the panel folds into a
+   96px header (mark + name) so the first field sits above the fold. */
+
+.screen-access {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(320px, 42%) minmax(0, 1fr);
+}
+
+/* --------------------------------------------------------------- brand */
+
+.access-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 40px;
+  background: var(--primary-soft);
+  color: var(--on-soft);
+}
+.access-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.access-mark {
+  width: 40px;
+  height: 40px;
+}
+.access-name {
+  font-family: var(--f-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--on-soft);
+}
+.access-eyebrow {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--f-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.access-pitch h2 {
+  max-width: 16ch;
+  font-size: 32px;
+  letter-spacing: -0.015em;
+  color: var(--on-soft);
+}
+.access-pitch p {
+  max-width: 38ch;
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.access-foot {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------- form */
+
+.access-form {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+  background: var(--canvas);
+}
+.box-access {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+}
+.access-head p {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+.box-access > .button:not(.link) {
+  width: 100%;
+}
+.box-access > .access-forgot {
+  align-self: center;
+}
+.access-switch {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.access-switch .button {
+  width: 100%;
+}
+
+/* ------------------------------------------------------------- narrow */
+
+@media (max-width: 900px) {
+  .screen-access {
+    display: flex;
+    flex-direction: column;
+  }
+  .access-brand {
+    flex: none;
+    flex-direction: row;
+    align-items: center;
+    height: 96px;
+    padding: 0 24px;
+    gap: 0;
+  }
+  .access-pitch,
+  .access-foot {
+    display: none;
+  }
+  .access-form {
+    flex: 1;
+    align-content: start;
+    padding: 24px 16px 32px;
+  }
+}
+@media (max-width: 600px) {
+  .access-brand {
+    padding: 0 16px;
+  }
+  .box-access {
+    gap: 14px;
+    padding: 20px;
+  }
+}

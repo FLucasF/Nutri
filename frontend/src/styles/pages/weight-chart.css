@@ -1,0 +1,72 @@
+/* =========================================================== gráfico de peso
+   components/WeightChart.tsx, on the patient profile.
+
+   Barras horizontais em div, sem biblioteca. São cinco barras; uma
+   dependência de gráfico custaria mais do que a tela inteira. E barra em vez
+   de curva porque, com poucas medições, a linha sugere uma tendência que os
+   pontos não sustentam.
+
+   The delta badge (.delta.up / .delta.down) is defined in anthropometry.css
+   and shared with the evolution table: one vocabulary for a change of weight. */
+
+.grafico-peso {
+  display: grid;
+  gap: 8px;
+}
+
+.linha-peso {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  gap: 12px;
+  align-items: center;
+  min-height: 24px;
+}
+
+/* A tabular date is the same width on every row, so the column sizes to it. */
+.data-peso {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.barra-peso {
+  height: 10px;
+  background: var(--surface-3);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.barra-peso > div {
+  height: 100%;
+  min-width: 10px;
+  background: var(--primary-fill);
+  border-radius: var(--radius-pill);
+}
+
+.valor-peso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 9rem;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .linha-peso {
+    gap: 8px;
+  }
+  .valor-peso {
+    min-width: 7.5rem;
+  }
+}
+
+/* O formulário de consulta abre sobre a linha de ações, ocupando a largura. */
+.painel-consulta {
+  flex-basis: 100%;
+  margin-top: 0.6rem;
+}

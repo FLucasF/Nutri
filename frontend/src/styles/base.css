@@ -1,0 +1,181 @@
+/* ============================================================================
+   Base — resets, body, headings, links, focus, motion
+   ----------------------------------------------------------------------------
+   Inter carries body and tables (14px, 15 on the phone) with tabular figures
+   everywhere: a column of kcal has to line up without asking. Instrument Sans
+   carries what is read as a label — headings, buttons, navigation. DM Mono is
+   reserved for readouts (hour chips, kcal, g/kg) and never used for prose.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--f-text);
+  font-size: 14px;
+  line-height: 1.45;
+  font-feature-settings: "tnum", "cv08", "ss03";
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* A word that is too long must not push the page. break-word is the safe
+     floor: it only acts when the word really does not fit. */
+  overflow-wrap: break-word;
+}
+@media (max-width: 600px) {
+  body {
+    font-size: 15px;
+  }
+}
+
+/* ---------------------------------------------------------------- headings */
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink);
+  text-wrap: balance;
+}
+h1 {
+  font-size: 26px;
+  letter-spacing: -0.015em;
+}
+h2 {
+  font-size: 16px;
+}
+h3 {
+  font-size: 14px;
+}
+h4 {
+  font-size: 13px;
+}
+@media (max-width: 600px) {
+  h1 {
+    font-size: 22px;
+  }
+}
+
+p {
+  text-wrap: pretty;
+}
+
+small {
+  font-size: 12px;
+}
+
+strong,
+b {
+  font-weight: 600;
+}
+
+code,
+kbd,
+samp {
+  font-family: var(--f-mono);
+  font-size: 0.92em;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
+/* ------------------------------------------------------------------- links */
+
+a {
+  color: var(--primary);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color var(--motion);
+}
+a:hover {
+  color: var(--primary-hover);
+}
+
+/* ---------------------------------------------------------------- controls */
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  margin: 0;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+}
+
+/* lucide-react tags every icon with .lucide: never let one shrink in a flex row */
+.lucide {
+  flex: none;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 24%, transparent);
+}
+
+/* ------------------------------------------------------------------- focus */
+
+/* Every interactive element gets the same ring. Inputs replace it with the
+   border + halo pair in components.css, which reads better on a field. */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ motion */
+
+/* The only !important in the system: whoever asked for no motion gets none,
+   whatever a component declared. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------- text somebody typed in */
+
+/* In free-text fields, `anywhere` is firmer than the body floor: there the
+   break also counts toward the container's minimum width, which is what keeps
+   a pasted URL or a 700-character lab code from dragging the layout. */
+.appointment-note,
+.body-handout,
+.handout-attached p,
+.description-item,
+.feedback-text,
+.field-message,
+.problems-list li,
+.item-notes,
+.warning {
+  overflow-wrap: anywhere;
+}

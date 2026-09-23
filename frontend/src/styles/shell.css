@@ -1,0 +1,599 @@
+/* ============================================================================
+   Shell — sidebar / rail / app bar / drawer / tab bar / content / page header
+   ----------------------------------------------------------------------------
+   > 1180   sidebar 240px (groups, labels, footer with theme + user + Sair)
+   901–1180 icon rail 64px (same markup: labels go visually hidden)
+   601–900  no sidebar: sticky app bar 56px + drawer (Sheet side="left")
+   ≤ 600    app bar + bottom tab bar 64px (+ safe area)
+   Focused routes (plan / recipe editors) drop the app bar and tab bar on ≤900
+   and make the page's own header sticky (.header-page.sticky).
+
+   App.tsx renders exactly this vocabulary; the drawer is the same .sidebar
+   markup inside a Sheet, the rail is the same markup with labels hidden.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------- frame */
+
+.app {
+  display: grid;
+  /* auto, not a fixed width: the first track takes the width of whatever
+     sidebar is rendered (240 / 64 / the legacy rail). minmax(0, 1fr) and not
+     1fr: the 1fr track has an automatic minimum and would grow to a wide table
+     instead of letting it scroll inside its own container. */
+  grid-template-columns: auto minmax(0, 1fr);
+  /* dvh and not vh: on the phone 100vh counts the browser bar that disappears
+     on scroll, and the page is too tall from the first touch. */
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+@media (max-width: 900px) {
+  .app {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* ----------------------------------------------------------------- sidebar */
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  width: var(--sidebar-w);
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border-strong);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 64px;
+  padding: 0 16px;
+  flex: none;
+  color: inherit;
+  text-decoration: none;
+}
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+.brand-name {
+  font-family: var(--f-display);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.brand-eyebrow {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--f-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 12px 12px;
+}
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-group-label {
+  padding: 0 12px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Works as <a> (NavLink) or <button>. The active state is a pill, and only a
+   pill: no bar, no second signal. */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--f-display);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--motion), color var(--motion);
+}
+.nav-item > svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.nav-item:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.nav-item.active {
+  background: var(--primary-soft);
+  color: var(--on-soft);
+  font-weight: 600;
+}
+.nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-footer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+.sidebar-footer .segmented {
+  align-self: stretch;
+  display: flex;
+}
+.sidebar-footer .segmented > button {
+  flex: 1;
+}
+.sidebar-footer .button.ghost {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 8px;
+}
+.user-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-plan {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* Rail footer: the avatar is a button and opens a small menu (user card,
+   Equipe, Sair) beside the rail. Fixed, not absolute: the rail scrolls, and an
+   absolutely positioned menu would be clipped by its overflow. */
+.rail-user {
+  position: relative;
+}
+.rail-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+.rail-avatar[aria-expanded="true"] {
+  background: var(--surface-2);
+}
+.rail-menu {
+  position: fixed;
+  left: calc(var(--rail-w) + 8px);
+  bottom: 12px;
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 232px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-pop);
+}
+.rail-menu .user-card {
+  margin-bottom: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.rail-menu .button.ghost {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* Show/hide helpers for the two footers (full vs rail). Render one with the
+   hook, or both and let these choose. */
+@media (min-width: 1181px) {
+  .rail-only {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .rail-only {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------- rail 901–1180 */
+
+@media (max-width: 1180px) and (min-width: 901px) {
+  .sidebar {
+    width: var(--rail-w);
+  }
+  .sidebar-brand {
+    justify-content: center;
+    padding: 0;
+  }
+  .brand-name,
+  .brand-eyebrow,
+  .nav-group-label,
+  .nav-label,
+  .desktop-only {
+    /* visually hidden, still read: the item keeps title + aria-label too */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .sidebar-nav {
+    gap: 8px;
+    padding: 8px 12px 16px;
+  }
+  .nav-group {
+    gap: 4px;
+  }
+  .nav-item {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--radius);
+  }
+  .sidebar-footer {
+    align-items: center;
+    padding: 12px 8px;
+  }
+  .sidebar-footer .segmented,
+  .sidebar-footer .button.ghost {
+    width: auto;
+  }
+}
+
+/* --------------------------------------------------------- app bar ≤ 900 */
+
+.appbar {
+  display: none;
+}
+@media (max-width: 900px) {
+  .app > .sidebar {
+    display: none;
+  }
+  .appbar {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-appbar);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: var(--appbar-h);
+    padding: 0 8px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-strong);
+    transition: box-shadow var(--motion);
+  }
+  .appbar[data-scrolled="true"] {
+    box-shadow: var(--shadow-2);
+  }
+  .appbar .button.icon {
+    width: 44px;
+    min-height: 44px;
+  }
+  .appbar .button.icon > svg {
+    width: 20px;
+    height: 20px;
+  }
+  .appbar-brand {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+  }
+  .appbar-brand .brand-mark {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* The drawer is a Sheet (side="left", className="drawer") holding the same
+   sidebar markup. Inside it the sidebar is no longer sticky nor 240px wide. */
+.sheet.drawer .sheet-body {
+  padding: 0;
+}
+.sheet .sidebar {
+  position: static;
+  display: flex;
+  width: auto;
+  height: auto;
+  min-height: 100%;
+  border-right: 0;
+  overflow: visible;
+}
+/* The brand row doubles as the drawer's header: the sheet's own close button
+   sits over its right end instead of taking a row of its own. */
+.sheet.drawer .sheet-head {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  z-index: 1;
+  padding: 0;
+}
+.sheet.drawer .sidebar-brand {
+  padding-right: 60px;
+}
+
+/* --------------------------------------------------------- tab bar ≤ 600 */
+
+.tabbar {
+  display: none;
+}
+@media (max-width: 600px) {
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-tabbar);
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    border-top: 1px solid var(--border-strong);
+  }
+  .tabbar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--ink-3);
+    font-family: var(--f-display);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color var(--motion);
+  }
+  .tabbar-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 20px;
+    border-radius: var(--radius-pill);
+    transition: background-color var(--motion);
+  }
+  .tabbar-icon > svg {
+    width: 22px;
+    height: 22px;
+  }
+  .tabbar-item.active {
+    color: var(--on-soft);
+  }
+  .tabbar-item.active .tabbar-icon {
+    background: var(--primary-soft);
+  }
+}
+
+/* ----------------------------------------------------------------- content */
+
+.content {
+  --gutter: 32px;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: var(--gutter);
+}
+@media (max-width: 1180px) {
+  .content {
+    --gutter: 24px;
+  }
+}
+@media (max-width: 900px) {
+  .content {
+    --gutter: 20px;
+  }
+}
+@media (max-width: 600px) {
+  .content {
+    --gutter: 16px;
+    /* room for the tab bar */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+  .app.focused .content {
+    padding-bottom: 24px;
+  }
+}
+
+/* ------------------------------------------------------------- page header */
+
+/* Breadcrumb → h1 → subtitle on the left, actions on the right. No divider:
+   whitespace does the job. */
+.header-page {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.header-page > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.header-page p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.header-page-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Breadcrumb: ChevronLeft + parent. `a.minusculo` is the legacy spelling the
+   pages still use ("← Prescrições"). */
+.migalha,
+.header-page a.minusculo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.migalha > svg {
+  width: 16px;
+  height: 16px;
+  margin-left: -4px;
+}
+.migalha:hover,
+.header-page a.minusculo:hover {
+  color: var(--primary);
+}
+
+/* Focused routes on ≤900: the page header is the only bar. It bleeds into the
+   content gutter so that it reads as the top of the screen. */
+.header-page.sticky {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--canvas);
+  margin: calc(-1 * var(--gutter, 16px)) calc(-1 * var(--gutter, 16px)) 16px;
+  padding: 12px var(--gutter, 16px);
+  transition: box-shadow var(--motion);
+}
+.header-page.sticky[data-scrolled="true"] {
+  box-shadow: var(--shadow-2);
+}
+.header-page-back {
+  margin-left: -8px;
+}
+
+/* A horizontal strip of secondary actions on the phone: scrolls, no scrollbar,
+   bleeds into the gutter so the last button is not cut by the padding. */
+.scroll-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: calc(-1 * var(--gutter, 16px));
+  padding-inline: var(--gutter, 16px);
+  scroll-padding-inline: var(--gutter, 16px);
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-strip::-webkit-scrollbar {
+  display: none;
+}
+.scroll-strip > * {
+  flex: none;
+}
+
+@media (max-width: 600px) {
+  .header-page {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .header-page-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  /* 1–2 buttons: full width, 44px, stacked. */
+  .header-page .button:not(.icon) {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+  /* 3+: primary full width + the rest in the strip, outlined, 38px. */
+  .header-page .scroll-strip .button {
+    width: auto;
+    min-height: 38px;
+  }
+  .header-page.sticky {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 4px;
+  }
+  .header-page.sticky > .header-page-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ------------------------------------------------------------------ touch */
+
+@media (pointer: coarse) {
+  .nav-item,
+  .tabbar-item,
+  .rail-avatar {
+    min-height: 44px;
+  }
+}

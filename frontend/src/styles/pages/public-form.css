@@ -1,0 +1,110 @@
+/* =============================================================== public form
+   The questionnaire the patient answers from a link. Shares the shell and the
+   cover with the public plan (patient-plan.css). One question per card, a
+   progress line at the top, and one large full-width send button at the end. */
+
+.form-patient {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.form-alert {
+  margin: 0;
+}
+
+/* -------------------------------------------------------------- progress */
+
+.form-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px;
+}
+.form-progress-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.form-progress-count .readout.strong {
+  font-size: 13px;
+}
+.form-progress-legend {
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.form-progress-track {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.form-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--primary-fill);
+  transition: width var(--motion);
+}
+
+/* -------------------------------------------------------------- questions */
+
+.question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.question-card {
+  gap: 10px;
+}
+.question-index {
+  font-size: 12px;
+}
+/* The statement is the question, not a field label: sentence case, body size. */
+.question-card > label {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.required {
+  color: var(--danger);
+  font-weight: 600;
+}
+.question-card .field-hint {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.question-card select,
+.question-card input,
+.question-card textarea {
+  margin-top: 2px;
+  font-size: 16px; /* 16 on purpose: below it, iOS zooms into the field */
+}
+.question-card textarea {
+  min-height: 104px;
+}
+/* A number is a short answer; the box says so. */
+.question-card[data-kind="number"] input {
+  max-width: 200px;
+}
+
+/* --------------------------------------------------------------- actions */
+
+.form-patient-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+.form-footnote {
+  margin: 0;
+  text-align: center;
+  line-height: 1.5;
+}

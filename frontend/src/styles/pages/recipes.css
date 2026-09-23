@@ -1,0 +1,350 @@
+/* ================================================================== recipes
+   The recipe editor (/recipes/new, /recipes/:id).
+
+   A focused route: on ≤900 the shell draws no bar and .header-page.sticky is
+   the top of the screen (shell.css). Below it, one column of cards — fields,
+   ingredients, preparation — and, from 901 up, a sticky aside with the
+   composition the server calculated. Every class here is the page's own; the
+   ingredient rows mirror the plan editor's item rows but do not share them.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ header */
+
+/* The sticky header holds the back chevron before the title. shell.css gives
+   the first child of a header flex: 1 1 auto (the title block); here that is
+   the chevron, so the roles are reassigned. */
+.page-recipe .header-page.sticky {
+  align-items: center;
+}
+.page-recipe .header-page.sticky > .header-page-back {
+  flex: none;
+}
+.page-recipe .header-page-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* In the sticky bar a long name is cut, not wrapped: the bar stays one bar. */
+.page-recipe .header-page.sticky .header-page-title > h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.page-recipe .migalha {
+  margin-bottom: 4px;
+}
+
+/* ------------------------------------------------------------------ layout */
+
+.recipe-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+/* A grid child that cannot shrink punches through the whole page. */
+.recipe-editor > * {
+  min-width: 0;
+}
+.recipe-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.recipe-aside {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.recipe-aside .card {
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .recipe-editor {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 20px;
+  }
+}
+@media (max-width: 900px) {
+  .recipe-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .recipe-aside {
+    position: static;
+  }
+}
+
+/* ------------------------------------------------------------------ fields */
+
+/* Six tracks: name takes four and group two on the first row; yield and
+   servings split the second. No orphan, no ragged heights — the hints belong
+   to the row's two fields alike. */
+.recipe-fields {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.recipe-field-name {
+  grid-column: span 4;
+}
+.recipe-field-group {
+  grid-column: span 2;
+}
+.recipe-field-yield,
+.recipe-field-servings {
+  grid-column: span 3;
+}
+@media (max-width: 600px) {
+  .recipe-fields {
+    gap: 12px;
+  }
+  .recipe-field-name,
+  .recipe-field-group {
+    grid-column: span 6;
+  }
+}
+
+/* ------------------------------------------------------------- ingredients */
+
+.recipe-ingredients .card-head {
+  align-items: center;
+  margin-bottom: 4px;
+}
+.recipe-raw {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.recipe-empty {
+  padding: 24px 16px 20px;
+}
+
+/* food · quantity · measure · computed g · remove */
+.ingredient-head,
+.ingredient-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px minmax(120px, 168px) 72px 38px;
+  gap: 8px;
+  align-items: center;
+}
+.ingredient-head {
+  padding: 8px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--border);
+}
+.ingredient-row {
+  min-height: 52px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ingredient-row:last-child {
+  border-bottom: 0;
+}
+.ingredient-name {
+  font-size: 14px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.ingredient-row > input,
+.ingredient-row > select {
+  width: 100%;
+  min-width: 0;
+}
+.ingredient-row > input {
+  text-align: right;
+}
+.ingredient-grams {
+  text-align: right;
+  font-size: 13px;
+}
+.ingredient-remove {
+  color: var(--ink-3);
+}
+.ingredient-remove:hover:not(:disabled) {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+@media (max-width: 760px) {
+  .ingredient-head {
+    display: none;
+  }
+  /* Two layers: the name takes the whole width, the controls share the row
+     below. Stacking one control per row would triple the height. */
+  .ingredient-row {
+    grid-template-columns: 80px minmax(0, 1fr) auto 44px;
+    padding: 10px 0;
+  }
+  .ingredient-name {
+    grid-column: 1 / -1;
+  }
+  .ingredient-grams {
+    min-width: 56px;
+  }
+}
+/* A wide touch screen keeps the five tracks; only the remove target grows. */
+@media (pointer: coarse) and (min-width: 761px) {
+  .ingredient-head,
+  .ingredient-row {
+    grid-template-columns: minmax(0, 1fr) 88px minmax(120px, 168px) 72px 44px;
+  }
+}
+
+/* The search that adds the next ingredient: a full-width row at the foot of
+   the list, with the search glyph inside the input. */
+.recipe-add {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.recipe-add .picker-food {
+  position: relative;
+}
+.recipe-add .picker-food > input {
+  width: 100%;
+  min-width: 0;
+  padding-left: 36px;
+  /* the placeholder is longer than a phone; it trails off instead of being cut */
+  text-overflow: ellipsis;
+}
+.recipe-add .picker-food::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: calc(var(--h-input) / 2);
+  width: 16px;
+  height: 16px;
+  translate: 0 -50%;
+  background-color: var(--ink-3);
+  -webkit-mask: var(--mask-search) center / 16px 16px no-repeat;
+  mask: var(--mask-search) center / 16px 16px no-repeat;
+  pointer-events: none;
+}
+@media (pointer: coarse) {
+  .recipe-add .picker-food::before {
+    top: 22px;
+  }
+}
+
+/* ------------------------------------------------------------- composition */
+
+.recipe-rows {
+  display: flex;
+  flex-direction: column;
+}
+.recipe-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.recipe-row:last-child {
+  border-bottom: 0;
+}
+.recipe-row > span:first-child {
+  min-width: 0;
+}
+/* A nutrient not determined in the source is not zero; the difference has to
+   be visible without having to read the note. */
+.recipe-row.missing .readout {
+  color: var(--ink-3);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.recipe-note {
+  margin: 12px 0 0;
+}
+.recipe-note-only {
+  margin: 0;
+}
+
+/* The 96px donut with the kcal at its centre, plus a three-line legend. */
+.recipe-ring {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 4px 0 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.recipe-ring-kcal {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.recipe-ring-unit {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.recipe-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.recipe-legend > li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recipe-legend > li::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+.recipe-legend > li.prot::before {
+  background: var(--macro-prot);
+}
+.recipe-legend > li.carb::before {
+  background: var(--macro-carb);
+}
+.recipe-legend > li.fat::before {
+  background: var(--macro-fat);
+}
+
+/* The composition at a glance under the header, only where the aside has
+   fallen below the whole form. */
+.recipe-strip {
+  display: none;
+}
+@media (max-width: 900px) {
+  .recipe-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-1);
+  }
+  .recipe-strip-per {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+}

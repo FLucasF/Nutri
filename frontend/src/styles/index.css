@@ -1,0 +1,30 @@
+/* ============================================================================
+   NutriPlan stylesheet — entry point
+   ----------------------------------------------------------------------------
+   Order matters: tokens define, base resets, components build, shell frames,
+   pages override. A page file may only style its own classes; anything two
+   pages share belongs in components.css.
+   ========================================================================== */
+
+@import "./tokens.css";
+@import "./base.css";
+@import "./components.css";
+@import "./shell.css";
+
+@import "./pages/access.css";
+@import "./pages/patient-plan.css";
+@import "./pages/schedule.css";
+@import "./pages/handouts.css";
+@import "./pages/plan-editor.css";
+@import "./pages/anamneses.css";
+@import "./pages/energy.css";
+@import "./pages/labtests.css";
+@import "./pages/patient-profile.css";
+@import "./pages/weight-chart.css";
+@import "./pages/patients.css";
+@import "./pages/finance.css";
+@import "./pages/recipes.css";
+@import "./pages/public-form.css";
+@import "./pages/foods.css";
+@import "./pages/library.css";
+@import "./pages/anthropometry.css";

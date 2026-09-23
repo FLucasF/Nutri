@@ -1,0 +1,308 @@
+/* ============================================================== antropometria
+   /patients/:id/anthropometry — the last assessment as stat tiles, the
+   evolution and history tables, and the assessment form.
+
+   `.delta` is shared with the weight chart (components/WeightChart.tsx): a
+   change of weight reads the same wherever it is shown. Up is amber and down
+   is green because that is what the clinic watches for on weight, waist and
+   fat; the badge never judges, it only marks the direction.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ delta */
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: var(--radius-chip);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.delta.up {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.delta.down {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+/* A value and its change side by side, right-aligned in a numeric cell. */
+.value-change {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.sem-comparacao {
+  cursor: help;
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------- stat tiles */
+
+/* Three across on the desk, two on the phone: a six-value group is two rows
+   of three, never one six-wide line with the pairs floating in empty space. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.stats.dense {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+/* Nested container: --surface-2 fill, no second border. */
+.stats > .stat {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+.stat-unit {
+  margin-left: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+/* A classification is a word, not a figure: one step smaller so that
+   "Risco moderado" fits a tile instead of breaking in two. */
+.stat-value.texto {
+  font-size: 17px;
+  line-height: 1.25;
+}
+.stat-empty {
+  padding-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+.stat-tag {
+  padding-top: 5px;
+}
+@media (max-width: 900px) {
+  .stats.dense {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .stats,
+  .stats.dense {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stats > .stat {
+    padding: 10px 12px;
+  }
+  .stats .stat-value {
+    font-size: 20px;
+  }
+}
+
+/* ---------------------------------------------------------------- summary */
+
+.summary-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.summary-date > svg {
+  width: 14px;
+  height: 14px;
+  color: var(--ink-3);
+}
+
+.summary-group {
+  margin-top: 20px;
+}
+.summary-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+/* The group title is an eyebrow; the h3 stays for the outline. */
+.summary-group-head > h3,
+.form-section-head > h3 {
+  font-family: var(--f-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.summary-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.summary-notes {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.summary-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+/* Growth indicators (child): description and reference on the left, z-score
+   and its classification on the right. */
+.growth-list {
+  display: flex;
+  flex-direction: column;
+}
+.growth-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.growth-row:last-child {
+  border-bottom: 0;
+}
+.growth-row-ref {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.growth-row-score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ----------------------------------------------------------------- tables */
+
+/* The card already frames the section; the table gets a quieter inner frame
+   so that its header row has corners of its own. */
+.table-frame {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.baseline-tag {
+  margin-left: 8px;
+}
+.history-table .col-class,
+.history-table .col-protocolo {
+  white-space: nowrap;
+}
+.history-table td.acoes {
+  padding-right: 12px;
+}
+/* The hidden "Ações" header is absolutely positioned; anchored to its own
+   cell it scrolls with the table instead of widening the page. */
+.history-table th.acoes {
+  position: relative;
+}
+.history-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+@media (max-width: 600px) {
+  /* Protocol and lean mass stay on the wide screens; on the phone the row
+     keeps the figures the professional scrolls for and its two buttons. */
+  .history-table .col-secundaria {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------- form */
+
+.form-assessment .form-section {
+  margin-top: 16px;
+  padding: 16px;
+}
+.form-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.form-section-hint {
+  margin: -6px 0 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.form-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+/* A label may carry the "exigida" tag: side by side, wrapping if it must. */
+.form-assessment .field > label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.form-check {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.form-notes {
+  margin-top: 16px;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .form-assessment .form-section {
+    padding: 12px;
+  }
+  .form-grid,
+  .form-grid.three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  /* the date deserves the whole line: half a phone is short for a picker */
+  .form-grid > .field.largo {
+    grid-column: 1 / -1;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+  .form-actions > .button {
+    width: 100%;
+    min-height: 44px;
+  }
+}

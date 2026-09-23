@@ -1,0 +1,263 @@
+/* ============================================================================
+   NutriPlan — "Pedra & Sálvia" tokens
+   ----------------------------------------------------------------------------
+   Warm stone neutrals, one eucalyptus green for every primary action, colour
+   spent almost only on data (macro arcs, hour chips, deltas vs. meta).
+
+   Both values of a colour token sit on the same line, inside light-dark(): that
+   way there is no separate dark block that can fall behind when the light one
+   changes. The plain line before each pair is the pure light value — a browser
+   without light-dark() drops the second declaration and stays on the light
+   theme, instead of being left with no token at all.
+
+   color-scheme is not just a switch for the tokens: it is what makes the
+   browser draw what is not ours in the right theme — the date picker, the
+   select menu, the scrollbar. The pre-paint script in index.html sets
+   data-theme before React runs, so a pinned theme never flashes.
+
+   Every pair below was measured for WCAG (text ≥ 4.5:1, outlines ≥ 3:1).
+   Do not "tune" them.
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark; /* no explicit choice: follows the system */
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root {
+  /* ------------------------------------------------------------ surfaces */
+  --canvas: #f6f5f2;
+  --canvas: light-dark(#f6f5f2, #121411);
+  --surface: #ffffff;
+  --surface: light-dark(#ffffff, #1a1c19);
+  --surface-2: #f1f0ec;
+  --surface-2: light-dark(#f1f0ec, #212421);
+  --surface-3: #e8e6e0;
+  --surface-3: light-dark(#e8e6e0, #2a2d29);
+
+  /* ------------------------------------------------------------- borders */
+  --border: #e5e3dd;
+  --border: light-dark(#e5e3dd, #2e322d);
+  --border-strong: #cfccc4;
+  --border-strong: light-dark(#cfccc4, #3e433d);
+  --border-input: #8e928c;
+  --border-input: light-dark(#8e928c, #6e736c);
+  /* L1 resting card edge: --border in the light theme, --border-strong in the
+     dark one, where it stands in for the shadow that no longer shows. */
+  --border-card: #e5e3dd;
+  --border-card: light-dark(#e5e3dd, #3e433d);
+
+  /* ----------------------------------------------------------------- ink */
+  --ink: #191c1a;
+  --ink: light-dark(#191c1a, #edece7);
+  --ink-2: #4c524e;
+  --ink-2: light-dark(#4c524e, #b0b3ac);
+  --ink-3: #5E6762;
+  --ink-3: light-dark(#5E6762, #9A9E97);
+
+  /* ------------------------------------------------------------- primary */
+  --primary: #127a5b;
+  --primary: light-dark(#127a5b, #3fbf8f);
+  --primary-fill: #127a5b;
+  --primary-fill: light-dark(#127a5b, #3fbf8f);
+  --ink-on-primary: #ffffff;
+  --ink-on-primary: light-dark(#ffffff, #0b1f17);
+  --primary-hover: #0e6349;
+  --primary-hover: light-dark(#0e6349, #5ccfa3);
+  --primary-soft: #e2f2ea;
+  --primary-soft: light-dark(#e2f2ea, #163326);
+  --on-soft: #0b5a42;
+  --on-soft: light-dark(#0b5a42, #7adbb4);
+  --ring: rgba(18, 122, 91, 0.32);
+  --ring: light-dark(rgba(18, 122, 91, 0.32), rgba(63, 191, 143, 0.4));
+
+  /* -------------------------------------------------------------- accent */
+  /* FILLS ONLY (ring dot, arc, hour-chip dot) — never as text. */
+  --accent: #d63b6a;
+  --accent: light-dark(#d63b6a, #f0698c);
+  --accent-text: #c02f5c;
+  --accent-text: light-dark(#c02f5c, #f58ba6);
+  --accent-soft: #fbe6ec;
+  --accent-soft: light-dark(#fbe6ec, #3a1c26);
+
+  /* -------------------------------------------------------------- status */
+  --success: #167a45;
+  --success: light-dark(#167a45, #4cc47e);
+  --success-soft: #e3f5ea;
+  --success-soft: light-dark(#e3f5ea, #14301f);
+  --warning: #8f5e0a;
+  --warning: light-dark(#8f5e0a, #f0b04a);
+  --warning-soft: #fbefd9;
+  --warning-soft: light-dark(#fbefd9, #3a2a10);
+  --danger: #c42b2b;
+  --danger: light-dark(#c42b2b, #f07373);
+  --danger-soft: #fbe7e7;
+  --danger-soft: light-dark(#fbe7e7, #3a1717);
+  --info: #2b5fc4;
+  --info: light-dark(#2b5fc4, #7fa7f0);
+  --info-soft: #e6eefc;
+  --info-soft: light-dark(#e6eefc, #16233a);
+
+  /* -------------------------------------------------------------- macros */
+  /* Three tracks side by side: they separate by hue, not by lightness, so that
+     they stay three in the dark theme. Protein is NOT the brand green. */
+  --macro-prot: #1f6f8b;
+  --macro-prot: light-dark(#1f6f8b, #6cc3e0);
+  --macro-prot-text: #1f6f8b;
+  --macro-prot-text: light-dark(#1f6f8b, #6cc3e0);
+  --macro-carb: #e09a2e;
+  --macro-carb: light-dark(#e09a2e, #f2b95a);
+  --macro-carb-text: #8f5e0a;
+  --macro-carb-text: light-dark(#8f5e0a, #f2b95a);
+  --macro-fat: #7c5cbf;
+  --macro-fat: light-dark(#7c5cbf, #b39ce8);
+  --macro-fat-text: #6446a8;
+  --macro-fat-text: light-dark(#6446a8, #b39ce8);
+
+  /* ----------------------------------------------------------- typography */
+  --f-display: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "DM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* legacy name for the mono face */
+  --f-code: var(--f-mono);
+  /* Archivo's narrow width no longer exists; the legacy font-stretch calls
+     resolve to normal so that nothing squeezes by accident. */
+  --narrow: 100%;
+
+  /* ---------------------------------------------------------------- shape */
+  --radius-chip: 6px;
+  --radius: 8px; /* buttons, inputs, selects, segmented */
+  --radius-card: 12px;
+  --radius-sheet: 16px; /* drawer, sheet, toast */
+  --radius-pill: 999px;
+
+  /* -------------------------------------------------------------- heights */
+  --h-sm: 32px;
+  --h-md: 38px;
+  --h-lg: 44px;
+  --h-input: 38px;
+  --h-row: 44px; /* table row */
+  --h-meal: 48px; /* meal header */
+
+  /* --------------------------------------------------------------- layout */
+  --sidebar-w: 240px;
+  --rail-w: 64px;
+  --drawer-w: 288px;
+  --appbar-h: 56px;
+  --tabbar-h: 64px;
+  --content-max: 1280px;
+
+  /* --------------------------------------------------------------- motion */
+  --motion: 150ms ease; /* hover / focus */
+  --motion-sheet: 220ms;
+  --motion-toast: 200ms;
+
+  /* -------------------------------------------------------------- z-index */
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-appbar: 30;
+  --z-tabbar: 30;
+  --z-sheet: 50;
+  --z-toast: 60;
+
+  /* ------------------------------------------------------------- shadows */
+  /* Three elevation levels only. L1 resting = surface + 1px border + shadow-1;
+     L2 = shadow-2 on sticky bars once scrolled and on hovered list rows;
+     L3 = shadow-pop for drawer, sheet, menus, toasts. light-dark() takes
+     colours only, so the dark values live in the guarded blocks below. */
+  --shadow-1: 0 1px 2px rgba(25, 28, 26, 0.06), 0 1px 3px rgba(25, 28, 26, 0.04);
+  --shadow-2: 0 4px 12px -2px rgba(25, 28, 26, 0.1), 0 2px 4px rgba(25, 28, 26, 0.04);
+  --shadow-pop: 0 12px 32px -8px rgba(25, 28, 26, 0.22);
+  --backdrop: rgba(25, 28, 26, 0.4);
+
+  /* --------------------------------------------------------------- icons */
+  /* A <select> cannot carry a pseudo-element, so its chevron is a background
+     image — and a data URI cannot read a token, hence the light/dark pair. */
+  --icon-chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2366706B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+
+  /* Masks are colour-agnostic: painted with background-color at use time. */
+  --mask-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  --mask-chevron-right: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+  --mask-circle-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v4'/%3E%3Cpath d='M12 16h.01'/%3E%3C/svg%3E");
+  --mask-triangle-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E");
+  --mask-circle-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E");
+  --mask-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E");
+}
+
+/* Dark values for what light-dark() cannot express: no shadows (cards rely on
+   --border-strong), a 1px ring in place of the L2 lift, and the chevron
+   redrawn in the dark --ink-3. Same guard as the pre-paint script: a pinned
+   "light" wins over the system, a pinned "dark" wins over everything. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --shadow-1: none;
+    --shadow-2: 0 0 0 1px #3e433d;
+    --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px #3e433d;
+    --backdrop: rgba(0, 0, 0, 0.55);
+    --icon-chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238B8F88' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+}
+:root[data-theme="dark"] {
+  --shadow-1: none;
+  --shadow-2: 0 0 0 1px #3e433d;
+  --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px #3e433d;
+  --backdrop: rgba(0, 0, 0, 0.55);
+  --icon-chevron-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238B8F88' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* ----------------------------------------------------------------------------
+   Legacy aliases
+   ----------------------------------------------------------------------------
+   The page stylesheets under pages/ still speak the old "Ruler" vocabulary.
+   Each old name resolves to its new token so that nothing goes unstyled while
+   the pages are rewritten one by one. Delete a line here only when no CSS
+   references the old name any more.
+   -------------------------------------------------------------------------- */
+:root {
+  --paper: var(--surface);
+  --stone: var(--canvas);
+  --stone-light: var(--surface-2);
+  --ink-strong: var(--ink);
+  --ink-medium: var(--ink-2);
+  --ink-weak: var(--ink-3);
+  --row: var(--border);
+  --row-strong: var(--border-strong);
+  --outline-field: var(--border-input);
+  --pitch: var(--ink);
+
+  --beetroot: var(--primary-fill);
+  --beetroot-vivid: var(--primary-hover);
+  --beetroot-text: var(--primary);
+  --beetroot-washed: var(--primary-soft);
+  /* plain value on purpose: it feeds color-mix() inside .page-patient */
+  --beetroot-base: #127a5b;
+  --focus-halo: var(--ring);
+
+  --moss: var(--success);
+  --moss-strong: var(--success);
+  --moss-washed: var(--success-soft);
+  --moss-border: var(--border);
+  --ochre: var(--warning);
+  --ochre-strong: var(--warning);
+  --ochre-washed: var(--warning-soft);
+  --ochre-border: var(--border);
+  --brick: var(--danger);
+  --brick-strong: var(--danger);
+  --brick-washed: var(--danger-soft);
+  --brick-border: var(--border);
+
+  --macro-protein: var(--macro-prot);
+  --macro-carbohydrate: var(--macro-carb);
+  --macro-lipid: var(--macro-fat);
+
+  --shadow-near: rgba(25, 28, 26, 0.08);
+  --shadow-near: light-dark(rgba(25, 28, 26, 0.08), rgba(0, 0, 0, 0.45));
+  --shadow-far: rgba(25, 28, 26, 0.12);
+  --shadow-far: light-dark(rgba(25, 28, 26, 0.12), rgba(0, 0, 0, 0.55));
+  --float: var(--shadow-pop);
+}

@@ -1,0 +1,402 @@
+/* =================================================================== library
+   Shared by Orientações (Handouts.tsx), Questionários (Questionnaires.tsx)
+   and Equipe (Team.tsx): the toolbar with the search, the card grid, the
+   collapsible library card (icon + title + tags, body, action row), the
+   question list, the team rows and the quiet explainer note.
+
+   The card keeps the legacy hooks the pages toggle by class — .body-handout
+   / .open and .figure-handout / .recolhida — so the collapse behaviour is
+   unchanged; only the look is new. */
+
+/* ----------------------------------------------------------------- toolbar */
+
+.library-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.library-toolbar .input-search {
+  flex: 1 1 320px;
+  max-width: 420px;
+}
+@media (max-width: 600px) {
+  .library-toolbar .input-search {
+    max-width: none;
+  }
+}
+
+/* -------------------------------------------------------------------- grid */
+
+/* Two columns once there is room for two readable ones (~1000px of content);
+   a single column below that. Cards align to the top so an opened handout
+   grows on its own without stretching its neighbour. */
+.list-handouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+/* The divider between the practice's texts and the system templates. It is a
+   heading for the screen reader and a rule for the eye. */
+.library-section {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 0;
+  font-family: var(--f-text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.library-section::after {
+  content: "";
+  flex: 1 1 24px;
+  height: 1px;
+  background: var(--border-strong);
+}
+.list-handouts > .library-section:first-child {
+  margin-top: 0;
+}
+/* On the phone the sentence wraps: the rule goes under it instead of beside. */
+@media (max-width: 600px) {
+  .library-section {
+    display: block;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .library-section::after {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------------------------- card */
+
+.card.handout {
+  min-width: 0;
+}
+.handout-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.title-handout {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.title-handout h2 {
+  font-size: 16px;
+  line-height: 1.25;
+  color: var(--ink);
+  transition: color var(--motion);
+  text-wrap: pretty;
+}
+.title-handout:hover h2 {
+  color: var(--primary);
+}
+.handout-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--on-soft);
+}
+.handout-icon > svg {
+  width: 18px;
+  height: 18px;
+}
+/* The system template stays one step back: its mark is neutral. */
+.handout.template .handout-icon {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.handout-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.handout-meta {
+  font-family: var(--f-text);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.tags {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: none;
+  /* level with the title's first line, next to a 36px mark */
+  margin-top: 8px;
+}
+.handout-head > .tag {
+  margin-top: 8px;
+}
+/* On the phone the tag would squeeze the title into two lines: it goes under
+   the title instead, aligned with it. */
+@media (max-width: 600px) {
+  .handout-head {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 6px;
+  }
+  .handout-head > .title-handout {
+    grid-column: 1 / -1;
+  }
+  .handout-head > .tag,
+  .handout-head > .tags {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 0;
+  }
+}
+
+/* Collapsed it shows the first lines: enough to recognise the text without
+   turning the list into a wall. */
+.body-handout {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.body-handout.open {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+  color: var(--ink);
+}
+.body-handout:empty {
+  display: none;
+}
+.body-handout .richtext-view {
+  font-size: inherit;
+  color: inherit;
+}
+.handout-desc {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* Read toggle at the left, the actions at the right; on a narrow card the
+   right group drops to its own line and stays right-aligned. */
+.handout-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.handout-actions-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+.handout-actions .button.ghost {
+  margin-left: -8px;
+}
+
+/* --------------------------------------------------------------- questions */
+
+.questions {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: pergunta;
+  border-top: 1px solid var(--border);
+}
+.questions > li {
+  counter-increment: pergunta;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  column-gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.questions > li:last-child {
+  border-bottom: 0;
+}
+.questions > li::before {
+  content: counter(pergunta);
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.7;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.question-statement {
+  grid-column: 2;
+  color: var(--ink);
+}
+.options {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.options > li {
+  padding: 2px 8px;
+  border-radius: var(--radius-chip);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------- team */
+
+.team-rows {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-1);
+}
+.team-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  column-gap: 16px;
+  min-height: 64px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.team-row:last-child {
+  border-bottom: 0;
+}
+.team-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.team-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.team-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.team-row .tags {
+  margin-top: 0;
+}
+.team-since {
+  font-size: 13px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.team-action {
+  display: flex;
+  justify-content: flex-end;
+  /* the owner's row has no button: the column keeps its place anyway */
+  min-width: 0;
+}
+.team-row.inativo .team-name,
+.team-row.inativo .team-email {
+  color: var(--ink-3);
+}
+.team-row.inativo .avatar {
+  opacity: 0.55;
+}
+@media (max-width: 760px) {
+  .team-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    row-gap: 6px;
+    padding: 12px 16px;
+  }
+  .team-row .tags,
+  .team-since {
+    grid-column: 2 / -1;
+  }
+  .team-row .tags {
+    display: flex;
+  }
+  .team-action {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .team-action:empty {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------------------------- note */
+
+/* The explainer at the foot of the page: a quiet aside on --surface-2, not a
+   second card competing with the content. */
+.library-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.library-note > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin-top: 1px;
+  color: var(--ink-3);
+}
+.library-note > div {
+  min-width: 0;
+}
+.library-note h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.library-note p {
+  margin: 0;
+}

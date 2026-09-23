@@ -1,0 +1,516 @@
+/* ============================================================================
+   Foods — the catalogue (/foods), the food sheet (/foods/:id) and the two
+   pieces the editors embed: the typeahead (components/FoodSearch.tsx) and the
+   quick forms (components/QuickFood.tsx).
+   ----------------------------------------------------------------------------
+   Tokens only. The typeahead and the quick form keep their legacy class names
+   (.picker-food, .results-search, .quick-form) because the plan and recipe
+   editors — and the e2e tests — address them by name.
+   ========================================================================== */
+
+/* -------------------------------------------------------------- page frame */
+
+.page-foods,
+.page-food {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.page-foods > .header-page,
+.page-food > .header-page {
+  margin-bottom: 8px;
+}
+
+/* ================================================================= /foods */
+
+/* ----------------------------------------------------------------- toolbar */
+
+/* Search wide, the two filters beside it; on the tablet and the phone the
+   search takes the whole first row and the filters share the second. */
+.foods-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px 16px;
+  align-items: end;
+  padding: 16px;
+}
+@media (max-width: 900px) {
+  .foods-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+  .foods-toolbar > .foods-search {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ----------------------------------------------------------------- results */
+
+.foods-count {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.foods-note {
+  margin: -4px 0 0;
+}
+
+/* Numbers shrink to their content and the name takes the rest; the group is
+   secondary and never widens the table on its own. */
+.foods-table th.num,
+.foods-table td.num {
+  width: 1%;
+}
+.foods-table td:first-child {
+  min-width: 220px;
+}
+.foods-table .foods-group {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+.foods-name {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+.foods-brand {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-3);
+}
+
+/* ≤760: one row per food, the whole row opens it. */
+.foods-list .list-row-body {
+  gap: 3px;
+}
+.foods-list .readout {
+  line-height: 1.2;
+}
+
+.foods-empty .empty-hint {
+  max-width: 46ch;
+  margin: 0 auto;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------ panels that open in place */
+
+/* Import and new food: a card with a head (title + close) and a footer. */
+.foods-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.foods-panel > .card-head {
+  margin-bottom: 0;
+  align-items: flex-start;
+}
+.foods-panel .card-head > .button.icon {
+  margin: -6px -8px 0 0;
+}
+.foods-panel .card-sub code {
+  font-size: 12px;
+  color: var(--ink);
+}
+.foods-panel-section {
+  margin: 4px 0 -6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.foods-panel-actions {
+  padding-top: 4px;
+}
+
+/* The identity row: description twice as wide as group and brand. */
+.food-form-grid {
+  display: grid;
+  gap: 12px 16px;
+}
+.food-form-grid.identity {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+.food-form-grid.composition {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.food-form-grid.portion {
+  grid-template-columns: minmax(0, 1fr) 140px;
+}
+@media (max-width: 760px) {
+  .food-form-grid.identity {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .food-form-grid.identity > .field.wide {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 480px) {
+  .food-form-grid.identity {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .food-form-grid.composition {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .food-form-grid.portion {
+    grid-template-columns: minmax(0, 1fr) 120px;
+  }
+}
+
+/* The CSV picker: the native control dressed as a secondary button. */
+.foods-panel input[type="file"] {
+  min-height: var(--h-input);
+  padding: 3px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.foods-panel input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-input);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.foods-panel input[type="file"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.foods-panel .warning ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+/* ============================================================== /foods/:id */
+
+.food-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 4px;
+}
+.food-title > h1 {
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------- portion calc */
+
+/* Quantity · measure · what it comes to, in one line; the result is a stat,
+   not a tag hidden at the far right. */
+.calc-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: 12px 16px;
+  align-items: end;
+}
+.calc-result {
+  align-self: end;
+  min-width: 96px;
+  padding: 0 0 4px 16px;
+  border-left: 1px solid var(--border-strong);
+}
+@media (max-width: 600px) {
+  .calc-row {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+  .calc-result {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    padding: 10px 12px;
+    border-left: 0;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+}
+
+/* ------------------------------------------------------------ composition */
+
+/* Columns, not a grid: a short group ("Outros") packs under the previous one
+   instead of sitting alone on a new row. */
+.food-composition {
+  column-width: 240px;
+  column-gap: 32px;
+}
+.nutrient-group {
+  break-inside: avoid;
+  margin-bottom: 20px;
+}
+.nutrient-group > h3 {
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-strong);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.food-composition .nutrient-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  min-height: 36px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.food-composition .nutrient-row:last-child {
+  border-bottom: none;
+}
+.food-composition .nutrient-row > span:first-child {
+  color: var(--ink-2);
+}
+.food-composition .nutrient-row > span:last-child {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.food-composition .nutrient-row.missing > span:last-child {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+/* --------------------------------------------------------------- measures */
+
+/* The table sits inside the card without a second border: the header band
+   on --surface-2 and the row dividers are enough. */
+.measure-table th:first-child {
+  border-top-left-radius: var(--radius);
+}
+.measure-table th:last-child {
+  border-top-right-radius: var(--radius);
+}
+.measure-table td:last-child {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+.measure-name {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ≤760: a list, weight at the right, the button on its own. */
+.measure-list {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.measure-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.measure-item:last-child {
+  border-bottom: none;
+}
+.measure-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.measure-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.measure-empty {
+  padding: 24px 16px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+/* New measure: input · weight · standard · button, feet aligned. */
+.measure-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 16px;
+}
+.measure-standard {
+  min-height: var(--h-input);
+}
+@media (max-width: 600px) {
+  .measure-form {
+    grid-template-columns: minmax(0, 1fr) 100px;
+  }
+  .measure-form > .measure-standard {
+    grid-column: 1;
+  }
+  .measure-form > .button {
+    grid-column: 2;
+    justify-self: end;
+  }
+}
+@media (pointer: coarse) {
+  .measure-standard {
+    min-height: 44px;
+  }
+}
+
+/* ============================================================== typeahead */
+
+/* The list floats under the input (L3). The rows are <button>s on purpose:
+   onMouseDown preventDefault is what lets a click land before the blur. */
+.picker-food {
+  position: relative;
+}
+.results-search {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  min-width: min(320px, calc(100vw - 32px));
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-pop);
+}
+.results-search > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--motion);
+}
+.results-search > button + button {
+  margin-top: 2px;
+}
+.results-search > button:hover {
+  background: var(--surface-2);
+}
+.results-search > button:focus-visible {
+  outline-offset: -2px;
+  background: var(--surface-2);
+}
+.results-name {
+  grid-column: 1;
+  display: block;
+  font-weight: 500;
+}
+.results-search .results-meta {
+  grid-column: 1;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.results-search .readout {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.results-status {
+  display: block;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* ============================================================= quick form */
+
+/* Inside the meal, a form that opens and closes: the primary-tinted edge is
+   what marks it as transient among the plain nested boxes. */
+.quick-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+}
+.quick-form-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.quick-form-head > h3 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink);
+}
+.quick-form-head > p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+.quick-form .warning {
+  margin: 0;
+}
+/* Four short numbers: four across where they fit, two on the phone. */
+.quick-macros {
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+}
+.measure-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quick-section-title {
+  margin: 0;
+  font-family: var(--f-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+.measure-rows > .field-hint {
+  margin-top: -4px;
+}
+.measure-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6.5rem auto;
+  gap: 8px;
+  align-items: center;
+}
+.measure-rows > .button {
+  align-self: flex-start;
+}
+.quick-form-actions {
+  padding-top: 4px;
+}

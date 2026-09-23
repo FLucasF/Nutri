@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { CircleAlert, CircleCheck, X } from "lucide-react";
 import { explainError, nowHour } from "../api/errors";
 
 type Type = "ok" | "error";
@@ -83,12 +84,11 @@ export function useFeedback(): Panel {
 }
 
 /**
- * The feedback strip, anchored to the foot of the screen.
+ * The toast, anchored to the foot of the screen.
  *
- * The hour on the left and the text on the right repeat the day ruler: it is
- * the same gesture of hanging information on a real hour, and it is the hour
- * that answers the question a person really asks after a long edit — *did my
- * last change go in?*.
+ * An icon says which of the two it is before the text is read; the hour, in
+ * the mono readout face, answers the question a person really asks after a
+ * long edit — *did my last change go in?*.
  *
  * `role` changes with the type because a screen reader treats the two
  * differently: a confirmation waits for the sentence in progress to end, an
@@ -102,18 +102,30 @@ function FeedbackBanner({ feedback, onClose }: { feedback: Feedback | null; onCl
       <div aria-live="polite" aria-atomic="true" className="feedback-region">
         {feedback?.type === "ok" && (
           <div className="feedback-banner ok" key={feedback.key}>
-            <time className="feedback-hour">{feedback.hour}</time>
+            <span className="feedback-icon" aria-hidden="true">
+              <CircleCheck size={20} />
+            </span>
             <p className="feedback-text">{feedback.text}</p>
+            <time className="feedback-hour">{feedback.hour}</time>
           </div>
         )}
       </div>
       <div aria-live="assertive" aria-atomic="true" className="feedback-region">
         {feedback?.type === "error" && (
           <div className="feedback-banner error" role="alert" key={feedback.key}>
-            <time className="feedback-hour">{feedback.hour}</time>
+            <span className="feedback-icon" aria-hidden="true">
+              <CircleAlert size={20} />
+            </span>
             <p className="feedback-text">{feedback.text}</p>
-            <button type="button" className="feedback-close" onClick={onClose} aria-label="Fechar aviso">
-              ×
+            <time className="feedback-hour">{feedback.hour}</time>
+            <button
+              type="button"
+              className="feedback-close"
+              onClick={onClose}
+              aria-label="Fechar aviso"
+              title="Fechar aviso"
+            >
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         )}

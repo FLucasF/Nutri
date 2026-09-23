@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 /**
  * O avatar do paciente, com as iniciais.
  *
@@ -38,20 +40,20 @@ function hueOf(name: string): number {
   return sum;
 }
 
+/**
+ * Only the data goes inline: the size and the hue. The lightness pair — pale
+ * disc with deep text in the light theme, the reverse in the dark one — lives
+ * in components.css (`.avatar`), which reads `--hue` and follows the theme.
+ */
 export function Avatar({ name, size = 34 }: { name: string; size?: number }) {
-  const hue = hueOf(name);
+  const style = {
+    width: size,
+    height: size,
+    fontSize: size * 0.38,
+    "--hue": hueOf(name),
+  } as CSSProperties;
   return (
-    <span
-      className="avatar"
-      aria-hidden="true"
-      style={{
-        width: size,
-        height: size,
-        fontSize: size * 0.38,
-        background: `oklch(0.92 0.045 ${hue})`,
-        color: `oklch(0.42 0.09 ${hue})`,
-      }}
-    >
+    <span className="avatar" aria-hidden="true" style={style}>
       {initialsOf(name)}
     </span>
   );
