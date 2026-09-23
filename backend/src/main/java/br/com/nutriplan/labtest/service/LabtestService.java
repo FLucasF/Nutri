@@ -194,7 +194,11 @@ public class LabtestService {
         // limits of the range are in the standard unit, and comparing numbers
         // from different scales would produce a wrong classification with the
         // appearance of a right one.
-        boolean unitCompatible = labtest.getUnit().equalsIgnoreCase(parameter.getUnitStandard());
+        // `sameUnit` e nao `equalsIgnoreCase` direto: o parametro pode nao ter
+        // unidade padrao — exame qualitativo, razao entre grandezas — e o
+        // catalogo traz varios assim. Sem isto, lancar um resultado num deles
+        // estourava NullPointerException e devolvia 500.
+        boolean unitCompatible = sameUnit(labtest.getUnit(), parameter.getUnitStandard());
         labtest.setClassification(unitCompatible
                 ? LabtestClassification.from(req.value(), labtest.getReferenceMin(), labtest.getReferenceMax())
                 : null);

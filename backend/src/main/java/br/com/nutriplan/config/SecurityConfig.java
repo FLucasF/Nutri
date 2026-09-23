@@ -62,6 +62,13 @@ public class SecurityConfig {
                 // Password recovery is, by definition, for whoever cannot get in.
                 .requestMatchers("/api/auth/recover-password", "/api/auth/reset-password").permitAll()
                 .requestMatchers("/actuator/health", "/h2/**").permitAll()
+                // O encaminhamento interno de erro. Sem isto, quando uma rota
+                // falha e o Spring redireciona para /error, a seguranca barra
+                // o redirecionamento e responde 401 — escondendo o erro de
+                // verdade atras de "nao autenticado". Aparece sobretudo nas
+                // rotas de PDF, onde a resposta de erro nao pode ser rendida
+                // no formato pedido.
+                .requestMatchers("/error").permitAll()
                 // A aplicação do navegador. Ela é pública porque é só HTML,
                 // CSS e JavaScript: quem entra nela ainda precisa de token
                 // para qualquer /api, e é a própria tela que pede o login.

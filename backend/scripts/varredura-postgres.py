@@ -19,9 +19,12 @@ FALHAS = []
 out = io.open("varredura.txt", "w", encoding="utf-8")
 
 
-def call(metodo, caminho, corpo=None, rotulo=None):
+def call(metodo, caminho, corpo=None, rotulo=None, aceita=None):
     dados = None
-    h = {"Accept": "application/json", "User-Agent": "varredura"}
+    # `aceita` existe por causa dos PDFs: pedir application/json a uma rota que
+    # produz application/pdf faz o Spring recusar com "No acceptable
+    # representation", e a varredura acusaria defeito onde nao ha.
+    h = {"Accept": aceita or "application/json", "User-Agent": "varredura"}
     if corpo is not None:
         dados = json.dumps(corpo, ensure_ascii=False).encode("utf-8")
         h["Content-Type"] = "application/json; charset=utf-8"
@@ -30,7 +33,12 @@ def call(metodo, caminho, corpo=None, rotulo=None):
     req = urllib.request.Request(BASE + caminho, data=dados, headers=h, method=metodo)
     try:
         with urllib.request.urlopen(req, timeout=120) as r:
-            bruto = r.read().decode("utf-8")
+            corpo = r.read()
+            # PDF e binario: decodificar como texto estouraria e a varredura
+            # acusaria defeito numa folha que saiu certa.
+            if r.headers.get("Content-Type", "").startswith("application/pdf"):
+                return r.status, {"pdf": len(corpo), "assinatura": corpo[:4].decode("latin-1")}
+            bruto = corpo.decode("utf-8")
             return r.status, (json.loads(bruto) if bruto.strip() else None)
     except urllib.error.HTTPError as e:
         bruto = e.read().decode("utf-8", "replace")
@@ -42,8 +50,8 @@ def call(metodo, caminho, corpo=None, rotulo=None):
         return "ERRO", str(e)[:150]
 
 
-def testa(rotulo, metodo, caminho, corpo=None, espera=(200, 201, 204)):
-    s, b = call(metodo, caminho, corpo)
+def testa(rotulo, metodo, caminho, corpo=None, espera=(200, 201, 204), aceita=None):
+    s, b = call(metodo, caminho, corpo, aceita=aceita)
     ok = s in espera
     if not ok:
         FALHAS.append((rotulo, metodo, caminho, s,
@@ -167,6 +175,75 @@ testa("questionarios", "GET", "/api/questionnaires")
 testa("financeiro", "GET", "/api/finance/transactions?size=10")
 testa("receitas", "GET", "/api/recipes?size=5")
 testa("equipe", "GET", "/api/users")
+
+# ----------------------------------------------------------------- exames
+# Lancar resultado e pedir a serie historica: e onde ja apareceu um 500 por
+# parametro sem unidade padrao, e o catalogo tem varios assim.
+if pid:
+    params = call("GET", "/api/labtests/parameters")[1]
+    alvo = None
+    for p_ in (params or []):
+        if not p_.get("unitStandard"):
+            alvo = p_
+            break
+    alvo = alvo or (params[0] if params else None)
+    if alvo:
+        testa("lancar resultado", "POST", "/api/patients/%d/labtests" % pid, {
+            "parameterId": alvo["id"], "dateCollection": "2026-06-01", "value": 95})
+        testa("lancar segundo", "POST", "/api/patients/%d/labtests" % pid, {
+            "parameterId": alvo["id"], "dateCollection": "2026-09-01", "value": 88})
+        testa("serie historica", "GET",
+              "/api/patients/%d/labtests/series/%d" % (pid, alvo["id"]))
+        testa("solicitar exames", "POST", "/api/patients/%d/requests-from-labtest" % pid,
+              {"date": "2026-09-01", "parameterIds": [alvo["id"]]}, (200, 201))
+        testa("listar solicitacoes", "GET",
+              "/api/patients/%d/requests-from-labtest" % pid)
+
+# -------------------------------------------------------------------- PDFs
+# Sao o que o paciente recebe na mao. Uma consulta quebrada aqui so aparece na
+# hora de imprimir, que e a pior hora.
+if pid:
+    testa("PDF do relatorio de evolucao", "GET",
+          "/api/patients/%d/anthropometry-report" % pid, None, (200, 422),
+          aceita="application/pdf")
+if pid and 'an' in dir() and an:
+    testa("PDF da anamnese", "GET", "/api/anamneses/%d/pdf" % an["id"],
+          None, (200,), aceita="application/pdf")
+if pid and fid and 'plano' in dir() and plano:
+    testa("PDF do cardapio", "GET", "/api/prescriptions/%d/pdf" % plano["id"],
+          None, (200,), aceita="application/pdf")
+
+# ------------------------------------------------------------- financeiro
+testa("criar lancamento", "POST", "/api/finance/transactions", {
+    "type": "INCOME", "value": 200.0, "accrual": "2026-09-01",
+    "category": "Consulta", "description": "Primeira consulta"}, (200, 201))
+testa("resumo financeiro", "GET", "/api/finance/summary?from=2026-09-01&to=2026-09-30")
+testa("vencidos", "GET", "/api/finance/overdue")
+
+# ------------------------------------------------------------- questionario
+# O fluxo inteiro: criar, enviar ao paciente, responder pelo link publico e
+# ler a resposta. E o unico caminho do sistema em que alguem sem conta escreve
+# no banco.
+q = testa("criar questionario", "POST", "/api/questionnaires", {
+    "name": "Pre-consulta da varredura", "scorable": False,
+    "questions": [
+        {"statement": "Como se alimenta hoje?", "type": "TEXT", "required": True},
+        {"statement": "Quantas refeicoes por dia?", "type": "NUMBER", "required": False},
+    ]})
+if q and pid:
+    envio = testa("enviar ao paciente", "POST", "/api/patients/%d/questionnaires" % pid,
+                  {"questionnaireId": q["id"]})
+    if envio and envio.get("publicIdentifier"):
+        ident_q = envio["publicIdentifier"]
+        formulario = testa("abrir formulario publico", "GET",
+                           "/api/public/questionnaires/%s" % ident_q)
+        if formulario:
+            perguntas = formulario.get("questions") or []
+            testa("responder formulario", "POST",
+                  "/api/public/questionnaires/%s" % ident_q,
+                  {"answers": [{"questionId": x["id"], "value": "Resposta"}
+                               for x in perguntas]}, (200, 204))
+        testa("ler respostas", "GET", "/api/patients/%d/questionnaires" % pid)
 
 # ---------------------------------------------------------------------- saida
 out.write("\n")

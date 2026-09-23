@@ -57,7 +57,14 @@ public class Labtest extends BaseEntity {
     @Column(name = "amount", precision = 12, scale = 3)
     private BigDecimal value;
 
-    @Column(nullable = false, length = 20)
+    /**
+     * A unidade do resultado, quando ha uma.
+     *
+     * Exame qualitativo nao tem — "reagente", "ausente", uma contagem. Sao 136
+     * dos 154 parametros do catalogo, e exigir unidade neles obrigaria a
+     * inventar uma, que apareceria ao lado do resultado como se fosse medida.
+     */
+    @Column(length = 20)
     private String unit;
 
     @Enumerated(EnumType.STRING)

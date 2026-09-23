@@ -1,0 +1,21 @@
+-- A unidade do resultado passa a ser opcional.
+--
+-- A V28 trouxe os 25 paineis do documento do cliente e, com eles, 136 dos 154
+-- parametros sem unidade padrao — exame qualitativo ("reagente / nao
+-- reagente"), razao entre grandezas, contagem. Ela tornou opcional a unidade
+-- do parametro, mas a do resultado continuou obrigatoria.
+--
+-- O efeito: lancar um resultado em qualquer um desses 136 parametros
+-- terminava em violacao de integridade, e a tela devolvia 409. Ou seja, 88%
+-- do catalogo nao aceitava resultado nenhum.
+--
+-- A correcao e deixar a coluna aceitar nulo, e nao inventar uma unidade para
+-- preencher. Um exame qualitativo nao tem unidade; escrever "un" ali seria
+-- gravar um dado que ninguem mediu, e ele apareceria ao lado do resultado
+-- como se fosse informacao clinica.
+--
+-- Nada do que ja esta gravado muda: sao todos resultados com unidade.
+--
+-- So usa o subconjunto comum a H2 e PostgreSQL (AD-11).
+
+ALTER TABLE labtest ALTER COLUMN unit DROP NOT NULL;

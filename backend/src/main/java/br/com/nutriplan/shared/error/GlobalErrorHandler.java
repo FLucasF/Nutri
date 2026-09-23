@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -23,9 +24,20 @@ import java.util.List;
 @Slf4j
 public class GlobalErrorHandler {
 
+    /*
+     * Toda resposta daqui declara que e JSON.
+     *
+     * Sem isso, quem pede o PDF de um plano com `Accept: application/pdf` e
+     * esbarra numa regra de negocio nao recebe a regra: o Spring nao consegue
+     * render o corpo de erro no formato pedido, e a resposta vira 500. O
+     * erro precisa se explicar independentemente do que o chamador aceita —
+     * e especialmente quando o chamador esperava um arquivo.
+     */
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponse> notFound(NotFoundException e, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ErrorResponse.from(404, "Não encontrado", e.getMessage(), req.getRequestURI()));
     }
 
@@ -37,12 +49,14 @@ public class GlobalErrorHandler {
     public ResponseEntity<ErrorResponse> accessDenied(ForbiddenException e, HttpServletRequest req) {
         log.warn("Tentativa de acesso cruzado: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ErrorResponse.from(404, "Não encontrado", "Recurso não encontrado", req.getRequestURI()));
     }
 
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ErrorResponse> businessRule(BusinessRuleException e, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ErrorResponse.from(422, "Regra de negocio", e.getMessage(), req.getRequestURI()));
     }
 
@@ -51,7 +65,8 @@ public class GlobalErrorHandler {
         List<ErrorResponse.InvalidField> fields = e.getBindingResult().getFieldErrors().stream()
                 .map(f -> new ErrorResponse.InvalidField(f.getField(), f.getDefaultMessage()))
                 .toList();
-        return ResponseEntity.badRequest().body(new ErrorResponse(
+        return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON).body(new ErrorResponse(
                 Instant.now(), 400, "Validacao", "Dados inválidos", req.getRequestURI(), fields));
     }
 
@@ -59,6 +74,7 @@ public class GlobalErrorHandler {
     public ResponseEntity<ErrorResponse> integrity(DataIntegrityViolationException e, HttpServletRequest req) {
         log.warn("Violacao de integridade em {}", req.getRequestURI(), e);
         return ResponseEntity.status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ErrorResponse.from(409, "Conflito",
                         "Operação viola uma restricao de integridade dos dados", req.getRequestURI()));
     }
@@ -66,12 +82,14 @@ public class GlobalErrorHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> notAuthenticated(AuthenticationException e, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ErrorResponse.from(401, "Não autenticado", "Credenciais inválidas", req.getRequestURI()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> withoutPermission(AccessDeniedException e, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ErrorResponse.from(403, "Sem permissão", "Acesso negado", req.getRequestURI()));
     }
 
@@ -87,6 +105,7 @@ public class GlobalErrorHandler {
     public ResponseEntity<ErrorResponse> routeNonexistent(NoResourceFoundException e,
                                                         HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ErrorResponse.from(404, "Rota não encontrada",
                         "Este endereço não existe nesta API. Confira o caminho e o método HTTP.",
                         req.getRequestURI()));
@@ -109,6 +128,7 @@ public class GlobalErrorHandler {
                 : accepted.stream().map(String::valueOf)
                         .collect(java.util.stream.Collectors.joining(", "));
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ErrorResponse.from(405, "Método não permitido",
                         "Este endereço não responde a " + e.getMethod()
                                 + (list == null ? "." : ". Métodos aceitos: " + list + "."),
@@ -132,11 +152,13 @@ public class GlobalErrorHandler {
             String accepted = valuesAccepted(failure);
             String message = "O campo \"" + field + "\" não aceita o valor enviado"
                     + (accepted == null ? "." : ". Valores aceitos: " + accepted + ".");
-            return ResponseEntity.badRequest().body(new ErrorResponse(
+            return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON).body(new ErrorResponse(
                     Instant.now(), 400, "Dados inválidos", message, req.getRequestURI(),
                     List.of(new ErrorResponse.InvalidField(field, message))));
         }
-        return ResponseEntity.badRequest().body(ErrorResponse.from(400, "Dados inválidos",
+        return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON).body(ErrorResponse.from(400, "Dados inválidos",
                 "O conteúdo enviado não pôde ser lido. Confira o formato dos dados.",
                 req.getRequestURI()));
     }
@@ -146,7 +168,8 @@ public class GlobalErrorHandler {
     public ResponseEntity<ErrorResponse> invalidParameter(MethodArgumentTypeMismatchException e,
                                                           HttpServletRequest req) {
         String message = "O parâmetro \"" + e.getName() + "\" recebeu um valor que não serve.";
-        return ResponseEntity.badRequest().body(new ErrorResponse(
+        return ResponseEntity.badRequest()
+                .contentType(MediaType.APPLICATION_JSON).body(new ErrorResponse(
                 Instant.now(), 400, "Dados inválidos", message, req.getRequestURI(),
                 List.of(new ErrorResponse.InvalidField(e.getName(), message))));
     }
@@ -182,6 +205,7 @@ public class GlobalErrorHandler {
     public ResponseEntity<ErrorResponse> unexpected(Exception e, HttpServletRequest req) {
         log.error("Erro inesperado em {}", req.getRequestURI(), e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ErrorResponse.from(500, "Erro interno",
                         "Ocorreu um erro inesperado", req.getRequestURI()));
     }
