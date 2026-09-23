@@ -1,5 +1,6 @@
 package br.com.nutriplan.patient.dto;
 
+import br.com.nutriplan.patient.domain.BiologicalCondition;
 import br.com.nutriplan.patient.domain.Patient;
 import br.com.nutriplan.patient.domain.Sex;
 
@@ -15,18 +16,22 @@ public record PatientResponse(
         Integer age,
         Sex sex,
         String cpf,
+        String nickname,
+        /** Só preenchida para mulher; a ausência diz "nenhuma das duas". */
+        BiologicalCondition biologicalCondition,
         String occupation,
         String goal,
         String notes,
         boolean active,
-        boolean hasAccessAoApp,
+        boolean hasAccessToApp,
         Instant createdAt
 ) {
     public static PatientResponse from(Patient p) {
         return new PatientResponse(
                 p.getId(), p.getName(), p.getEmail(), p.getPhone(),
                 p.getDateBirth(), p.getAge(), p.getSex(), p.getCpf(),
+                p.getNickname(), p.getBiologicalCondition(),
                 p.getOccupation(), p.getGoal(), p.getNotes(),
-                p.isActive(), p.hasAccessAoApp(), p.getCreatedAt());
+                p.isActive(), p.hasAccessToApp(), p.getCreatedAt());
     }
 }

@@ -8,6 +8,9 @@ import br.com.nutriplan.anthropometry.domain.GrowthIndicator;
 import br.com.nutriplan.anthropometry.domain.CompositionProtocol;
 import br.com.nutriplan.anthropometry.domain.CardiometabolicRisk;
 import br.com.nutriplan.anthropometry.domain.GainStatus;
+import br.com.nutriplan.anthropometry.domain.CircumferenceSite;
+import br.com.nutriplan.anthropometry.domain.Side;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -20,6 +23,25 @@ import java.util.Map;
 
 /** Input and output contracts of the anthropometry module. */
 public final class AnthropometryDtos {
+
+    /**
+     * Uma circunferência medida.
+     *
+     * Local e lado são enums, então a tela não consegue mandar um local que o
+     * domínio não conhece — e o lado deixa de ser um sufixo no nome do campo.
+     */
+    public record CircumferenceValue(
+            @NotNull CircumferenceSite site,
+            @NotNull Side side,
+            @NotNull @DecimalMin(value = "0.1", message = "A circunferência deve ser maior que zero")
+            BigDecimal valueCm,
+            /** Preenchido só na resposta, para a tela não repetir a tradução. */
+            String description
+    ) {
+        public CircumferenceValue(CircumferenceSite site, Side side, BigDecimal valueCm) {
+            this(site, side, valueCm, site.getDescription());
+        }
+    }
 
     private AnthropometryDtos() {
     }
@@ -41,7 +63,32 @@ public final class AnthropometryDtos {
             @DecimalMin(value = "0.1", message = "A altura deve ser maior que zero") BigDecimal heightCm,
 
             Map<String, BigDecimal> skinfolds,
-            Map<String, BigDecimal> circumferences,
+            /**
+             * Circunferências com local e lado.
+             *
+             * Era um mapa de nome para número, que não tinha onde pôr o lado.
+             * Sete dos treze locais são medidos dos dois lados.
+             */
+            @Valid List<CircumferenceValue> circumferences,
+
+            /** Diâmetros ósseos, em centímetros. */
+            BigDecimal diameterHumerus,
+            BigDecimal diameterWrist,
+            BigDecimal diameterFemur,
+
+            BigDecimal heightSittingCm,
+            BigDecimal heightKneeCm,
+
+            /** Bioimpedância, como o aparelho informou. */
+            BigDecimal biaFatPercentage,
+            BigDecimal biaFatMassKg,
+            BigDecimal biaMusclePercentage,
+            BigDecimal biaMuscleMassKg,
+            BigDecimal biaLeanMassKg,
+            BigDecimal biaBoneMassKg,
+            BigDecimal biaVisceralFat,
+            BigDecimal biaBodyWaterPercentage,
+            Integer biaMetabolicAge,
 
             /** Null records the skinfolds without estimating composition. */
             CompositionProtocol protocolComposition,
@@ -51,7 +98,7 @@ public final class AnthropometryDtos {
             @DecimalMin(value = "1.0", message = "O fator de atividade não pode ser menor que 1")
             BigDecimal factorActivity,
 
-            @Size(max = 2000) String notes,
+            @Size(max = 8000) String notes,
 
             /** Gestational week, when the patient is pregnant. */
             @jakarta.validation.constraints.Min(value = 1, message = "A semana gestacional vai de 1 a 42")
@@ -153,8 +200,32 @@ public final class AnthropometryDtos {
             LocalDate date,
             BigDecimal weightKg,
             BigDecimal heightCm,
+            /**
+             * Idade na data da avaliação.
+             *
+             * Sai daqui porque o servidor já a calcula para classificar o IMC, e
+             * a tela precisa dela para saber se trava a altura: o cliente pede
+             * altura imutável para adultos, e criança ainda cresce.
+             */
+            Integer ageYears,
             Map<String, BigDecimal> skinfolds,
-            Map<String, BigDecimal> circumferences,
+            List<CircumferenceValue> circumferences,
+
+            BigDecimal diameterHumerus,
+            BigDecimal diameterWrist,
+            BigDecimal diameterFemur,
+            BigDecimal heightSittingCm,
+            BigDecimal heightKneeCm,
+
+            BigDecimal biaFatPercentage,
+            BigDecimal biaFatMassKg,
+            BigDecimal biaMusclePercentage,
+            BigDecimal biaMuscleMassKg,
+            BigDecimal biaLeanMassKg,
+            BigDecimal biaBoneMassKg,
+            BigDecimal biaVisceralFat,
+            BigDecimal biaBodyWaterPercentage,
+            Integer biaMetabolicAge,
 
             BigDecimal bmi,
             Derived<BmiClassification> classificationBmi,

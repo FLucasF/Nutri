@@ -15,21 +15,36 @@ export default function FoodSearch({
   onFreeType,
   onChoose,
   disabled,
+  /**
+   * Como o campo se chama para quem lê a tela com leitor ou testa por papel.
+   *
+   * O substituto usa a mesma busca do item — é o mesmo catálogo, e um segundo
+   * componente divergiria — mas os dois campos coexistem na mesma refeição, e
+   * "Alimento" nos dois deixaria ambíguo qual é qual.
+   */
+  label = "Alimento",
 }: {
   freeValue: string;
   onFreeType: (text: string) => void;
   onChoose: (summary: FoodSummary) => void;
   disabled: boolean;
+  label?: string;
 }) {
   const [results, setResults] = useState<FoodSummary[]>([]);
   const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     if (freeValue.trim().length < 2) {
       setResults([]);
+      setSearching(false);
       return;
     }
     let canceled = false;
+    setSearching(true);
+    // 180 ms: a consulta responde em algumas dezenas de milissegundos, e a
+    // espera existe só para não disparar uma por tecla. Era 280, que somado ao
+    // percurso fazia a lista parecer travada entre uma letra e outra.
     const clock = setTimeout(() => {
       api.foods
         .find({ term: freeValue.trim(), size: 8 })
@@ -39,8 +54,11 @@ export default function FoodSearch({
             setOpen(true);
           }
         })
-        .catch(() => setResults([]));
-    }, 280);
+        .catch(() => setResults([]))
+        .finally(() => {
+          if (!canceled) setSearching(false);
+        });
+    }, 180);
     return () => {
       canceled = true;
       clearTimeout(clock);
@@ -56,8 +74,20 @@ export default function FoodSearch({
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Buscar alimento ou escrever livremente"
         disabled={disabled}
-        aria-label="Alimento"
+        aria-label={label}
       />
+      {/*
+        Dizer que está procurando, em vez de não dizer nada. Sem isso, o tempo
+        entre a tecla e a lista passa por travamento — e quem está usando
+        clica de novo, o que só recomeça a busca.
+      */}
+      {open && searching && results.length === 0 && freeValue.trim().length >= 2 && (
+        <div className="results-search">
+          <span className="minusculo" style={{ padding: "0.5rem 0.6rem", display: "block" }}>
+            Procurando…
+          </span>
+        </div>
+      )}
       {open && results.length > 0 && (
         <div className="results-search">
           {results.map((r) => (

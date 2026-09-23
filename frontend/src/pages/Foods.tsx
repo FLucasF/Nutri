@@ -6,6 +6,7 @@ import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
 import type { FoodSummary, DataSource, ResultImport } from "../api/types";
 import { count } from "../text";
+import { Own, Reference } from "../components/Own";
 
 const SOURCES: { value: DataSource | ""; label: string }[] = [
   { value: "", label: "Todas as fontes" },
@@ -202,9 +203,18 @@ export default function Foods() {
                   <td className="num">{num(a.carbohydrateG)}</td>
                   <td className="num">{num(a.fatG)}</td>
                   <td>
-                    <span className={`tag ${a.publicBase ? "" : "verde"}`}>
-                      {a.source === "OPEN_FOOD_FACTS" ? "OFF" : a.source.toLowerCase()}
-                    </span>
+                    {/*
+                      A fonte e a propriedade eram a mesma marca, distinguidas
+                      só pela cor. Agora são duas: de onde o dado veio, e se ele
+                      é do consultório — que é o que responde "fui eu que criei?".
+                    */}
+                    {a.publicBase ? (
+                      <Reference>
+                        {a.source === "OPEN_FOOD_FACTS" ? "OFF" : a.source.toLowerCase()}
+                      </Reference>
+                    ) : (
+                      <Own />
+                    )}
                   </td>
                 </tr>
               ))}

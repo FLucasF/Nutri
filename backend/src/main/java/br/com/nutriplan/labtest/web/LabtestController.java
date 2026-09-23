@@ -55,6 +55,19 @@ public class LabtestController {
 
     // -------------------------------------------------------------- lab tests
 
+    @PostMapping("/labtests/parameters/{id}/ranges")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Cadastra a faixa de referência do laboratório do consultório",
+            description = "É o que faz a classificação baixo/normal/alto sair sozinha. "
+                    + "A faixa não vem pronta porque varia de laboratório e de método, e "
+                    + "uma faixa errada marcaria como alterado um resultado normal. "
+                    + "Sexo e idade são opcionais: com eles, a faixa tem precedência sobre "
+                    + "a geral.")
+    public LabtestDtos.ParameterResponse addRange(
+            @PathVariable Long id, @Valid @RequestBody LabtestDtos.RangeRequest req) {
+        return labtestService.addRange(id, req);
+    }
+
     @GetMapping("/patients/{patientId}/labtests")
     @Operation(summary = "Exames do paciente, da coleta mais recente para a mais antiga")
     public List<LabtestDtos.LabtestResponse> forPatient(@PathVariable Long patientId) {

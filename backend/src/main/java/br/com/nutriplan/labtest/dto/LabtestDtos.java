@@ -17,6 +17,40 @@ import java.util.List;
 
 public final class LabtestDtos {
 
+    /** Um painel do consultório, montado a partir dos parâmetros escolhidos. */
+    public record PanelRequest(
+            @jakarta.validation.constraints.NotBlank
+            @jakarta.validation.constraints.Size(max = 150) String name,
+            @jakarta.validation.constraints.NotEmpty java.util.List<Long> parameterIds
+    ) {}
+
+    public record PanelParameterResponse(Long id, String name, String unit, String group) {
+        public static PanelParameterResponse from(
+                br.com.nutriplan.labtest.domain.LabtestPanelParameter item) {
+            var parameter = item.getParameter();
+            return new PanelParameterResponse(parameter.getId(), parameter.getName(),
+                    parameter.getUnitStandard(), parameter.getGroup());
+        }
+    }
+
+    public record PanelResponse(
+            Long id,
+            String name,
+            /** Painel do sistema não é editável: é acervo compartilhado. */
+            boolean systemPanel,
+            /** A TAG que a tela mostra para separar os dele dos do sistema. */
+            boolean own,
+            java.util.List<PanelParameterResponse> parameters
+    ) {
+        public static PanelResponse from(br.com.nutriplan.labtest.domain.LabtestPanel panel) {
+            return new PanelResponse(panel.getId(), panel.getName(),
+                    panel.isSystemPanel(), !panel.isSystemPanel(),
+                    panel.getParameters().stream()
+                            .map(PanelParameterResponse::from)
+                            .toList());
+        }
+    }
+
     private LabtestDtos() {
     }
 
@@ -38,6 +72,25 @@ public final class LabtestDtos {
             @jakarta.validation.constraints.NotBlank @Size(max = 120) String name,
             @jakarta.validation.constraints.NotBlank @Size(max = 20) String unitStandard,
             @Size(max = 60) String group,
+            BigDecimal minimum,
+            BigDecimal maximum
+    ) {}
+
+    /**
+     * Uma faixa de referência declarada pelo consultório.
+     *
+     * Faixa de referência varia de laboratório e de método — é por isso que o
+     * sistema não traz uma para cada um dos 154 parâmetros, e por isso que o
+     * registro congela a que valeu. O consultório cadastra a do laboratório com
+     * que trabalha, e a partir daí a classificação sai sozinha.
+     *
+     * Sexo e faixa etária são opcionais. Sem eles, a faixa vale para todos; com
+     * eles, ela tem precedência sobre a geral.
+     */
+    public record RangeRequest(
+            br.com.nutriplan.patient.domain.Sex sex,
+            Integer ageMin,
+            Integer ageMax,
             BigDecimal minimum,
             BigDecimal maximum
     ) {}

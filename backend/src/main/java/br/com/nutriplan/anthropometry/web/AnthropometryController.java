@@ -10,6 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,6 +44,23 @@ public class AnthropometryController {
                         p.skinfoldsRequired(Sex.FEMALE).stream().map(Skinfold::name).toList(),
                         p.skinfoldsRequired(Sex.MALE).stream().map(Skinfold::name).toList()))
                 .toList();
+    }
+
+    @GetMapping(value = "/patients/{patientId}/anthropometry-report",
+            produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Gera o relatório de evolução antropométrica, com gráficos",
+            description = "Traz peso, IMC e percentual de gordura no tempo, e as dobras e "
+                    + "circunferências comparadas entre a primeira e a última avaliação. "
+                    + "Exige pelo menos duas avaliações.")
+    public ResponseEntity<byte[]> report(@PathVariable Long patientId) {
+        var report = assessmentService.report(patientId);
+        return ResponseEntity.ok()
+                // "inline": a folha é conferida antes de ser mostrada ao
+                // paciente, e baixar forçaria abrir o arquivo fora do sistema.
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                        .filename("evolucao-" + patientId + ".pdf").build().toString())
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(report.content());
     }
 
     @GetMapping("/patients/{patientId}/assessments")

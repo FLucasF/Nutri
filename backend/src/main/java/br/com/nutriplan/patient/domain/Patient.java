@@ -38,13 +38,27 @@ public class Patient extends AccountEntity {
     @Column(length = 20)
     private String cpf;
 
+    /** Como ele chama o paciente. Opcional, e não substitui o nome. */
+    @Column(length = 80)
+    private String nickname;
+
+    /**
+     * Condição biológica, quando há uma.
+     *
+     * Só se aplica a mulher. A ausência já diz "nenhuma das duas", que é por
+     * isso que não existe um valor para isso.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "biological_condition", length = 20)
+    private BiologicalCondition biologicalCondition;
+
     @Column(length = 100)
     private String occupation;
 
     @Column(name = "goal", length = 500)
     private String goal;
 
-    @Column(length = 2000)
+    @Column(length = 8000)
     private String notes;
 
     /** A user of the patient app, created on demand when access is granted. */
@@ -74,7 +88,7 @@ public class Patient extends AccountEntity {
         return ageAt(LocalDate.now());
     }
 
-    public boolean hasAccessAoApp() {
+    public boolean hasAccessToApp() {
         return userId != null;
     }
 }

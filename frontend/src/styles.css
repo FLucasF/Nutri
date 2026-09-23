@@ -1807,3 +1807,817 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ------------------------------------------------------------------ texto rico
+
+   O tamanho do texto aqui é sempre em pontos, nunca em em ou rem. É o que
+   garante que o corpo 12 escrito numa observação salva continue corpo 12
+   dentro do cardápio e dentro do PDF: pt é absoluto, então não herda a escala
+   do bloco que envolve o texto. Era exatamente esse o defeito que o cliente
+   descreve, de ter que recorrigir o tamanho em cada plano. */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.richtext {
+  border: 1px solid var(--outline-field);
+  border-radius: var(--radius);
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.richtext:focus-within {
+  border-color: var(--beetroot);
+  box-shadow: 0 0 0 3px var(--focus-halo);
+}
+
+.richtext-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.6rem;
+  align-items: center;
+  padding: 0.35rem 0.45rem;
+  background: var(--stone-light);
+  border-bottom: 1px solid var(--row);
+}
+
+.richtext-group {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.richtext-group + .richtext-group {
+  border-left: 1px solid var(--row-strong);
+  padding-left: 0.6rem;
+}
+
+.richtext-button {
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--ink-medium);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.richtext-button:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.richtext-button:focus-visible {
+  outline: 2px solid var(--beetroot);
+  outline-offset: 1px;
+}
+
+.richtext-button.ativo {
+  background: var(--beetroot-washed);
+  border-color: var(--beetroot);
+  color: var(--beetroot-text);
+}
+
+.richtext-size {
+  height: 1.9rem;
+  padding: 0 0.3rem;
+  font-size: 0.82rem;
+  width: auto;
+  min-width: 3.4rem;
+}
+
+.richtext-area,
+.richtext-view {
+  /* 11pt é o texto que não declara tamanho. Absoluto, como todos os outros. */
+  font-size: 11pt;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.richtext-area {
+  padding: 0.8rem 0.9rem;
+  outline: none;
+  overflow-wrap: break-word;
+}
+
+.richtext-area p,
+.richtext-view p {
+  margin: 0 0 0.5rem;
+}
+
+.richtext-area p:last-child,
+.richtext-view p:last-child {
+  margin-bottom: 0;
+}
+
+.richtext-area ul,
+.richtext-area ol,
+.richtext-view ul,
+.richtext-view ol {
+  margin: 0 0 0.5rem;
+  padding-left: 1.6rem;
+}
+
+.richtext-area li p,
+.richtext-view li p {
+  margin-bottom: 0.15rem;
+}
+
+.richtext-area table,
+.richtext-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.6rem 0;
+  table-layout: fixed;
+}
+
+.richtext-area th,
+.richtext-area td,
+.richtext-table th,
+.richtext-table td {
+  border: 1px solid var(--row-strong);
+  padding: 0.35rem 0.45rem;
+  vertical-align: top;
+  position: relative;
+}
+
+.richtext-area th,
+.richtext-table th {
+  background: var(--stone-light);
+  font-weight: 600;
+  text-align: left;
+}
+
+/* A célula marcada durante a seleção de várias, antes de mesclar. */
+.richtext-area .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--focus-halo);
+  pointer-events: none;
+}
+
+.richtext-area .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--beetroot);
+  cursor: col-resize;
+}
+
+@media (max-width: 640px) {
+  .richtext-group + .richtext-group {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+.richtext-alerta {
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  background: var(--brick-washed);
+  color: var(--brick);
+  border-bottom: 1px solid var(--brick-border);
+  font-size: 0.85rem;
+}
+
+/* ----------------------------------------------------------------- anamnese
+
+   A listagem é de cartões e não de linhas de tabela porque cada anamnese
+   carrega os campos de destaque embaixo do nome. Numa tabela eles virariam
+   colunas vazias sempre que o consultório declarasse um campo a mais. */
+
+.card-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.card-anamnese {
+  background: var(--paper);
+  border: 1px solid var(--row);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+}
+
+.card-anamnese-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.card-anamnese h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.card-anamnese-top p {
+  margin: 0.15rem 0 0;
+}
+
+.destaques {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.5rem 1.2rem;
+  margin: 0.9rem 0 0;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--row);
+}
+
+.destaques dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-weak);
+}
+
+.destaques dd {
+  margin: 0.1rem 0 0;
+  color: var(--ink);
+}
+
+.painel {
+  background: var(--stone-light);
+  border: 1px solid var(--row);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+}
+
+.campo-destaque {
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  align-items: center;
+}
+
+.campo-destaque input[type="text"] {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+/* Um botão que se comporta como link de volta, para o editor sair sem rota. */
+.link-voltar {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--beetroot-text);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .campo-destaque {
+    flex-wrap: wrap;
+  }
+}
+
+/* ------------------------------------------------------- cálculo energético
+
+   O resultado fica numa coluna fixa à direita, e não embaixo do formulário.
+   É o mesmo pedido que o cliente faz para o cardápio: ver o que a alteração
+   causou sem ter que descer a página toda vez. */
+
+.energia-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: 1.6rem;
+  align-items: start;
+}
+
+.energia-resultado {
+  position: sticky;
+  top: 1rem;
+  background: var(--stone-light);
+  border: 1px solid var(--row);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+}
+
+.energia-kcal {
+  font-family: var(--f-display, inherit);
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 0.1rem 0 1rem;
+  color: var(--beetroot-text);
+}
+
+.energia-kcal span {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink-medium);
+}
+
+.energia-linhas {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.energia-linhas dt {
+  font-size: 0.78rem;
+  color: var(--ink-weak);
+}
+
+.energia-linhas dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.energia-linhas dd.negativo {
+  color: var(--brick);
+}
+
+.energia-faixa {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--row);
+}
+
+.energia-faixa p {
+  margin: 0.15rem 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.equacoes {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.equacao {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--row);
+  border-radius: var(--radius);
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.equacao:hover {
+  border-color: var(--row-strong);
+}
+
+.equacao input {
+  width: auto;
+  margin-top: 0.15rem;
+}
+
+.equacao span {
+  display: grid;
+}
+
+.kcal-destaque {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .energia-layout {
+    grid-template-columns: 1fr;
+  }
+  .energia-resultado {
+    position: static;
+  }
+}
+
+/* --------------------------------------------------- cardápio: a refeição
+
+   A refeição fora da contabilização fica visivelmente apagada em vez de só
+   ter um checkbox desmarcado. Ela continua no cardápio e continua somando em
+   si mesma — o que mudou foi o papel dela, e isso precisa ser óbvio numa
+   varredura da tela, não só na leitura do controle. */
+
+.meal.fora-da-conta {
+  border-style: dashed;
+  background: var(--stone-light);
+}
+
+.aviso-substituta {
+  margin: 0;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.78rem;
+  color: var(--ochre);
+  background: var(--ochre-washed);
+  border-bottom: 1px solid var(--ochre-border);
+}
+
+.meal-hora {
+  width: 6.2rem;
+  flex: 0 0 auto;
+}
+
+.meal-acoes {
+  gap: 0.35rem;
+  flex: 0 0 auto;
+}
+
+/* PTN / LIP / CHO / Kcal — as siglas que ele pediu. */
+.macro-tags {
+  display: flex;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.macro-tags span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.16rem 0.4rem;
+  border-radius: var(--radius);
+  background: var(--stone-light);
+  color: var(--ink-medium);
+  white-space: nowrap;
+}
+
+.macro-tags .kcal {
+  background: var(--moss-washed);
+  color: var(--moss);
+  border: 1px solid var(--moss-border);
+}
+
+/* O separador: a barra que ele desenha com "---" no Word. */
+.separador-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.9rem;
+}
+
+.separador-item > span:first-child {
+  flex: 1;
+  height: 0;
+  border-top: 2px solid var(--row-strong);
+}
+
+.item-acoes {
+  gap: 0.2rem;
+  flex-wrap: nowrap;
+}
+
+/* ------------------------------------------------ cardápio: a distribuição */
+
+.distribuicao-metas {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.distribuicao-metas label {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.distribuicao-metas input {
+  width: 4.5rem;
+}
+
+.soma-metas {
+  font-size: 0.78rem;
+  color: var(--ochre);
+  padding-bottom: 0.45rem;
+}
+
+.soma-metas.certa {
+  color: var(--moss);
+}
+
+.tabela-distribuicao {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.tabela-distribuicao th,
+.tabela-distribuicao td {
+  padding: 0.3rem 0.25rem;
+  border-bottom: 1px solid var(--row);
+  text-align: left;
+}
+
+.tabela-distribuicao th.num,
+.tabela-distribuicao td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabela-distribuicao th {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-weak);
+}
+
+/* As três faixas da página 32. Abaixo e acima recebem cores diferentes
+   porque são situações clínicas diferentes: pintar as duas de vermelho diria
+   que algo está errado sem dizer para que lado corrigir. */
+.faixa {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.faixa.dentro {
+  background: var(--moss-washed);
+  color: var(--moss);
+}
+
+.faixa.abaixo {
+  background: var(--ochre-washed);
+  color: var(--ochre);
+}
+
+.faixa.acima {
+  background: var(--brick-washed);
+  color: var(--brick);
+}
+
+/* A lista de refeições salvas, dentro do editor. */
+.favorita {
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--row);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+/* Cadastro rápido de alimento e medida, dentro do cardápio. */
+.quick-form {
+  border-color: var(--beetroot);
+}
+
+.quick-form h3 {
+  color: var(--beetroot-text);
+}
+
+/* Um rótulo que se comporta como botão, para o seletor de arquivo. */
+.button.desabilitado {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+label.button {
+  cursor: pointer;
+}
+
+/* A observação da refeição, abaixo dos alimentos. */
+.observacao-refeicao {
+  padding: 0.6rem 0.9rem;
+  border-top: 1px dashed var(--row);
+}
+
+/* ------------------------------------------- painéis de biomarcadores
+
+   Os botões que preenchem o pedido de exame. O painel do consultório leva
+   uma marca: são 25 do sistema, e o dele é o que ele aperta todo dia. */
+
+.paineis {
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--row);
+}
+
+.paineis-botoes {
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.paineis-botoes .button {
+  gap: 0.3rem;
+}
+
+.button.meu-painel {
+  border-color: var(--beetroot);
+  color: var(--beetroot-text);
+}
+
+.tag-painel {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.05rem 0.25rem;
+  border-radius: var(--radius);
+  background: var(--beetroot-washed);
+  color: var(--beetroot-text);
+}
+
+/* O ponto que marca a TAG criada pelo consultório.
+
+   Não é uma palavra porque o alvo é pequeno: a TAG já é um botão curto, e
+   escrever "sua" dentro dele dobraria a largura de cada uma. O título diz o
+   que o ponto significa para quem passar o mouse ou usar leitor de tela. */
+.sinal-sua {
+  display: inline-block;
+  width: 0.34rem;
+  height: 0.34rem;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: var(--beetroot);
+}
+
+/* ------------------------------------------------ perfil do paciente
+
+   O avatar traz as iniciais numa cor derivada do nome. O cliente pediu rosa
+   e azul por sexo e depois explicou o que queria: achar um paciente sem ler
+   o nome. Duas cores dão dois grupos numa lista de centenas; a cor por nome
+   dá uma por paciente, e a TAG dá os grupos que ele mesmo define. */
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex: 0 0 auto;
+  user-select: none;
+}
+
+.linha-paciente {
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.tags-paciente {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.15rem;
+}
+
+.tag-paciente {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.08rem 0.3rem;
+  border-radius: var(--radius);
+  background: var(--stone-light);
+  color: var(--ink-medium);
+  border: 1px solid var(--row);
+  white-space: nowrap;
+}
+
+.bloco-tags {
+  margin-top: 0.5rem;
+}
+
+.escolha-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.tag-escolha {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.22rem 0.5rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--row-strong);
+  background: var(--paper);
+  color: var(--ink-medium);
+  cursor: pointer;
+}
+
+.tag-escolha:hover {
+  border-color: var(--beetroot);
+}
+
+.tag-escolha.ativa {
+  background: var(--beetroot-washed);
+  border-color: var(--beetroot);
+  color: var(--beetroot-text);
+}
+
+.tag-escolha.nova {
+  border-style: dashed;
+}
+
+.feed-anotacoes {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.feed-anotacoes li {
+  padding: 0.6rem 0.75rem;
+  border-left: 2px solid var(--row-strong);
+  background: var(--stone-light);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.feed-anotacoes p {
+  margin: 0 0 0.3rem;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+/* Um anexo na ficha do paciente. */
+.anexo {
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--row);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.anexo p {
+  margin: 0.2rem 0 0;
+}
+
+/* ------------------------------------------------------- gráfico de peso
+
+   Barras horizontais em div, sem biblioteca. São cinco barras; uma
+   dependência de gráfico custaria mais do que a tela inteira. E barra em vez
+   de curva porque, com poucas medições, a linha sugere uma tendência que os
+   pontos não sustentam. */
+
+.grafico-peso {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+}
+
+.linha-peso {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 9rem;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.barra-peso {
+  height: 0.85rem;
+  background: var(--stone-light);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.barra-peso div {
+  height: 100%;
+  background: var(--beetroot);
+  border-radius: var(--radius);
+}
+
+.valor-peso {
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.valor-peso .subiu {
+  color: var(--ochre);
+  font-weight: 500;
+}
+
+.valor-peso .desceu {
+  color: var(--moss);
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .linha-peso {
+    grid-template-columns: 4.5rem minmax(0, 1fr) 7rem;
+    gap: 0.4rem;
+  }
+}
+
+/* O formulário de consulta abre sobre a linha de ações, ocupando a largura. */
+.painel-consulta {
+  flex-basis: 100%;
+  margin-top: 0.6rem;
+}

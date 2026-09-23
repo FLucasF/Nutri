@@ -19,6 +19,14 @@
 
     <properties>
         <java.version>21</java.version>
+        <!--
+          Sem isto o Maven cai no charset da plataforma, que difere entre
+          Windows e o servidor. Fonte, recurso e teste têm acento, e uma build
+          que depende de onde roda é uma build que um dia produz outro
+          resultado. Declarado, e não descoberto.
+        -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <jjwt.version>0.12.6</jjwt.version>
         <openpdf.version>2.2.2</openpdf.version>
     </properties>

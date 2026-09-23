@@ -122,6 +122,10 @@ public class PatientsImporter {
                         birth,
                         sex(value(fields, columns.get("sex"))),
                         trim(onlyDigits(value(fields, columns.get("cpf"))), 20),
+                        // A planilha de importação não traz apelido nem condição
+                        // biológica; os dois são preenchidos depois, na ficha.
+                        null,
+                        null,
                         trim(value(fields, columns.get("occupation")), 100),
                         trim(value(fields, columns.get("goal")), 500),
                         trim(value(fields, columns.get("notes")), 2000))));

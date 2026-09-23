@@ -8,6 +8,7 @@ import { formatNutrient, MACROS_PRINCIPAIS, labelDe } from "../api/nutrients";
 import type { FoodSummary, RecipeIngredient, Measure, Recipe } from "../api/types";
 import FoodSearch from "../components/FoodSearch";
 import { count } from "../text";
+import { NotesField } from "../components/RichText/NotesField";
 
 /** An ingredient while it is being assembled on screen, before going to the server. */
 type Draft = {
@@ -303,19 +304,21 @@ export default function RecipeEditor() {
           </div>
 
           <div className="card" style={{ marginTop: "0.9rem" }}>
-            <div className="field">
-              <label htmlFor="rc-preparo">Modo de preparo</label>
-              <textarea
-                id="rc-preparo"
-                name="modeInstructions"
-                rows={6}
-                value={modeInstructions}
-                onChange={(e) => setModeInstructions(e.target.value)}
-                placeholder="Bata os ingredientes, despeje na frigideira quente…"
-                {...fields.props("modeInstructions")}
-              />
-              <FieldError field="modeInstructions" errors={fields.errors} />
-            </div>
+            {/*
+              O preparo agora viaja para o cardápio: quando esta receita entra
+              num plano, o texto daqui sai no PDF que o paciente recebe, numa
+              seção "Modo de preparo" depois das refeições. Por isso ele ganhou
+              o editor com tabela — a lista de ingredientes em coluna é o
+              formato em que uma receita de fato se escreve.
+            */}
+            <NotesField
+              label="Modo de preparo"
+              value={modeInstructions}
+              onChange={setModeInstructions}
+              minHeight="14rem"
+              help="Sai no PDF do cardápio sempre que esta receita for usada."
+            />
+            <FieldError field="modeInstructions" errors={fields.errors} />
           </div>
         </div>
 

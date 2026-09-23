@@ -17,7 +17,9 @@ public enum Skinfold {
     CHEST("Peitoral"),
     THIGH("Coxa"),
     CALF("Panturrilha medial"),
-    MEAN_AXILLARY("Axilar média");
+    MEAN_AXILLARY("Axilar média"),
+    /** Listada pelo cliente na página 22 do documento. */
+    SUPRASPINAL("Supraespinhal");
 
     private final String description;
 

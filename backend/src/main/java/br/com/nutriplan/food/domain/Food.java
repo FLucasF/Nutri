@@ -89,7 +89,7 @@ public class Food extends BaseEntity {
     // treating the two as one is what makes a recipe enter the search, accept
     // a household measure and be prescribed with no new code.
 
-    @Column(name = "instructions_mode", length = 4000)
+    @Column(name = "instructions_mode", length = 20_000)
     private String modeInstructions;
 
     /**

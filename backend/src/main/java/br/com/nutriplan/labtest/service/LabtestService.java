@@ -85,6 +85,47 @@ public class LabtestService {
         return LabtestDtos.ParameterResponse.from(parameter);
     }
 
+    /**
+     * Declara a faixa de referência do laboratório com que o consultório trabalha.
+     *
+     * É o que destrava a classificação automática que o cliente pede na página
+     * 15 — "colocarmos a avaliação via código". A faixa não vem pronta para os
+     * 154 parâmetros porque ela varia de laboratório e de método, e uma faixa
+     * errada classifica como alterado um resultado que está normal.
+     *
+     * Vale inclusive sobre parâmetro do sistema: a faixa é do consultório, o
+     * parâmetro é o acervo comum.
+     */
+    @Transactional
+    public LabtestDtos.ParameterResponse addRange(Long parameterId, LabtestDtos.RangeRequest req) {
+        Long accountId = contextCurrent.accountId();
+        LabtestParameter parameter = parameterRepository.findById(parameterId)
+                .filter(p -> p.getAccountId() == null || p.getAccountId().equals(accountId))
+                .orElseThrow(() -> new NotFoundException("Parâmetro", parameterId));
+
+        if (req.minimum() == null && req.maximum() == null) {
+            throw new BusinessRuleException(
+                    "Informe ao menos um limite. Uma faixa sem limite não classifica nada.");
+        }
+        if (req.minimum() != null && req.maximum() != null
+                && req.minimum().compareTo(req.maximum()) > 0) {
+            throw new BusinessRuleException("O mínimo não pode ser maior que o máximo.");
+        }
+
+        var range = new ReferenceRange();
+        range.setParameter(parameter);
+        range.setSex(req.sex());
+        range.setAgeMin(req.ageMin());
+        range.setAgeMax(req.ageMax());
+        range.setMinimum(req.minimum());
+        range.setMaximum(req.maximum());
+        parameter.getRanges().add(range);
+
+        parameterRepository.save(parameter);
+        log.info("Faixa de referência cadastrada: parametro={} conta={}", parameterId, accountId);
+        return LabtestDtos.ParameterResponse.from(parameter);
+    }
+
     // -------------------------------------------------------------- lab tests
 
     @Transactional(readOnly = true)
@@ -181,16 +222,23 @@ public class LabtestService {
         String firstUnit = null;
         boolean mixed = false;
 
+        // Nem todo exame tem unidade: parâmetros qualitativos e razões são
+        // registrados sem uma, e o catálogo traz vários assim. O código
+        // anterior chamava equalsIgnoreCase direto no que vinha do banco e
+        // quebrava com 500 na primeira série de um exame desses.
+        boolean firstSeen = false;
+
         for (Labtest e : labtests) {
-            if (firstUnit == null) {
+            if (!firstSeen) {
                 firstUnit = e.getUnit();
-            } else if (!firstUnit.equalsIgnoreCase(e.getUnit())) {
+                firstSeen = true;
+            } else if (!sameUnit(firstUnit, e.getUnit())) {
                 mixed = true;
             }
             // Variation only between points in the same unit: subtracting mg/dL
             // from mmol/L would give a number with no meaning at all.
             BigDecimal change = (previous != null && e.getValue() != null
-                    && e.getUnit().equalsIgnoreCase(firstUnit))
+                    && sameUnit(firstUnit, e.getUnit()))
                     ? e.getValue().subtract(previous) : null;
             points.add(new LabtestDtos.SeriesPoint(e.getDateCollection(), e.getValue(),
                     e.getUnit(), e.getClassification(), change));
@@ -202,6 +250,21 @@ public class LabtestService {
         return new LabtestDtos.SeriesResponse(parameter.getId(), parameter.getName(),
                 firstUnit == null ? parameter.getUnitStandard() : firstUnit,
                 points, mixed);
+    }
+
+    /**
+     * Duas unidades sao a mesma?
+     *
+     * Ausencia casa com ausencia: dois resultados sem unidade sao comparaveis
+     * entre si — sao o mesmo exame medido do mesmo jeito. O que nao se compara
+     * e um com unidade contra um sem, porque ai nao se sabe o que o numero solto
+     * significa.
+     */
+    private static boolean sameUnit(String one, String other) {
+        if (one == null || other == null) {
+            return one == null && other == null;
+        }
+        return one.equalsIgnoreCase(other);
     }
 
     // ------------------------------------------------------------------- order

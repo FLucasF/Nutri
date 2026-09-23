@@ -42,6 +42,20 @@ import type {
   TypeAppointmentInfo,
   TransactionType,
   TokenResponse,
+  Anamnesis,
+  AnamnesisField,
+  AnamnesisRequest,
+  AnamnesisSummary,
+  EnergyOptions,
+  FavoriteMeal,
+  LabtestPanel,
+  PatientAttachment,
+  PatientNote,
+  PatientTag,
+  FavoriteMealRequest,
+  EnergyPlan,
+  EnergyPlanRequest,
+  EnergyPlanSummary,
 } from "./types";
 
 const BASE = "/api";
@@ -190,6 +204,72 @@ export const api = {
       request<Page<PatientSummary>>(`/patients${query(params)}`),
 
     find: (id: number) => request<Patient>(`/patients/${id}`),
+
+    /** As TAGs disponíveis: as do consultório primeiro, depois as do sistema. */
+    tags: () => request<PatientTag[]>("/patient-tags"),
+
+    createTag: (name: string) =>
+      request<PatientTag>("/patient-tags", { method: "POST", body: { name } }),
+
+    tagsOf: (patientId: number) => request<PatientTag[]>(`/patients/${patientId}/tags`),
+
+    /** O conjunto inteiro de uma vez: marcar e desmarcar é uma operação só. */
+    setTags: (patientId: number, tagIds: number[]) =>
+      request<PatientTag[]>(`/patients/${patientId}/tags`, {
+        method: "PUT",
+        body: { tagIds },
+      }),
+
+    notes: (patientId: number) => request<PatientNote[]>(`/patients/${patientId}/notes`),
+
+    attachments: (patientId: number) =>
+      request<PatientAttachment[]>(`/patients/${patientId}/attachments`),
+
+    /**
+     * Anexa um arquivo ao prontuário.
+     *
+     * O título vai junto e é obrigatório: "documento(1).pdf" não diz nada daqui
+     * a um ano, e é daqui a um ano que alguém vai procurar.
+     */
+    attachFile: (
+      patientId: number,
+      file: File,
+      meta: { title: string; notes?: string; referenceDate?: string },
+    ) => {
+      const data = new FormData();
+      data.append("file", file);
+      data.append("title", meta.title);
+      if (meta.notes) data.append("notes", meta.notes);
+      if (meta.referenceDate) data.append("referenceDate", meta.referenceDate);
+      return request<PatientAttachment>(`/patients/${patientId}/attachments`, {
+        method: "POST",
+        formDate: data,
+      });
+    },
+
+    attachLink: (
+      patientId: number,
+      data: { title: string; url: string; notes?: string; referenceDate?: string },
+    ) =>
+      request<PatientAttachment>(`/patients/${patientId}/attachments/links`, {
+        method: "POST",
+        body: data,
+      }),
+
+    /** Baixa o arquivo autenticado e devolve um endereço local para abrir. */
+    attachmentFile: (patientId: number, attachmentId: number) =>
+      download(`/patients/${patientId}/attachments/${attachmentId}/file`),
+
+    removeAttachment: (patientId: number, attachmentId: number) =>
+      request<void>(`/patients/${patientId}/attachments/${attachmentId}`, {
+        method: "DELETE",
+      }),
+
+    addNote: (patientId: number, body: string) =>
+      request<PatientNote>(`/patients/${patientId}/notes`, { method: "POST", body: { body } }),
+
+    removeNote: (patientId: number, noteId: number) =>
+      request<void>(`/patients/${patientId}/notes/${noteId}`, { method: "DELETE" }),
 
     create: (data: Partial<Patient>) =>
       request<Patient>("/patients", { method: "POST", body: data }),
@@ -403,6 +483,23 @@ export const api = {
   labtests: {
     parameters: () => request<LabtestParameter[]>("/labtests/parameters"),
 
+    /**
+     * Os painéis de biomarcadores — os botões que preenchem o pedido.
+     *
+     * Os do consultório vêm primeiro e marcados, para a tela poder separá-los
+     * dos 25 que o sistema traz.
+     */
+    panels: () => request<LabtestPanel[]>("/labtests/panels"),
+
+    createPanel: (data: { name: string; parameterIds: number[] }) =>
+      request<LabtestPanel>("/labtests/panels", { method: "POST", body: data }),
+
+    duplicatePanel: (id: number) =>
+      request<LabtestPanel>(`/labtests/panels/${id}/duplicate`, { method: "POST" }),
+
+    removePanel: (id: number) =>
+      request<void>(`/labtests/panels/${id}`, { method: "DELETE" }),
+
     createParameter: (data: {
       name: string;
       unitStandard: string;
@@ -456,6 +553,104 @@ export const api = {
   },
 
   // ---------------------------------------------------------------- handouts
+  mealPhotos: {
+    /** Anexa a foto do prato. A refeição precisa já estar salva. */
+    send: (planId: number, mealId: number, file: File) => {
+      const data = new FormData();
+      data.append("file", file);
+      return request<void>(`/prescriptions/${planId}/meals/${mealId}/photo`, {
+        method: "POST",
+        formDate: data,
+      });
+    },
+
+    /** Baixa a foto autenticada e devolve um endereço local para o `src`. */
+    open: (planId: number, mealId: number) =>
+      download(`/prescriptions/${planId}/meals/${mealId}/photo`),
+
+    remove: (planId: number, mealId: number) =>
+      request<void>(`/prescriptions/${planId}/meals/${mealId}/photo`, { method: "DELETE" }),
+  },
+
+  mealFavorites: {
+    list: () => request<FavoriteMeal[]>("/meal-favorites"),
+
+    detail: (id: number) => request<FavoriteMeal>(`/meal-favorites/${id}`),
+
+    /**
+     * Salva a refeição inteira, e não o id de uma já gravada.
+     *
+     * No editor a refeição pode ainda não ter sido salva, e ele não deveria
+     * precisar salvar o plano para guardar a própria refeição.
+     */
+    save: (data: FavoriteMealRequest) =>
+      request<FavoriteMeal>("/meal-favorites", { method: "POST", body: data }),
+
+    remove: (id: number) => request<void>(`/meal-favorites/${id}`, { method: "DELETE" }),
+  },
+
+  energyPlans: {
+    /**
+     * As equações e os níveis de atividade que a tela pode oferecer.
+     *
+     * Vêm do servidor, e não de uma lista escrita aqui: uma equação que a tela
+     * oferecesse e o cálculo não conhecesse viraria erro na hora de salvar.
+     */
+    options: () => request<EnergyOptions>("/energy-plans/options"),
+
+    ofPatient: (patientId: number) =>
+      request<EnergyPlanSummary[]>(`/patients/${patientId}/energy-plans`),
+
+    detail: (id: number) => request<EnergyPlan>(`/energy-plans/${id}`),
+
+    create: (data: EnergyPlanRequest) =>
+      request<EnergyPlan>("/energy-plans", { method: "POST", body: data }),
+
+    update: (id: number, data: EnergyPlanRequest) =>
+      request<EnergyPlan>(`/energy-plans/${id}`, { method: "PUT", body: data }),
+
+    remove: (id: number) => request<void>(`/energy-plans/${id}`, { method: "DELETE" }),
+  },
+
+  anamneses: {
+    /** Os campos de destaque do consultório. */
+    fields: () => request<AnamnesisField[]>("/anamnesis-fields"),
+
+    /**
+     * Redefine a lista inteira de campos.
+     *
+     * A ordem é propriedade do conjunto, então o conjunto viaja junto. O que
+     * sair da lista é desativado no servidor, nunca apagado: anamneses já
+     * escritas apontam para ele.
+     */
+    saveFields: (fields: { label: string; showInListing: boolean }[]) =>
+      request<AnamnesisField[]>("/anamnesis-fields", { method: "PUT", body: { fields } }),
+
+    ofPatient: (patientId: number) =>
+      request<AnamnesisSummary[]>(`/patients/${patientId}/anamneses`),
+
+    detail: (id: number) => request<Anamnesis>(`/anamneses/${id}`),
+
+    create: (data: AnamnesisRequest) =>
+      request<Anamnesis>("/anamneses", { method: "POST", body: data }),
+
+    update: (id: number, data: AnamnesisRequest) =>
+      request<Anamnesis>(`/anamneses/${id}`, { method: "PUT", body: data }),
+
+    duplicate: (id: number) =>
+      request<Anamnesis>(`/anamneses/${id}/duplicate`, { method: "POST" }),
+
+    remove: (id: number) => request<void>(`/anamneses/${id}`, { method: "DELETE" }),
+
+    /**
+     * Baixa o PDF autenticado e devolve um endereço temporário.
+     *
+     * O token viaja no cabeçalho, então um href direto para a rota voltaria
+     * 401. O cliente busca, vira blob, e a guia abre esse endereço local.
+     */
+    pdf: (id: number) => download(`/anamneses/${id}/pdf`),
+  },
+
   handouts: {
     list: (params: { term?: string; page?: number; size?: number }) =>
       request<Page<Handout>>(`/handouts${query(params)}`),
@@ -534,6 +729,10 @@ export const api = {
       request<Assessment>(`/assessments/${id}`, { method: "PUT", body: data }),
 
     remove: (id: number) => request<void>(`/assessments/${id}`, { method: "DELETE" }),
+
+    /** O relatório de evolução, com os gráficos. Precisa de duas avaliações. */
+    report: (patientId: number) =>
+      download(`/patients/${patientId}/anthropometry-report`),
   },
 
   // ------------------------------------------------------------------- schedule

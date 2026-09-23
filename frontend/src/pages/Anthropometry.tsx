@@ -6,6 +6,9 @@ import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
 import { formatBr, todayIso } from "../api/dates";
 import type {
+  CircumferenceSite,
+  CircumferenceValue,
+  Side,
   Assessment,
   Pregnancy,
   Derived,
@@ -15,6 +18,8 @@ import type {
   Change,
 } from "../api/types";
 import { count } from "../text";
+import { AREAS_HIDDEN } from "../features";
+import { NotesField, NotesView } from "../components/RichText/NotesField";
 
 const SKINFOLDS: { key: string; label: string }[] = [
   { key: "TRICEPS", label: "Tricipital" },
@@ -28,15 +33,51 @@ const SKINFOLDS: { key: string; label: string }[] = [
   { key: "MEAN_AXILLARY", label: "Axilar média" },
 ];
 
-const CIRCUMFERENCES: { key: string; label: string }[] = [
-  { key: "waist", label: "Cintura" },
-  { key: "hip", label: "Quadril" },
-  { key: "abdomen", label: "Abdômen" },
-  { key: "arm", label: "Braço" },
-  { key: "forearm", label: "Antebraço" },
-  { key: "thigh", label: "Coxa" },
-  { key: "calf", label: "Panturrilha" },
-  { key: "chest", label: "Tórax" },
+/**
+ * Os treze locais que o cliente lista, na ordem anatômica do enum do domínio.
+ *
+ * Os marcados como bilaterais ganham dois campos, direito e esquerdo. Era essa
+ * a razão de as circunferências saírem das colunas planas do banco.
+ */
+const CIRCUMFERENCES: { site: CircumferenceSite; label: string; bilateral: boolean }[] = [
+  { site: "NECK", label: "Pescoço", bilateral: false },
+  { site: "SHOULDER", label: "Ombro", bilateral: false },
+  { site: "CHEST", label: "Tórax", bilateral: false },
+  { site: "WAIST", label: "Cintura", bilateral: false },
+  { site: "ABDOMEN", label: "Abdômen", bilateral: false },
+  { site: "HIP", label: "Quadril", bilateral: false },
+  { site: "ARM_RELAXED", label: "Braço relaxado", bilateral: true },
+  { site: "ARM_CONTRACTED", label: "Braço contraído", bilateral: true },
+  { site: "FOREARM", label: "Antebraço", bilateral: true },
+  { site: "THIGH_PROXIMAL", label: "Coxa proximal", bilateral: true },
+  { site: "THIGH_MEDIAL", label: "Coxa medial", bilateral: true },
+  { site: "THIGH_DISTAL", label: "Coxa distal", bilateral: true },
+  { site: "CALF", label: "Panturrilha", bilateral: true },
+];
+
+/** A chave do campo no formulário: local mais lado. */
+function keyOf(site: CircumferenceSite, side: Side): string {
+  return `${site}|${side}`;
+}
+
+const EXTRAS_MEASURES: { key: string; label: string }[] = [
+  { key: "heightSittingCm", label: "Altura sentado" },
+  { key: "heightKneeCm", label: "Altura do joelho" },
+  { key: "diameterHumerus", label: "Diâmetro do úmero" },
+  { key: "diameterWrist", label: "Diâmetro do punho" },
+  { key: "diameterFemur", label: "Diâmetro do fêmur" },
+];
+
+const BIA_FIELDS: { key: string; label: string }[] = [
+  { key: "biaFatPercentage", label: "% de gordura" },
+  { key: "biaFatMassKg", label: "Massa gorda (kg)" },
+  { key: "biaMusclePercentage", label: "% de massa muscular" },
+  { key: "biaMuscleMassKg", label: "Massa muscular (kg)" },
+  { key: "biaLeanMassKg", label: "Massa livre de gordura (kg)" },
+  { key: "biaBoneMassKg", label: "Peso ósseo (kg)" },
+  { key: "biaVisceralFat", label: "Gordura visceral" },
+  { key: "biaBodyWaterPercentage", label: "% de água corporal" },
+  { key: "biaMetabolicAge", label: "Idade metabólica" },
 ];
 
 const CLASSIFICATIONS: Record<string, string> = {
@@ -64,6 +105,9 @@ export default function Anthropometry() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  /** A avaliação que está sendo corrigida, quando há uma. */
+  const [editing, setEditing] = useState<Assessment | null>(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,6 +132,22 @@ export default function Anthropometry() {
   }, [load]);
 
   const feedback = useFeedback();
+
+  /** Abre o relatório de evolução em outra guia. */
+  async function openReport() {
+    setGeneratingReport(true);
+    try {
+      const { url } = await api.anthropometry.report(patientId);
+      window.open(url, "_blank", "noopener");
+      // Solta o endereço depois: revogar antes de a guia nova ler abriria em
+      // branco.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setError(explainError(e, "gerar o relatório de evolução"));
+    } finally {
+      setGeneratingReport(false);
+    }
+  }
 
   async function remove(assessmentId: number) {
     if (!confirm("Remover esta avaliação?")) return;
@@ -118,20 +178,52 @@ export default function Anthropometry() {
               : `${assessments.length} ${assessments.length === 1 ? "avaliação" : "avaliações"}`}
           </p>
         </div>
-        <button className="button" onClick={() => setCreating((v) => !v)}>
-          {creating ? "Cancelar" : "Nova avaliação"}
-        </button>
+        <div className="row">
+          {/*
+            O relatório só aparece com duas avaliações: uma evolução de um
+            ponto só não é uma evolução, e o botão prometeria uma folha que o
+            servidor recusaria.
+          */}
+          {assessments.length > 1 && (
+            <button
+              className="button secundario"
+              onClick={() => void openReport()}
+              disabled={generatingReport}
+              title="Abre em outra guia"
+            >
+              {generatingReport ? "Gerando…" : "Relatório de evolução"}
+            </button>
+          )}
+          <button
+            className="button"
+            onClick={() => {
+              setEditing(null);
+              setCreating((v) => !v);
+            }}
+          >
+            {creating ? "Cancelar" : "Nova avaliação"}
+          </button>
+        </div>
       </div>
 
       {error && <div className="warning error" style={{ marginBottom: "0.9rem" }}>{error}</div>}
 
-      {creating && (
+      {(creating || editing) && (
         <FormAssessment
+          // A chave troca junto com a avaliação editada: sem isso o formulário
+          // seria reaproveitado com os valores da anterior ainda dentro.
+          key={editing ? `editar-${editing.id}` : "nova"}
           patientId={patientId}
           protocols={protocols}
           last={moreRecent}
+          editing={editing ?? undefined}
+          onCancel={() => {
+            setCreating(false);
+            setEditing(null);
+          }}
           onSave={async () => {
             setCreating(false);
+            setEditing(null);
             await load();
           }}
         />
@@ -153,6 +245,7 @@ export default function Anthropometry() {
                   <th className="num">IMC</th>
                   <th>Classificação</th>
                   <th className="num">% gordura</th>
+                  <th className="num">Massa magra</th>
                   <th>Protocolo</th>
                   <th />
                 </tr>
@@ -175,8 +268,25 @@ export default function Anthropometry() {
                         ? `${num(a.composition.percentageFat)}%`
                         : "—"}
                     </td>
+                    <td className="num">
+                      {a.composition?.massLeanKg
+                        ? `${num(a.composition.massLeanKg)} kg`
+                        : a.biaMuscleMassKg
+                          ? `${num(a.biaMuscleMassKg)} kg`
+                          : "—"}
+                    </td>
                     <td className="discreto">{a.composition?.protocolDescription ?? "—"}</td>
                     <td style={{ textAlign: "right" }}>
+                      <button
+                        className="button secundario pequeno"
+                        onClick={() => {
+                          setCreating(false);
+                          setEditing(a);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
+                        Editar
+                      </button>{" "}
                       <button className="button perigo pequeno" onClick={() => remove(a.id)}>
                         Remover
                       </button>
@@ -268,9 +378,11 @@ function AssessmentSummary({
         </>
       )}
 
-      {assessment.pregnancy?.value && <BlockPregnancy pregnancy={assessment.pregnancy.value} />}
+      {AREAS_HIDDEN.gestation && assessment.pregnancy?.value && (
+        <BlockPregnancy pregnancy={assessment.pregnancy.value} />
+      )}
 
-      {assessment.pregnancy && !assessment.pregnancy.value && (
+      {AREAS_HIDDEN.gestation && assessment.pregnancy && !assessment.pregnancy.value && (
         <div className="warning attention" style={{ marginTop: "0.9rem" }}>
           {assessment.pregnancy.unavailableBecause}
         </div>
@@ -308,28 +420,30 @@ function AssessmentSummary({
         </>
       )}
 
-      {Object.keys(assessment.circumferences).length > 0 && (
+      {assessment.circumferences.length > 0 && (
         <>
           <h3 style={{ margin: "1rem 0 0.4rem" }}>Circunferências (cm)</h3>
           <div className="grid three">
-            {CIRCUMFERENCES.filter((c) => assessment.circumferences[c.key] !== undefined).map(
-              (c) => (
-                <Indicator
-                  key={c.key}
-                  label={c.label}
-                  value={assessment.circumferences[c.key]}
-                  unit="cm"
-                />
-              ),
-            )}
+            {assessment.circumferences.map((c) => (
+              <Indicator
+                key={keyOf(c.site, c.side)}
+                label={
+                  c.side === "SINGLE"
+                    ? (c.description ?? c.site)
+                    : `${c.description ?? c.site} (${c.side === "RIGHT" ? "D" : "E"})`
+                }
+                value={c.valueCm}
+                unit="cm"
+              />
+            ))}
           </div>
         </>
       )}
 
       {assessment.notes && (
-        <p className="discreto" style={{ marginTop: "0.9rem", marginBottom: 0 }}>
-          {assessment.notes}
-        </p>
+        <div className="discreto" style={{ marginTop: "0.9rem" }}>
+          <NotesView value={assessment.notes} />
+        </div>
       )}
     </div>
   );
@@ -370,7 +484,7 @@ function BlockPregnancy({ pregnancy }: { pregnancy: Pregnancy }) {
         {pregnancy.expectedMin.toLocaleString("pt-BR")} a{" "}
         {pregnancy.expectedMax.toLocaleString("pt-BR")} kg até a {pregnancy.gestationalWeek}ª
         semana, e {pregnancy.totalGainRecommendedMin.toLocaleString("pt-BR")} a{" "}
-        {pregnancy.totalGainRecommendedMax.toLocaleString("pt-BR")} kg na gestação whole
+        {pregnancy.totalGainRecommendedMax.toLocaleString("pt-BR")} kg em toda a gestação
         (IOM, 2009).
       </p>
     </>
@@ -532,28 +646,78 @@ function FormAssessment({
   patientId,
   protocols,
   last,
+  editing,
   onSave,
+  onCancel,
 }: {
   patientId: number;
   protocols: ProtocolInfo[];
   last?: Assessment;
+  /**
+   * A avaliação sendo corrigida.
+   *
+   * Ausente quer dizer avaliação nova. É o mesmo formulário nos dois casos
+   * porque são os mesmos campos e as mesmas regras — duas telas divergiriam no
+   * primeiro campo que só uma delas ganhasse.
+   */
+  editing?: Assessment;
   onSave: () => Promise<void>;
+  onCancel: () => void;
 }) {
   const today = todayIso();
 
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(editing?.date ?? today);
   // Height rarely changes between appointments: repeating the last one saves typing.
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState(last?.heightCm ? String(last.heightCm) : "");
-  const [skinfolds, setSkinfolds] = useState<Record<string, string>>({});
-  const [circumferences, setCircumferences] = useState<Record<string, string>>({});
-  const [protocol, setProtocol] = useState<string>("");
-  const [equation, setEquation] = useState<string>("");
-  const [factor, setFactor] = useState("1.55");
-  const [notes, setNotes] = useState("");
-  const [pregnant, setPregnant] = useState(false);
-  const [week, setWeek] = useState("");
-  const [weightPre, setWeightPre] = useState("");
+  const [weight, setWeight] = useState(editing?.weightKg ? String(editing.weightKg) : "");
+  const [height, setHeight] = useState(
+    editing?.heightCm ? String(editing.heightCm) : last?.heightCm ? String(last.heightCm) : "",
+  );
+  /**
+   * Altura travada para adulto que já foi medido.
+   *
+   * O cliente pede a altura "imutável para adultos" e puxada da avaliação
+   * anterior. Criança continua editável — ela ainda cresce, e travar aí
+   * congelaria justamente o dado que a curva de crescimento acompanha.
+   */
+  const heightLocked =
+    !editing && last?.heightCm !== undefined && (last.ageYears ?? 0) >= 20;
+  const [skinfolds, setSkinfolds] = useState<Record<string, string>>(
+    () => textOf(editing?.skinfolds),
+  );
+  /**
+   * Diâmetros, alturas de apoio e bioimpedância.
+   *
+   * Num único mapa de texto porque são todos "rótulo e número", sem lado e sem
+   * regra própria — dar um estado a cada um seria quinze useState para dizer a
+   * mesma coisa quinze vezes.
+   */
+  const [extras, setExtras] = useState<Record<string, string>>(() => extrasOf(editing));
+  const [circumferences, setCircumferences] = useState<Record<string, string>>(
+    () => circumferencesOf(editing),
+  );
+  const [protocol, setProtocol] = useState<string>(
+    editing?.composition?.protocol ?? "",
+  );
+  const [equation, setEquation] = useState<string>(
+    editing?.expenditureEnergy?.equation ?? "",
+  );
+  const [factor, setFactor] = useState(
+    editing?.expenditureEnergy?.factorActivity
+      ? String(editing.expenditureEnergy.factorActivity)
+      : "1.55",
+  );
+  const [notes, setNotes] = useState(editing?.notes ?? "");
+  const [pregnant, setPregnant] = useState(!!editing?.pregnancy?.value);
+  const [week, setWeek] = useState(
+    editing?.pregnancy?.value?.gestationalWeek
+      ? String(editing.pregnancy.value.gestationalWeek)
+      : "",
+  );
+  const [weightPre, setWeightPre] = useState(
+    editing?.pregnancy?.value?.weightGestationalPreKg
+      ? String(editing.pregnancy.value.weightGestationalPreKg)
+      : "",
+  );
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const fields = useFieldErrors();
@@ -571,12 +735,13 @@ function FormAssessment({
     setError(null);
     setSending(true);
     try {
-      await api.anthropometry.create(patientId, {
+      const body = {
         date,
         weightKg: numberOuUndefined(weight),
         heightCm: numberOuUndefined(height),
         skinfolds: numbersMap(skinfolds),
-        circumferences: numbersMap(circumferences),
+        circumferences: circumferencesToSend(circumferences),
+        ...numbersMap(extras),
         protocolComposition: (protocol || undefined) as CompositionProtocol | undefined,
         equationExpenditure: (equation || undefined) as never,
         factorActivity: equation ? numberOuUndefined(factor) : undefined,
@@ -584,8 +749,17 @@ function FormAssessment({
         gestationalWeek: pregnant && week ? Number(week) : undefined,
         weightGestationalPreKg:
           pregnant && weightPre ? Number(weightPre.replace(",", ".")) : undefined,
-      });
-      feedback.confirm(`Avaliação de ${formatBr(date)} registrada.`);
+      };
+      if (editing) {
+        await api.anthropometry.update(editing.id, body);
+      } else {
+        await api.anthropometry.create(patientId, body);
+      }
+      feedback.confirm(
+        editing
+          ? `Avaliação de ${formatBr(date)} corrigida.`
+          : `Avaliação de ${formatBr(date)} registrada.`,
+      );
       await onSave();
     } catch (e) {
       if (!fields.apply(e)) {
@@ -597,7 +771,7 @@ function FormAssessment({
 
   return (
     <form className="card" style={{ marginBottom: "1.1rem" }} onSubmit={send}>
-      <h2>Nova avaliação</h2>
+      <h2>{editing ? `Corrigir avaliação de ${formatBr(editing.date)}` : "Nova avaliação"}</h2>
 
       {error && <div className="warning error" style={{ margin: "0.8rem 0" }}>{error}</div>}
 
@@ -635,25 +809,71 @@ function FormAssessment({
             name="heightCm"
             inputMode="decimal"
             value={height}
+            readOnly={heightLocked}
             onChange={(e) => setHeight(e.target.value)}
             {...fields.props("heightCm")}
           />
+          {heightLocked && (
+            <span className="minusculo">
+              Puxada da avaliação anterior. Adulto não muda de altura.
+            </span>
+          )}
           <FieldError field="heightCm" errors={fields.errors} />
         </div>
       </div>
 
       <h3 style={{ margin: "1.1rem 0 0.4rem" }}>Circunferências (cm)</h3>
       <div className="grid three">
-        {CIRCUMFERENCES.map((c) => (
-          <div className="field" key={c.key}>
-            <label htmlFor={`circ-${c.key}`}>{c.label}</label>
+        {CIRCUMFERENCES.flatMap((c) =>
+          (c.bilateral ? (["RIGHT", "LEFT"] as Side[]) : (["SINGLE"] as Side[])).map((side) => {
+            const key = keyOf(c.site, side);
+            const label =
+              side === "SINGLE" ? c.label : `${c.label} (${side === "RIGHT" ? "D" : "E"})`;
+            return (
+              <div className="field" key={key}>
+                <label htmlFor={`circ-${key}`}>{label}</label>
+                <input
+                  id={`circ-${key}`}
+                  inputMode="decimal"
+                  value={circumferences[key] ?? ""}
+                  onChange={(e) =>
+                    setCircumferences((v) => ({ ...v, [key]: e.target.value }))
+                  }
+                />
+              </div>
+            );
+          }),
+        )}
+      </div>
+
+      <h3 style={{ margin: "1.1rem 0 0.4rem" }}>Alturas de apoio e diâmetros ósseos (cm)</h3>
+      <div className="grid three">
+        {EXTRAS_MEASURES.map((field) => (
+          <div className="field" key={field.key}>
+            <label htmlFor={`ex-${field.key}`}>{field.label}</label>
             <input
-              id={`circ-${c.key}`}
+              id={`ex-${field.key}`}
               inputMode="decimal"
-              value={circumferences[c.key] ?? ""}
-              onChange={(e) =>
-                setCircumferences((v) => ({ ...v, [c.key]: e.target.value }))
-              }
+              value={extras[field.key] ?? ""}
+              onChange={(e) => setExtras((v) => ({ ...v, [field.key]: e.target.value }))}
+            />
+          </div>
+        ))}
+      </div>
+
+      <h3 style={{ margin: "1.1rem 0 0.4rem" }}>Bioimpedância</h3>
+      <p className="minusculo" style={{ marginTop: 0 }}>
+        Como o aparelho informou. Estes números são guardados, não recalculados.
+      </p>
+      <div className="grid three">
+        {BIA_FIELDS.map((field) => (
+          <div className="field" key={field.key}>
+            <label htmlFor={`bia-${field.key}`}>{field.label}</label>
+            <input
+              id={`bia-${field.key}`}
+              inputMode="decimal"
+              value={extras[field.key] ?? ""}
+              onChange={(e) => setExtras((v) => ({ ...v, [field.key]: e.target.value }))}
             />
           </div>
         ))}
@@ -737,6 +957,7 @@ function FormAssessment({
         </div>
       )}
 
+      {AREAS_HIDDEN.gestation && (
       <label className="row" style={{ gap: "0.4rem", marginTop: "0.9rem" }}>
         <input
           type="checkbox"
@@ -746,8 +967,9 @@ function FormAssessment({
         />
         <span className="discreto">Gestante</span>
       </label>
+      )}
 
-      {pregnant && (
+      {AREAS_HIDDEN.gestation && pregnant && (
         <div className="grid two" style={{ marginTop: "0.5rem" }}>
           <div className="field">
             <label htmlFor="av-semana">Semana gestacional</label>
@@ -782,22 +1004,32 @@ function FormAssessment({
         </div>
       )}
 
-      <div className="field" style={{ marginTop: "0.8rem" }}>
-        <label htmlFor="av-obs">Observações</label>
-        <textarea
-          id="av-obs"
-          name="notes"
-          rows={2}
+      <div style={{ marginTop: "0.8rem" }}>
+        <NotesField
+          label="Observações"
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          {...fields.props("notes")}
+          onChange={setNotes}
+          minHeight="7rem"
+          onDemand
         />
         <FieldError field="notes" errors={fields.errors} />
       </div>
 
       <div className="row end" style={{ marginTop: "0.9rem" }}>
         <button className="button" type="submit" disabled={sending}>
-          {sending ? "Salvando…" : "Registrar avaliação"}
+          {sending
+            ? "Salvando…"
+            : editing
+              ? "Salvar correção"
+              : "Registrar avaliação"}
+        </button>
+        <button
+          className="button secundario"
+          type="button"
+          onClick={onCancel}
+          disabled={sending}
+        >
+          Cancelar
         </button>
       </div>
     </form>
@@ -806,11 +1038,53 @@ function FormAssessment({
 
 // -------------------------------------------------------------------- helpers
 
+/** Os números de uma avaliação como o formulário os guarda: texto. */
+function textOf(origin?: Record<string, number>): Record<string, string> {
+  const output: Record<string, string> = {};
+  Object.entries(origin ?? {}).forEach(([key, value]) => {
+    output[key] = String(value);
+  });
+  return output;
+}
+
+/** Diâmetros, alturas de apoio e bioimpedância, no mapa único do formulário. */
+function extrasOf(assessment?: Assessment): Record<string, string> {
+  if (!assessment) return {};
+  const output: Record<string, string> = {};
+  [...EXTRAS_MEASURES, ...BIA_FIELDS].forEach(({ key }) => {
+    const value = (assessment as unknown as Record<string, unknown>)[key];
+    if (typeof value === "number") output[key] = String(value);
+  });
+  return output;
+}
+
+/** A lista tipada de circunferências de volta para "local|lado". */
+function circumferencesOf(assessment?: Assessment): Record<string, string> {
+  const output: Record<string, string> = {};
+  (assessment?.circumferences ?? []).forEach((c) => {
+    output[keyOf(c.site, c.side)] = String(c.valueCm);
+  });
+  return output;
+}
+
 function numberOuUndefined(text: string): number | undefined {
   const clean = text.replace(",", ".").trim();
   if (!clean) return undefined;
   const value = Number(clean);
   return Number.isFinite(value) ? value : undefined;
+}
+
+/** O formulário guarda texto por "local|lado"; a API quer a lista tipada. */
+function circumferencesToSend(origin: Record<string, string>): CircumferenceValue[] {
+  const output: CircumferenceValue[] = [];
+  Object.entries(origin).forEach(([key, text]) => {
+    const value = numberOuUndefined(text);
+    if (value === undefined || value <= 0) return;
+    const [site, side] = key.split("|");
+    if (!site || !side) return;
+    output.push({ site: site as CircumferenceSite, side: side as Side, valueCm: value });
+  });
+  return output;
 }
 
 function numbersMap(origin: Record<string, string>): Record<string, number> {

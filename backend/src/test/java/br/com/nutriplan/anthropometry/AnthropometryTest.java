@@ -258,7 +258,7 @@ class AnthropometryTest {
     void calculatesRatioWaistHip() throws Exception {
         String body = """
                 {"date":"%s","weightKg":70,"heightCm":170,
-                 "circumferences":{"waist":80,"hip":100}}""".formatted(LocalDate.now());
+                 "circumferences":[{"site":"WAIST","side":"SINGLE","valueCm":80},{"site":"HIP","side":"SINGLE","valueCm":100}]}""".formatted(LocalDate.now());
 
         JsonNode a = assess(tokenA, marina, body, 201);
 
@@ -284,7 +284,7 @@ class AnthropometryTest {
         long patient = "FEMALE".equals(sex) ? marina : carlos;
         String body = """
                 {"date":"%s","weightKg":70,"heightCm":170,
-                 "circumferences":{"waist":%d,"hip":100}}"""
+                 "circumferences":[{"site":"WAIST","side":"SINGLE","valueCm":%d},{"site":"HIP","side":"SINGLE","valueCm":100}]}"""
                 .formatted(LocalDate.now(), waist);
 
         JsonNode a = assess(tokenA, patient, body, 201);
@@ -296,7 +296,7 @@ class AnthropometryTest {
     @DisplayName("não classifica risco sem sexo informado")
     void notClassifiesRiskWithoutSex() throws Exception {
         String body = """
-                {"date":"%s","circumferences":{"waist":80,"hip":100}}"""
+                {"date":"%s","circumferences":[{"site":"WAIST","side":"SINGLE","valueCm":80},{"site":"HIP","side":"SINGLE","valueCm":100}]}"""
                 .formatted(LocalDate.now());
 
         JsonNode a = assess(tokenA, withoutSignup, body, 201);
@@ -308,14 +308,84 @@ class AnthropometryTest {
     }
 
     @Test
-    @DisplayName("não calcula a relação com apenas uma medida")
-    void notCalculatesRatioComMeasure() throws Exception {
+    @DisplayName("guarda a circunferência dos dois lados")
+    void keepsBothSides() throws Exception {
+        // Sete dos treze locais que o cliente lista são medidos dos dois lados.
+        // É o que fez as circunferências saírem das colunas planas.
         String body = """
-                {"date":"%s","circumferences":{"waist":80}}""".formatted(LocalDate.now());
+                {"date":"%s","circumferences":[
+                   {"site":"ARM_RELAXED","side":"RIGHT","valueCm":31.5},
+                   {"site":"ARM_RELAXED","side":"LEFT","valueCm":30.8},
+                   {"site":"WAIST","side":"SINGLE","valueCm":78}]}""".formatted(LocalDate.now());
+
+        JsonNode a = assess(tokenA, marina, body, 201);
+        JsonNode measures = a.get("circumferences");
+        assertThat(measures).hasSize(3);
+
+        // Cintura vem antes do braço: a ordem é a do enum, que é a anatômica.
+        assertThat(measures.get(0).get("site").asText()).isEqualTo("WAIST");
+        assertThat(measures.get(1).get("site").asText()).isEqualTo("ARM_RELAXED");
+        assertThat(measures.get(1).get("side").asText()).isEqualTo("RIGHT");
+        assertThat(measures.get(1).get("description").asText()).isEqualTo("Braço relaxado");
+        assertThat(measures.get(2).get("side").asText()).isEqualTo("LEFT");
+    }
+
+    @Test
+    @DisplayName("recusa lado em local que não tem lado")
+    void refusesASideOnAUnilateralSite() throws Exception {
+        // Uma cintura não tem lado direito. Aceitar isso guardaria um dado que
+        // não descreve nada e que a tela depois não saberia desenhar.
+        String body = """
+                {"date":"%s","circumferences":[
+                   {"site":"WAIST","side":"RIGHT","valueCm":78}]}""".formatted(LocalDate.now());
+
+        assess(tokenA, marina, body, 422);
+    }
+
+    @Test
+    @DisplayName("recusa a mesma circunferência duas vezes")
+    void refusesADuplicateSite() throws Exception {
+        String body = """
+                {"date":"%s","circumferences":[
+                   {"site":"WAIST","side":"SINGLE","valueCm":78},
+                   {"site":"WAIST","side":"SINGLE","valueCm":80}]}""".formatted(LocalDate.now());
+
+        assess(tokenA, marina, body, 422);
+    }
+
+    @Test
+    @DisplayName("registra a dobra supraespinhal e a bioimpedância")
+    void recordsSupraspinalAndBioimpedance() throws Exception {
+        String body = """
+                {"date":"%s","weightKg":62,"heightCm":165,
+                 "skinfolds":{"SUPRASPINAL":14.5},
+                 "heightSittingCm":86,"heightKneeCm":49,
+                 "diameterHumerus":6.2,"diameterWrist":5.1,"diameterFemur":9.0,
+                 "biaFatPercentage":22.4,"biaMuscleMassKg":41.2,
+                 "biaVisceralFat":4,"biaMetabolicAge":27}""".formatted(LocalDate.now());
 
         JsonNode a = assess(tokenA, marina, body, 201);
 
-        assertThat(a.get("circumferences").get("waist").decimalValue()).isEqualByComparingTo("80");
+        assertThat(a.get("skinfolds").get("SUPRASPINAL").decimalValue())
+                .isEqualByComparingTo("14.50");
+        assertThat(a.get("heightKneeCm").decimalValue()).isEqualByComparingTo("49");
+        assertThat(a.get("diameterFemur").decimalValue()).isEqualByComparingTo("9.0");
+        // A bioimpedância entra como o aparelho informou, sem recálculo.
+        assertThat(a.get("biaFatPercentage").decimalValue()).isEqualByComparingTo("22.4");
+        assertThat(a.get("biaMetabolicAge").asInt()).isEqualTo(27);
+    }
+
+    @Test
+    @DisplayName("não calcula a relação com apenas uma medida")
+    void notCalculatesRatioComMeasure() throws Exception {
+        String body = """
+                {"date":"%s","circumferences":[{"site":"WAIST","side":"SINGLE","valueCm":80}]}""".formatted(LocalDate.now());
+
+        JsonNode a = assess(tokenA, marina, body, 201);
+
+        assertThat(a.get("circumferences").get(0).get("site").asText()).isEqualTo("WAIST");
+        assertThat(a.get("circumferences").get(0).get("valueCm").decimalValue())
+                .isEqualByComparingTo("80");
         assertThat(a.has("ratioWaistHip")).isFalse();
     }
 
@@ -373,7 +443,7 @@ class AnthropometryTest {
     @DisplayName("não compara medida ausente em uma das avaliações")
     void notComparesMeasureMissing() throws Exception {
         assess(tokenA, marina, """
-                {"date":"%s","weightKg":72,"heightCm":170,"circumferences":{"waist":82}}"""
+                {"date":"%s","weightKg":72,"heightCm":170,"circumferences":[{"site":"WAIST","side":"SINGLE","valueCm":82}]}"""
                 .formatted(LocalDate.now().minusDays(30)), 201);
         assess(tokenA, marina, weightEHeight(70, 170), 201);
 

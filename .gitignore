@@ -34,3 +34,16 @@ Thumbs.db
 # ------------------------------------------------------------------ saídas
 *.log
 /scratchpad/
+
+# ------------------------------------------------------------------- testes
+# Artefatos de execução do Playwright: rastro, vídeo e captura de cada falha.
+# São derivados e pesados, e só dizem respeito à máquina que rodou a suíte.
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/.playwright/
+
+# A tela compilada dentro do JAR. Quem gera é o Dockerfile, copiando o dist/
+# do front para cá. É artefato de build, e commitá-lo poria duas versões da
+# mesma tela no repositório — a do código e a que alguém compilou um dia.
+backend/src/main/resources/static/

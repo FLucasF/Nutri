@@ -100,6 +100,23 @@ class HandoutTest {
 
     // ---------------------------------------------------------------- library
 
+    /**
+     * O texto da orientação, sem a formatação.
+     *
+     * O corpo passou a ser documento do editor. Estes testes se importam com o
+     * que está escrito, e não com a representação — comparar o JSON cru faria
+     * eles quebrarem a cada recurso novo do editor, sem nada ter piorado.
+     */
+    private String textOf(JsonNode body) throws Exception {
+        String raw = body.asText();
+        if (!raw.startsWith("{")) {
+            return raw;
+        }
+        var out = new StringBuilder();
+        json.readTree(raw).findValues("text").forEach(node -> out.append(node.asText()));
+        return out.toString();
+    }
+
     @Test
     @DisplayName("o sistema traz modelos, e eles não são editáveis")
     void systemNotAreEditableTemplates() throws Exception {
@@ -163,7 +180,7 @@ class HandoutTest {
                 {"handoutId":%d}""".formatted(id), 201);
 
         assertThat(attachment.get("title").asText()).isEqualTo("Como montar o prato");
-        assertThat(attachment.get("body").asText()).isEqualTo("Metade de vegetais.");
+        assertThat(textOf(attachment.get("body"))).isEqualTo("Metade de vegetais.");
         assertThat(attachment.get("handoutId").asLong()).isEqualTo(id);
     }
 
@@ -183,7 +200,7 @@ class HandoutTest {
                 .andExpect(status().isOk());
 
         JsonNode attached = getJson(token, "/api/prescriptions/" + plan + "/handouts").get(0);
-        assertThat(attached.get("body").asText())
+        assertThat(textOf(attached.get("body")))
                 .as("o paciente recebeu 2 litros; corrigir o modelo depois nao reescreve isso")
                 .isEqualTo("Beba 2 litros.");
     }
@@ -203,7 +220,7 @@ class HandoutTest {
                                 {"title":"Hidratacao","body":"Beba 2,5 litros — voce treina."}"""))
                 .andExpect(status().isOk());
 
-        assertThat(getJson(token, "/api/handouts/" + id).get("body").asText())
+        assertThat(textOf(getJson(token, "/api/handouts/" + id).get("body")))
                 .isEqualTo("Beba 2 litros.");
     }
 
@@ -404,6 +421,6 @@ class HandoutTest {
                 .andExpect(status().isNoContent());
 
         JsonNode attached = getJson(token, "/api/prescriptions/" + plan + "/handouts").get(0);
-        assertThat(attached.get("body").asText()).isEqualTo("Beba 2 litros.");
+        assertThat(textOf(attached.get("body"))).isEqualTo("Beba 2 litros.");
     }
 }

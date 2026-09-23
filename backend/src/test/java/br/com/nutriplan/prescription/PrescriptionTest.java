@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -17,7 +18,9 @@ import java.math.RoundingMode;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -200,8 +203,274 @@ class PrescriptionTest {
     }
 
     @Test
-    @DisplayName("substituições só existem no método por equivalentes")
-    void substitutionsRequireMethodCompatible() throws Exception {
+    @DisplayName("a foto da refeição é anexada, lida e sai no PDF")
+    void mealPhotoIsAttachedReadAndPrinted() throws Exception {
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", planComArroz(4), 201);
+        long planId = plan.get("id").asLong();
+        long mealId = plan.get("meals").get(0).get("id").asLong();
+        assertThat(plan.get("meals").get(0).get("hasPhoto").asBoolean()).isFalse();
+
+        int withoutPhoto = pdfOf(planId).length;
+
+        var file = new MockMultipartFile("file", "prato.png", "image/png", PNG_1X1);
+        mvc.perform(multipart("/api/prescriptions/" + planId + "/meals/" + mealId + "/photo")
+                        .file(file)
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isNoContent());
+
+        JsonNode reread = getJson(tokenA, "/api/prescriptions/" + planId);
+        assertThat(reread.get("meals").get(0).get("hasPhoto").asBoolean()).isTrue();
+        assertThat(reread.get("meals").get(0).get("photoName").asText()).isEqualTo("prato.png");
+
+        // Sai no PDF: é onde ele quer ver a foto, não só na tela.
+        assertThat(pdfOf(planId).length).isGreaterThan(withoutPhoto);
+
+        mvc.perform(get("/api/prescriptions/" + planId + "/meals/" + mealId + "/photo")
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("a foto precisa ser imagem")
+    void thePhotoHasToBeAnImage() throws Exception {
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", planComArroz(4), 201);
+        long planId = plan.get("id").asLong();
+        long mealId = plan.get("meals").get(0).get("id").asLong();
+
+        var file = new MockMultipartFile("file", "planilha.csv", "text/csv", "a,b".getBytes());
+        mvc.perform(multipart("/api/prescriptions/" + planId + "/meals/" + mealId + "/photo")
+                        .file(file)
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().is(422));
+    }
+
+    /** PNG 1x1 válido, o menor arquivo que o OpenPDF aceita desenhar. */
+    private static final byte[] PNG_1X1 = java.util.Base64.getDecoder().decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+
+    private byte[] pdfOf(long planId) throws Exception {
+        return mvc.perform(get("/api/prescriptions/" + planId + "/pdf")
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+    }
+
+    @Test
+    @DisplayName("favorita guarda uma cópia, que sobrevive ao plano de origem")
+    void favouriteSurvivesItsSourcePlan() throws Exception {
+        // A favorita é cópia e não referência: apagar o plano de onde ela veio
+        // não pode levar junto a refeição que ele salvou.
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", planComArroz(4), 201);
+        long planId = plan.get("id").asLong();
+
+        JsonNode saved = postJson(tokenA, "/api/meal-favorites", """
+               {"name":"Almoço padrão","meal":{"name":"Almoço","items":[
+                  {"foodId":%d,"measureId":%d,"quantity":4}]}}"""
+                .formatted(arrozId, arrozMeasureId), 201);
+
+        assertThat(saved.get("name").asText()).isEqualTo("Almoço padrão");
+        assertThat(saved.get("mealName").asText()).isEqualTo("Almoço");
+        assertThat(saved.get("itemsTotal").asInt()).isEqualTo(1);
+        assertThat(saved.get("energyKcal").decimalValue().signum()).isPositive();
+
+        mvc.perform(delete("/api/prescriptions/" + planId)
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isNoContent());
+
+        JsonNode still = getJson(tokenA, "/api/meal-favorites");
+        assertThat(still).hasSize(1);
+        assertThat(still.get(0).get("name").asText()).isEqualTo("Almoço padrão");
+    }
+
+    @Test
+    @DisplayName("favoritar funciona antes de o plano existir")
+    void favouritingWorksBeforeThePlanIsSaved() throws Exception {
+        // No editor a refeição pode ainda não ter sido salva. Exigir que ele
+        // salvasse o plano antes seria burocracia para guardar o próprio
+        // trabalho.
+        JsonNode saved = postJson(tokenA, "/api/meal-favorites", """
+               {"name":"Café rápido","meal":{"name":"Café da Manhã","items":[
+                  {"foodId":%d,"measureId":%d,"quantity":2},
+                  {"kind":"SEPARATOR"},
+                  {"foodId":%d,"measureId":%d,"quantity":1}]}}"""
+                .formatted(arrozId, arrozMeasureId, arrozId, arrozMeasureId), 201);
+
+        // O separador vem junto: ele faz parte de como a refeição foi montada.
+        JsonNode items = getJson(tokenA, "/api/meal-favorites/" + saved.get("id").asLong())
+                .get("items");
+        assertThat(items).hasSize(3);
+        assertThat(items.get(1).get("kind").asText()).isEqualTo("SEPARATOR");
+    }
+
+    @Test
+    @DisplayName("refeição vazia não vira favorita")
+    void anEmptyMealIsNotWorthSaving() throws Exception {
+        postJson(tokenA, "/api/meal-favorites",
+                "{\"name\":\"Nada\",\"meal\":{\"name\":\"Almoço\",\"items\":[]}}", 422);
+    }
+
+    @Test
+    @DisplayName("a favorita de um consultório não existe para o outro")
+    void favouritesDoNotCrossAccounts() throws Exception {
+        JsonNode saved = postJson(tokenA, "/api/meal-favorites", """
+               {"name":"Almoço padrão","meal":{"name":"Almoço","items":[
+                  {"foodId":%d,"measureId":%d,"quantity":4}]}}"""
+                .formatted(arrozId, arrozMeasureId), 201);
+
+        assertThat(getJson(tokenB, "/api/meal-favorites")).isEmpty();
+        mvc.perform(get("/api/meal-favorites/" + saved.get("id").asLong())
+                        .header("Authorization", "Bearer " + tokenB))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("compara o prescrito com o teórico e classifica a faixa")
+    void comparesPrescribedAgainstPlanned() throws Exception {
+        // A aba de distribuição da página 32. Meta de 2000 kcal com 30/50/20:
+        // o teórico de proteína é 2000 × 0,30 ÷ 4 = 150 g.
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", """
+               {"title":"Plano com meta","patientId":%d,"method":"FOODS","template":false,
+                "targetEnergyKcal":2000,
+                "targetProteinPct":30,"targetCarbohydratePct":50,"targetFatPct":20,
+                "targetWeightKg":80,
+                "meals":[{"name":"Almoço","items":[
+                   {"foodId":%d,"measureId":%d,"quantity":4}]}]}"""
+                .formatted(patient, arrozId, arrozMeasureId), 201);
+
+        JsonNode rows = plan.get("dayTotal").get("comparison");
+        assertThat(rows).hasSize(3);
+
+        JsonNode protein = rows.get(0);
+        assertThat(protein.get("macro").asText()).isEqualTo("protein");
+        assertThat(protein.get("theoreticalG").decimalValue()).isEqualByComparingTo("150.0");
+        // g/kg sobre o peso programado, que foi a resposta dele à pergunta 1.
+        assertThat(protein.get("theoreticalPerKg").decimalValue()).isEqualByComparingTo("1.88");
+
+        // Quatro colheres de arroz ficam muito abaixo de 150 g de proteína.
+        assertThat(protein.get("band").asText()).isEqualTo("BELOW");
+        assertThat(protein.get("differenceG").decimalValue().signum()).isNegative();
+    }
+
+    @Test
+    @DisplayName("a faixa de 95 a 105% é o que decide a cor")
+    void theBandIsWhatDecidesTheColour() throws Exception {
+        // Meta de 100 kcal só de proteína: 25 g de teórico. O arroz entra com
+        // o que entra; o que se verifica aqui é o corte, não o alimento.
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", """
+               {"title":"Faixa","patientId":%d,"method":"FOODS","template":false,
+                "targetEnergyKcal":2000,
+                "targetProteinPct":0,"targetCarbohydratePct":100,"targetFatPct":0,
+                "meals":[{"name":"Almoço","items":[
+                   {"foodId":%d,"measureId":%d,"quantity":4}]}]}"""
+                .formatted(patient, arrozId, arrozMeasureId), 201);
+
+        JsonNode carb = plan.get("dayTotal").get("comparison").get(1);
+        assertThat(carb.get("macro").asText()).isEqualTo("carbohydrate");
+        // 2000 kcal ÷ 4 = 500 g de teórico; quatro colheres ficam bem abaixo.
+        assertThat(carb.get("theoreticalG").decimalValue()).isEqualByComparingTo("500.0");
+        assertThat(carb.get("band").asText()).isEqualTo("BELOW");
+    }
+
+    @Test
+    @DisplayName("distribuição que não soma 100% é recusada com a soma na mensagem")
+    void refusesADistributionThatDoesNotAddUp() throws Exception {
+        String answer = mvc.perform(post("/api/prescriptions")
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                               {"title":"Torta","patientId":%d,"method":"FOODS","template":false,
+                                "targetEnergyKcal":2000,
+                                "targetProteinPct":30,"targetCarbohydratePct":50,
+                                "targetFatPct":30,
+                                "meals":[]}""".formatted(patient)))
+                .andExpect(status().is(422))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(json.readTree(answer).get("message").asText()).contains("110");
+    }
+
+    @Test
+    @DisplayName("sem meta energética não há comparação para mostrar")
+    void noTargetMeansNoComparison() throws Exception {
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", """
+               {"title":"Sem meta","patientId":%d,"method":"FOODS","template":false,
+                "meals":[{"name":"Almoço","items":[
+                   {"foodId":%d,"measureId":%d,"quantity":4}]}]}"""
+                .formatted(patient, arrozId, arrozMeasureId), 201);
+
+        // Comparar contra zero mostraria uma diferença que ninguém planejou.
+        assertThat(plan.get("dayTotal").get("comparison")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("refeição fora da contabilização não soma no dia, mas soma em si")
+    void mealOutOfTheCalculationStillTotalsItself() throws Exception {
+        // É como se prescreve refeição substituta: duas opções de almoço não
+        // contam como dois almoços, e ele precisa saber quanto vale cada uma.
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", """
+               {"title":"Almoço com opção","patientId":%d,"method":"FOODS","template":false,
+                "meals":[
+                  {"name":"Almoço","items":[{"foodId":%d,"measureId":%d,"quantity":4}]},
+                  {"name":"Almoço (opção 2)","inCalculation":false,
+                   "items":[{"foodId":%d,"measureId":%d,"quantity":4}]}
+                ]}""".formatted(patient, arrozId, arrozMeasureId, arrozId, arrozMeasureId), 201);
+
+        JsonNode meals = plan.get("meals");
+        assertThat(meals.get(0).get("inCalculation").asBoolean()).isTrue();
+        assertThat(meals.get(1).get("inCalculation").asBoolean()).isFalse();
+
+        BigDecimal ofFirst = meals.get(0).get("total").get("composition")
+                .get("energyKcal").decimalValue();
+        BigDecimal ofSecond = meals.get(1).get("total").get("composition")
+                .get("energyKcal").decimalValue();
+        // A segunda continua sendo calculada: ela vale o mesmo que a primeira.
+        assertThat(ofSecond).isEqualByComparingTo(ofFirst);
+
+        // Mas o dia soma só uma vez.
+        assertThat(plan.get("dayTotal").get("composition").get("energyKcal").decimalValue())
+                .isEqualByComparingTo(ofFirst);
+    }
+
+    @Test
+    @DisplayName("o separador guarda a posição e não entra na conta")
+    void separatorHoldsAPositionAndDoesNotCount() throws Exception {
+        // A barra que ele descreve: "eu quero que o paciente coma o farelo de
+        // aveia com o mamão... isso iria separar".
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", """
+               {"title":"Café separado","patientId":%d,"method":"FOODS","template":false,
+                "meals":[{"name":"Café da Manhã","items":[
+                   {"foodId":%d,"measureId":%d,"quantity":2},
+                   {"kind":"SEPARATOR"},
+                   {"foodId":%d,"measureId":%d,"quantity":2}
+                ]}]}""".formatted(patient, arrozId, arrozMeasureId, arrozId, arrozMeasureId), 201);
+
+        JsonNode items = plan.get("meals").get(0).get("items");
+        assertThat(items).hasSize(3);
+        assertThat(items.get(1).get("kind").asText()).isEqualTo("SEPARATOR");
+        // Ele fica entre os dois alimentos, que é a única coisa que ele faz.
+        assertThat(items.get(0).get("kind").asText()).isEqualTo("FOOD");
+        assertThat(items.get(2).get("kind").asText()).isEqualTo("FOOD");
+
+        // E não conta: dois itens somam, o separador não.
+        assertThat(plan.get("dayTotal").get("itemsInCalculation").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("o nome da refeição cabe a frase que ele escreve")
+    void mealNameFitsHisSentence() throws Exception {
+        String longName = "Café da Manhã – Mamão c/ Farelo de Aveia, Pão c/ Ovos Fritos "
+                + "e Café c/ Açúcar";
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", """
+               {"title":"Plano","patientId":%d,"method":"FOODS","template":false,
+                "meals":[{"name":"%s","items":[{"foodId":%d,"measureId":%d,"quantity":2}]}]}"""
+                .formatted(patient, longName, arrozId, arrozMeasureId), 201);
+
+        assertThat(plan.get("meals").get(0).get("name").asText()).isEqualTo(longName);
+    }
+
+    @Test
+    @DisplayName("o plano por alimentos aceita substituição no item")
+    void foodPlanAcceptsSubstitutions() throws Exception {
         String body = """
                {"title":"Plano com troca","patientId":%d,"method":"FOODS","template":false,
                 "meals":[{"name":"Café","items":[
@@ -209,13 +478,25 @@ class PrescriptionTest {
                     "substitutions":[{"description":"1 tapioca média","quantity":60}]}
                 ]}]}""".formatted(patient, arrozId, arrozMeasureId);
 
-        postJson(tokenA, "/api/prescriptions", body, 422);
-
-        JsonNode ok = postJson(tokenA, "/api/prescriptions",
-                body.replace("\"method\":\"FOODS\"", "\"method\":\"SUBSTITUTIONS\""), 201);
-        JsonNode substitutions = ok.get("meals").get(0).get("items").get(0).get("substitutions");
+        JsonNode plan = postJson(tokenA, "/api/prescriptions", body, 201);
+        JsonNode substitutions = plan.get("meals").get(0).get("items").get(0).get("substitutions");
         assertThat(substitutions).hasSize(1);
         assertThat(substitutions.get(0).get("serving").asText()).isEqualTo("60 g");
+    }
+
+    @Test
+    @DisplayName("substituição pede porção, então o plano qualitativo recusa")
+    void substitutionsRequireAQuantifiedMethod() throws Exception {
+        // The swap is portion for portion; a qualitative plan has no portion to
+        // put on either side of it.
+        String body = """
+               {"title":"Plano sem porção","patientId":%d,"method":"QUALITATIVE","template":false,
+                "meals":[{"name":"Café","items":[
+                   {"description":"fruta da estação",
+                    "substitutions":[{"description":"1 tapioca média","quantity":60}]}
+                ]}]}""".formatted(patient);
+
+        postJson(tokenA, "/api/prescriptions", body, 422);
     }
 
     @Test

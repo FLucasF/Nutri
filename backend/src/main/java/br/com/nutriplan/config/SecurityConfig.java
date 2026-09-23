@@ -62,6 +62,18 @@ public class SecurityConfig {
                 // Password recovery is, by definition, for whoever cannot get in.
                 .requestMatchers("/api/auth/recover-password", "/api/auth/reset-password").permitAll()
                 .requestMatchers("/actuator/health", "/h2/**").permitAll()
+                // A aplicação do navegador. Ela é pública porque é só HTML,
+                // CSS e JavaScript: quem entra nela ainda precisa de token
+                // para qualquer /api, e é a própria tela que pede o login.
+                // Sem isto, a tela de acesso viria com 403 e ninguém entraria.
+                .requestMatchers(HttpMethod.GET,
+                        "/", "/index.html", "/assets/**", "/favicon.ico", "/robots.txt")
+                    .permitAll()
+                .requestMatchers(HttpMethod.GET,
+                        "/patients/**", "/prescriptions/**", "/plan/**", "/form/**",
+                        "/schedule/**", "/foods/**", "/recipes/**", "/handouts/**",
+                        "/questionnaires/**", "/finance/**", "/team/**", "/access")
+                    .permitAll()
                 .requestMatchers("/docs/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                 // A plan opened by the link handed to the patient. The authorization
                 // is possession of the identifier, a UUID; the service only
@@ -81,6 +93,7 @@ public class SecurityConfig {
                 // and the finances belong to the owner.
                 .requestMatchers("/api/finance/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/prescriptions/**").hasAnyRole("NUTRITIONIST", "ADMIN")
+                .requestMatchers("/api/meal-favorites/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/recipes/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/handouts/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/labtests/**").hasAnyRole("NUTRITIONIST", "ADMIN")
@@ -90,10 +103,25 @@ public class SecurityConfig {
                 .requestMatchers("/api/assessments/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/patients/*/assessments/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/patients/*/progress").hasAnyRole("NUTRITIONIST", "ADMIN")
+                // O relatório de evolução é leitura clínica, como a avaliação
+                // de onde ele sai: a recepção agenda, não interpreta dobra.
+                .requestMatchers("/api/patients/*/anthropometry-report")
+                    .hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/patients/*/labtests/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/patients/*/requests-from-labtest/**")
                         .hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/anthropometry/**").hasAnyRole("NUTRITIONIST", "ADMIN")
+                // The anamnesis is the consultation written out: the most
+                // sensitive text in the chart, and none of it is front-desk work.
+                .requestMatchers("/api/anamneses/**").hasAnyRole("NUTRITIONIST", "ADMIN")
+                .requestMatchers("/api/anamnesis-fields").hasAnyRole("NUTRITIONIST", "ADMIN")
+                .requestMatchers("/api/patients/*/anamneses").hasAnyRole("NUTRITIONIST", "ADMIN")
+                // As anotações são a leitura que o profissional faz do paciente,
+                // e não recado de recepção.
+                .requestMatchers("/api/patients/*/notes/**").hasAnyRole("NUTRITIONIST", "ADMIN")
+                // Prescrever energia é ato do nutricionista, como prescrever cardápio.
+                .requestMatchers("/api/energy-plans/**").hasAnyRole("NUTRITIONIST", "ADMIN")
+                .requestMatchers("/api/patients/*/energy-plans").hasAnyRole("NUTRITIONIST", "ADMIN")
                 // Managing the team belongs to the account owner.
                 .requestMatchers("/api/users/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 // What is left — schedule and patient registration — the receptionist does.

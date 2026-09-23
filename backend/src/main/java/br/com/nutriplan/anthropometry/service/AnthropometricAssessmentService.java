@@ -1,11 +1,16 @@
 package br.com.nutriplan.anthropometry.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import br.com.nutriplan.shared.richtext.RichTextDocument;
 import br.com.nutriplan.anthropometry.domain.AnthropometricAssessment;
 import br.com.nutriplan.anthropometry.domain.BmiClassification;
 import br.com.nutriplan.anthropometry.domain.Skinfold;
 import br.com.nutriplan.anthropometry.domain.EnergyExpenditureEquation;
 import br.com.nutriplan.anthropometry.domain.CompositionProtocol;
+import br.com.nutriplan.anthropometry.domain.AssessmentCircumference;
 import br.com.nutriplan.anthropometry.domain.CardiometabolicRisk;
+import br.com.nutriplan.anthropometry.domain.CircumferenceSite;
+import br.com.nutriplan.anthropometry.domain.Side;
 import br.com.nutriplan.anthropometry.domain.ChildClassification;
 import br.com.nutriplan.anthropometry.domain.GestationalGain;
 import br.com.nutriplan.anthropometry.domain.GrowthIndicator;
@@ -39,15 +44,13 @@ public class AnthropometricAssessmentService {
 
     private static final int SCALE = 2;
 
-    /** Accepted circumferences, mapping the API key to the entity field. */
-    private static final List<String> CIRCUMFERENCES = List.of(
-            "waist", "hip", "abdomen", "arm", "forearm", "thigh", "calf", "chest");
-
     private final AnthropometricAssessmentRepository assessmentRepository;
     private final PatientRepository patientRepository;
     private final GrowthChartRepository chartRepository;
     private final ZScoreCalculator scoreZ;
     private final CurrentContext contextCurrent;
+    private final AnthropometryReportGenerator reportGenerator;
+    private final ObjectMapper mapper;
 
     // ------------------------------------------------------------------ reading
 
@@ -117,9 +120,28 @@ public class AnthropometricAssessmentService {
 
         assessment.setWeightKg(req.weightKg());
         assessment.setHeightCm(req.heightCm());
-        assessment.setNotes(req.notes());
+        assessment.setNotes(RichTextDocument.ofTextOrDocument(req.notes(), mapper).json());
         assessment.setGestationalWeek(req.gestationalWeek());
         assessment.setWeightGestationalPreKg(req.weightGestationalPreKg());
+
+        assessment.setHeightSittingCm(req.heightSittingCm());
+        assessment.setHeightKneeCm(req.heightKneeCm());
+        assessment.setDiameterHumerus(req.diameterHumerus());
+        assessment.setDiameterWrist(req.diameterWrist());
+        assessment.setDiameterFemur(req.diameterFemur());
+
+        // A bioimpedância é copiada como veio do aparelho. Nada aqui recalcula
+        // esses números: substituir medida por estimativa e continuar chamando
+        // de medida é o tipo de coisa que ninguém percebe depois.
+        assessment.setBiaFatPercentage(req.biaFatPercentage());
+        assessment.setBiaFatMassKg(req.biaFatMassKg());
+        assessment.setBiaMusclePercentage(req.biaMusclePercentage());
+        assessment.setBiaMuscleMassKg(req.biaMuscleMassKg());
+        assessment.setBiaLeanMassKg(req.biaLeanMassKg());
+        assessment.setBiaBoneMassKg(req.biaBoneMassKg());
+        assessment.setBiaVisceralFat(req.biaVisceralFat());
+        assessment.setBiaBodyWaterPercentage(req.biaBodyWaterPercentage());
+        assessment.setBiaMetabolicAge(req.biaMetabolicAge());
 
         applySkinfolds(req.skinfolds(), assessment);
         applyCircumferences(req.circumferences(), assessment);
@@ -240,6 +262,25 @@ public class AnthropometricAssessmentService {
      * protocol has its own standard error and the difference between them would
      * be read as a change in the patient.
      */
+    /**
+     * O relatorio de evolucao em PDF, com os graficos e as tabelas comparativas.
+     *
+     * Vive no servico e nao no controlador porque as circunferencias sao uma
+     * colecao preguicosa: montar a folha fora da transacao falharia na
+     * primeira avaliacao, com um erro que nao menciona PDF nenhum.
+     */
+    @Transactional(readOnly = true)
+    public Report report(Long patientId) {
+        Long accountId = contextCurrent.accountId();
+        Patient patient = requirePatient(patientId, accountId);
+        List<AnthropometricAssessment> series =
+                assessmentRepository.findByAccountIdAndPatientIdOrderByDateAscIdAsc(
+                        accountId, patientId);
+        return new Report(patient.getName(), reportGenerator.generate(patient.getName(), series));
+    }
+
+    public record Report(String patientName, byte[] content) {}
+
     @Transactional(readOnly = true)
     public AnthropometryDtos.ProgressResponse progress(Long patientId) {
         Long accountId = contextCurrent.accountId();
@@ -278,9 +319,11 @@ public class AnthropometricAssessmentService {
         changes.add(changeSimple("bmi", "IMC",
                 current.getBmi(), reference.getBmi()));
         changes.add(changeSimple("circumferenceWaist", "Cintura (cm)",
-                current.getCircumferenceWaist(), reference.getCircumferenceWaist()));
+                current.circumference(CircumferenceSite.WAIST, Side.SINGLE),
+                reference.circumference(CircumferenceSite.WAIST, Side.SINGLE)));
         changes.add(changeSimple("circumferenceHip", "Quadril (cm)",
-                current.getCircumferenceHip(), reference.getCircumferenceHip()));
+                current.circumference(CircumferenceSite.HIP, Side.SINGLE),
+                reference.circumference(CircumferenceSite.HIP, Side.SINGLE)));
         changes.add(changeSimple("massLeanKg", "Massa magra (kg)",
                 current.getMassLeanKg(), reference.getMassLeanKg()));
 
@@ -334,8 +377,13 @@ public class AnthropometricAssessmentService {
 
         return new AnthropometryDtos.AssessmentResponse(
                 a.getId(), a.getPatientId(), patient.getName(), a.getDate(),
-                a.getWeightKg(), a.getHeightCm(),
-                skinfoldsAsMap(a), circumferencesAsMap(a),
+                a.getWeightKg(), a.getHeightCm(), age,
+                skinfoldsAsMap(a), circumferencesOf(a),
+                a.getDiameterHumerus(), a.getDiameterWrist(), a.getDiameterFemur(),
+                a.getHeightSittingCm(), a.getHeightKneeCm(),
+                a.getBiaFatPercentage(), a.getBiaFatMassKg(), a.getBiaMusclePercentage(),
+                a.getBiaMuscleMassKg(), a.getBiaLeanMassKg(), a.getBiaBoneMassKg(),
+                a.getBiaVisceralFat(), a.getBiaBodyWaterPercentage(), a.getBiaMetabolicAge(),
                 bmi, classify(bmi, age),
                 rcq, classifyRisk(rcq, patient),
                 a.getProtocolComposition() == null ? null
@@ -513,35 +561,39 @@ public class AnthropometricAssessmentService {
         return null;
     }
 
-    private void applyCircumferences(Map<String, BigDecimal> measures,
-                                        AnthropometricAssessment a) {
-        a.setCircumferenceWaist(null);
-        a.setCircumferenceHip(null);
-        a.setCircumferenceAbdomen(null);
-        a.setCircumferenceArm(null);
-        a.setCircumferenceForearm(null);
-        a.setCircumferenceThigh(null);
-        a.setCircumferenceCalf(null);
-        a.setCircumferenceChest(null);
+    /**
+     * Rewrites the assessment's circumferences from the request.
+     *
+     * The whole set is replaced rather than merged: a measurement that left the
+     * form left because it was not taken this time, and keeping the old value
+     * would attribute today's date to last month's tape measure.
+     */
+    private void applyCircumferences(List<AnthropometryDtos.CircumferenceValue> measures,
+                                     AnthropometricAssessment a) {
         if (measures == null) {
+            a.clearCircumferences();
             return;
         }
-        measures.forEach((key, value) -> {
-            if (value == null || value.signum() <= 0) {
-                return;
+        var seen = new java.util.HashSet<String>();
+        for (var measure : measures) {
+            if (measure == null || measure.valueCm() == null || measure.valueCm().signum() <= 0) {
+                continue;
             }
-            switch (key.toLowerCase()) {
-                case "waist" -> a.setCircumferenceWaist(value);
-                case "hip" -> a.setCircumferenceHip(value);
-                case "abdomen" -> a.setCircumferenceAbdomen(value);
-                case "arm" -> a.setCircumferenceArm(value);
-                case "forearm" -> a.setCircumferenceForearm(value);
-                case "thigh" -> a.setCircumferenceThigh(value);
-                case "calf" -> a.setCircumferenceCalf(value);
-                case "chest" -> a.setCircumferenceChest(value);
-                default -> log.debug("Circunferência desconhecida ignorada: {}", key);
+            Side side = measure.side() == null ? Side.SINGLE : measure.side();
+            if (!measure.site().isBilateral() && side != Side.SINGLE) {
+                throw new BusinessRuleException(
+                        measure.site().getDescription() + " não é medida por lado.");
             }
-        });
+            if (!seen.add(measure.site().name() + "|" + side)) {
+                throw new BusinessRuleException(
+                        "A mesma circunferência chegou duas vezes: "
+                                + measure.site().getDescription() + ".");
+            }
+            a.set(measure.site(), side, measure.valueCm());
+        }
+        // O que nao veio no pedido some — mas por remocao do que sobrou, e nao
+        // apagando tudo antes de reescrever.
+        a.keepOnly(seen);
     }
 
     private Map<String, BigDecimal> skinfoldsAsMap(AnthropometricAssessment a) {
@@ -552,18 +604,14 @@ public class AnthropometricAssessmentService {
     }
 
     /** Only the circumferences actually measured enter the response. */
-    private Map<String, BigDecimal> circumferencesAsMap(AnthropometricAssessment a) {
-        Map<String, BigDecimal> map = new LinkedHashMap<>();
-        BigDecimal[] values = {
-                a.getCircumferenceWaist(), a.getCircumferenceHip(), a.getCircumferenceAbdomen(), a.getCircumferenceArm(),
-                a.getCircumferenceForearm(), a.getCircumferenceThigh(), a.getCircumferenceCalf(), a.getCircumferenceChest()
-        };
-        for (int i = 0; i < CIRCUMFERENCES.size(); i++) {
-            if (values[i] != null) {
-                map.put(CIRCUMFERENCES.get(i), values[i]);
-            }
-        }
-        return map;
+    private List<AnthropometryDtos.CircumferenceValue> circumferencesOf(AnthropometricAssessment a) {
+        return a.getCircumferences().stream()
+                .sorted(java.util.Comparator
+                        .comparing((AssessmentCircumference m) -> m.getSite().ordinal())
+                        .thenComparing(m -> m.getSide().ordinal()))
+                .map(m -> new AnthropometryDtos.CircumferenceValue(
+                        m.getSite(), m.getSide(), m.getValueCm()))
+                .toList();
     }
 
     private Patient requirePatient(Long patientId, Long accountId) {

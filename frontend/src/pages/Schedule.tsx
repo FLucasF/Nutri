@@ -243,7 +243,7 @@ function ScheduleSubscription({ onClose }: { onClose: () => void }) {
   }, []);
 
   function calendarUrl(token: string) {
-    return `${window.location.origin}/api/publico/agenda/${token}.ics`;
+    return `${window.location.origin}/api/public/schedule/${token}.ics`;
   }
 
   async function generate() {

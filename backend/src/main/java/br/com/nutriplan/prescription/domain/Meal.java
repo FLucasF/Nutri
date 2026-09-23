@@ -37,22 +37,71 @@ import java.util.Objects;
 @NoArgsConstructor
 public class Meal extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "plan_id", nullable = false,
+    /**
+     * The plan this meal belongs to, or null when it is a saved favourite.
+     *
+     * A favourite meal is a meal with no plan: same structure, same items, same
+     * substitutions, and the copy routine that already exists works in both
+     * directions. What makes it safe is that nothing outside {@link MealPlan}
+     * ever reads this field.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plan_id",
             foreignKey = @ForeignKey(name = "fk_refeicao_plano"))
     private MealPlan plan;
 
-    @Column(nullable = false, length = 100)
+    /** The practice that owns the favourite. Null for a meal inside a plan. */
+    @Column(name = "account_id")
+    private Long accountId;
+
+    /** The name the favourite was saved under. Null for a meal inside a plan. */
+    @Column(name = "favorite_name", length = 150)
+    private String favoriteName;
+
+    public boolean isFavorite() {
+        return plan == null;
+    }
+
+    /**
+     * Nome da refeição, que o cliente usa como frase.
+     *
+     * O exemplo dele: "Café da Manhã – Mamão c/ Farelo de Aveia, Pão c/ Ovos
+     * Fritos e Café c/ Açúcar". Por isso 250 e não 100.
+     */
+    @Column(nullable = false, length = 250)
     private String name;
+
+    /**
+     * Whether this meal counts towards the day.
+     *
+     * Turning it off is how a substitute meal is prescribed: two options for
+     * lunch should not add up as two lunches. The meal's own total is still
+     * calculated — the professional needs to know what the option not being
+     * counted is worth.
+     */
+    @Column(name = "in_calculation", nullable = false)
+    private boolean inCalculation = true;
+
+    /** Name and type here; the bytes in meal_photo. */
+    @Column(name = "photo_name", length = 200)
+    private String photoName;
+
+    @Column(name = "photo_type", length = 100)
+    private String photoType;
+
+    public boolean hasPhoto() {
+        return photoName != null;
+    }
 
     @Column
     private LocalTime time;
 
     @Column(name = "sort_order", nullable = false)
-    private Integer order;
+    private Integer order = 0;
 
     /** Guidance specific to the meal, shown to the patient. */
-    @Column(length = 1000)
+    /** Observações da refeição, no formato do editor. Ver RichTextDocument. */
+    @Column(length = 8000)
     private String notes;
 
     // Loaded in a batch: without this, reading a plan with six meals would fire

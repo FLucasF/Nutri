@@ -68,11 +68,11 @@ public class MealPlan extends AccountEntity {
     private LocalDate validityEnd;
 
     /** General guidance, shown to the patient before the meals. */
-    @Column(length = 4000)
+    @Column(length = 20_000)
     private String handouts;
 
     /** The professional's internal note. It never goes out in the patient's link. */
-    @Column(name = "internal_notes", length = 4000)
+    @Column(name = "internal_notes", length = 20_000)
     private String internalNotes;
 
     /** A plan kept as a starting point for others, with no patient attached. */
@@ -82,6 +82,35 @@ public class MealPlan extends AccountEntity {
     /** Daily energy goal, to compare with what was actually prescribed. */
     @Column(name = "target_energy_kcal", precision = 10, scale = 2)
     private java.math.BigDecimal targetEnergyKcal;
+
+    /**
+     * Distribuição planejada, em porcentagem da energia.
+     *
+     * É a coluna "teórico" que ele compara com a prescrita. Sem ela não há
+     * diferença para calcular nem faixa para colorir.
+     */
+    @Column(name = "target_protein_pct", precision = 5, scale = 2)
+    private java.math.BigDecimal targetProteinPct;
+
+    @Column(name = "target_carbohydrate_pct", precision = 5, scale = 2)
+    private java.math.BigDecimal targetCarbohydratePct;
+
+    @Column(name = "target_fat_pct", precision = 5, scale = 2)
+    private java.math.BigDecimal targetFatPct;
+
+    /**
+     * O peso que sustenta o g/kg do relatório.
+     *
+     * É o peso <b>programado</b>, não o atual — foi a resposta dele. Fica
+     * congelado aqui porque o peso atual muda a cada consulta e a distribuição
+     * do plano é de uma data.
+     */
+    @Column(name = "target_weight_kg", precision = 6, scale = 2)
+    private java.math.BigDecimal targetWeightKg;
+
+    /** De qual cálculo energético a meta veio, quando veio de um. */
+    @Column(name = "energy_plan_id")
+    private Long energyPlanId;
 
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("order asc")

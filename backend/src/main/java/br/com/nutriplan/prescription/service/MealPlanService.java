@@ -8,8 +8,10 @@ import br.com.nutriplan.food.repository.HouseholdMeasureRepository;
 import br.com.nutriplan.auth.service.CurrentContext;
 import br.com.nutriplan.patient.domain.Patient;
 import br.com.nutriplan.patient.repository.PatientRepository;
+import br.com.nutriplan.prescription.domain.AdequacyBand;
 import br.com.nutriplan.prescription.domain.ItemSubstitution;
 import br.com.nutriplan.prescription.domain.MealItem;
+import br.com.nutriplan.prescription.domain.MealItemKind;
 import br.com.nutriplan.prescription.domain.PrescriptionMethod;
 import br.com.nutriplan.prescription.domain.MealPlan;
 import br.com.nutriplan.prescription.domain.Meal;
@@ -18,6 +20,7 @@ import br.com.nutriplan.prescription.dto.PrescriptionDtos;
 import br.com.nutriplan.prescription.repository.MealPlanRepository;
 import br.com.nutriplan.shared.error.NotFoundException;
 import br.com.nutriplan.shared.error.BusinessRuleException;
+import br.com.nutriplan.shared.richtext.RichTextDocument;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -46,6 +49,7 @@ public class MealPlanService {
     private final PatientRepository patientRepository;
     private final NutritionalCalculator calculator;
     private final CurrentContext contextCurrent;
+    private final com.fasterxml.jackson.databind.ObjectMapper mapper;
 
     // ------------------------------------------------------------------ reading
 
@@ -204,9 +208,11 @@ public class MealPlanService {
             var nova = new Meal(meal.getName(), meal.getTime());
             nova.setOrder(meal.getOrder());
             nova.setNotes(meal.getNotes());
+            nova.setInCalculation(meal.isInCalculation());
 
             for (MealItem item : meal.getItems()) {
                 var novoItem = new MealItem(item.getDescription());
+                novoItem.setKind(item.getKind());
                 novoItem.setFoodId(item.getFoodId());
                 novoItem.setMeasureId(item.getMeasureId());
                 novoItem.setDescriptionMeasure(item.getDescriptionMeasure());
@@ -241,9 +247,23 @@ public class MealPlanService {
         plan.setPatientId(req.template() ? null : req.patientId());
         plan.setValidityStart(req.validityStart());
         plan.setValidityEnd(req.validityEnd());
-        plan.setHandouts(req.handouts());
-        plan.setInternalNotes(req.internalNotes());
+        plan.setHandouts(RichTextDocument.ofTextOrDocument(req.handouts(), mapper).json());
+        plan.setInternalNotes(
+                RichTextDocument.ofTextOrDocument(req.internalNotes(), mapper).json());
         plan.setTargetEnergyKcal(req.targetEnergyKcal());
+        plan.setTargetProteinPct(req.targetProteinPct());
+        plan.setTargetCarbohydratePct(req.targetCarbohydratePct());
+        plan.setTargetFatPct(req.targetFatPct());
+        plan.setTargetWeightKg(req.targetWeightKg());
+        plan.setEnergyPlanId(req.energyPlanId());
+
+        BigDecimal sumPct = sumOrNull(req.targetProteinPct(),
+                req.targetCarbohydratePct(), req.targetFatPct());
+        if (sumPct != null && sumPct.compareTo(BigDecimal.valueOf(100)) != 0) {
+            throw new BusinessRuleException(
+                    "A distribuição precisa somar 100%. Está somando "
+                            + sumPct.stripTrailingZeros().toPlainString() + "%.");
+        }
 
         if (req.validityStart() != null && req.validityEnd() != null
                 && req.validityEnd().isBefore(req.validityStart())) {
@@ -287,24 +307,74 @@ public class MealPlanService {
         var measures = loadMeasuresRequests(requests, accountId);
 
         for (PrescriptionDtos.MealRequest request : requests) {
-            var meal = new Meal(request.name(), request.time());
-            meal.setNotes(request.notes());
-
-            if (request.items() != null) {
-                for (PrescriptionDtos.ItemRequest itemRequest : request.items()) {
-                    meal.addItem(buildItem(itemRequest, plan.getMethod(), foods, measures));
-                }
-            }
+            var meal = buildMeal(request, plan.getMethod(), foods, measures);
             plan.addMeal(meal);
         }
         plan.renumberMeals();
         plan.getMeals().forEach(Meal::renumberItems);
     }
 
+    /**
+     * Monta uma refeição a partir do pedido.
+     *
+     * Serve o plano e a refeição favorita: uma favorita é uma refeição sem
+     * plano, e montá-la por outro caminho seria manter duas rotinas que teriam
+     * que concordar para sempre.
+     */
+    public Meal buildMeal(PrescriptionDtos.MealRequest request, PrescriptionMethod method,
+                          Long accountId) {
+        var requests = List.of(request);
+        return buildMeal(request, method,
+                loadFoodsRequested(requests, accountId),
+                loadMeasuresRequests(requests, accountId));
+    }
+
+    private Meal buildMeal(PrescriptionDtos.MealRequest request, PrescriptionMethod method,
+                           Map<Long, Food> foods, Map<Long, HouseholdMeasure> measures) {
+        var meal = new Meal(request.name(), request.time());
+        // Observação antiga é frase; observação nova é documento. As duas
+        // entram, e a antiga vira documento de um parágrafo na conversão.
+        meal.setNotes(RichTextDocument.ofTextOrDocument(request.notes(), mapper).json());
+        meal.setInCalculation(request.countsInDay());
+
+        if (request.items() != null) {
+            for (PrescriptionDtos.ItemRequest itemRequest : request.items()) {
+                meal.addItem(buildItem(itemRequest, method, foods, measures));
+            }
+        }
+        meal.renumberItems();
+        return meal;
+    }
+
+    /** Os alimentos usados por um conjunto de refeições, numa consulta só. */
+    public Map<Long, Food> loadFoodsOfMeals(List<Meal> meals, Long accountId) {
+        List<Long> ids = meals.stream()
+                .flatMap(r -> r.getItems().stream())
+                .map(MealItem::getFoodId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        return ids.isEmpty() ? Map.of() : index(foodRepository.visibleFind(ids, accountId));
+    }
+
+    /** Os itens de uma refeição, no formato da resposta. */
+    public List<PrescriptionDtos.ItemResponse> itemsAnswer(Meal meal) {
+        return meal.getItems().stream().map(this::buildItemAnswer).toList();
+    }
+
     private MealItem buildItem(PrescriptionDtos.ItemRequest request,
                                     PrescriptionMethod method,
                                     Map<Long, Food> foods,
                                     Map<Long, HouseholdMeasure> measures) {
+
+        // O separador é uma posição na ordem, não um alimento: não tem o que
+        // buscar no catálogo, nem porção, nem descrição obrigatória.
+        if (request.kindOrFood() == MealItemKind.SEPARATOR) {
+            var separator = new MealItem(
+                    StringUtils.hasText(request.description()) ? request.description() : "—");
+            separator.setKind(MealItemKind.SEPARATOR);
+            return separator;
+        }
 
         Food food = request.foodId() == null ? null : foods.get(request.foodId());
         if (request.foodId() != null && food == null) {
@@ -321,11 +391,11 @@ public class MealPlanService {
 
         var item = new MealItem(description);
         item.setFoodId(request.foodId());
-        item.setNotes(request.notes());
+        item.setNotes(RichTextDocument.ofTextOrDocument(request.notes(), mapper).json());
 
         // A qualitative plan does not quantify: "salada a vontade" has no number,
         // and inventing one would be creating clinical data nobody prescribed.
-        if (method.isQuantificado()) {
+        if (method.isQuantified()) {
             var serving = resolveServing(request.foodId(), request.measureId(),
                     request.quantity(), measures);
             item.setMeasureId(serving.measureId());
@@ -337,7 +407,9 @@ public class MealPlanService {
         if (request.substitutions() != null && !request.substitutions().isEmpty()) {
             if (!method.admitsSubstitutions()) {
                 throw new BusinessRuleException(
-                        "Substituições só existem no método por equivalentes");
+                        "Uma substituição troca uma porção por outra, e o plano "
+                                + "qualitativo não tem porção. Informe a quantidade do item "
+                                + "ou remova as substituições.");
             }
             for (var substitutionRequest : request.substitutions()) {
                 var substitution = new ItemSubstitution(substitutionRequest.description());
@@ -438,13 +510,7 @@ public class MealPlanService {
 
     /** Foods cited by an already-saved plan, for totalling. */
     private Map<Long, Food> loadPlanFoods(MealPlan plan, Long accountId) {
-        List<Long> ids = plan.getMeals().stream()
-                .flatMap(r -> r.getItems().stream())
-                .map(MealItem::getFoodId)
-                .filter(java.util.Objects::nonNull)
-                .distinct()
-                .toList();
-        return ids.isEmpty() ? Map.of() : index(foodRepository.visibleFind(ids, accountId));
+        return loadFoodsOfMeals(plan.getMeals(), accountId);
     }
 
     private Map<Long, Food> index(List<Food> foods) {
@@ -477,7 +543,8 @@ public class MealPlanService {
                     return new PrescriptionDtos.MealResponse(
                             meal.getId(), meal.getName(), meal.getTime(),
                             meal.getOrder(), meal.getNotes(),
-                            meal.getItems().stream().map(this::buildItemAnswer).toList(),
+                            meal.isInCalculation(), meal.hasPhoto(), meal.getPhotoName(),
+                            itemsAnswer(meal),
                             totalBuild(total, null));
                 })
                 .toList();
@@ -495,14 +562,17 @@ public class MealPlanService {
                 plan.getPublicIdentifier(),
                 plan.getValidityStart(), plan.getValidityEnd(),
                 plan.getHandouts(), plan.getInternalNotes(),
-                plan.getTargetEnergyKcal(), plan.isTemplate(),
-                meals, totalBuild(dayTotal, plan.getTargetEnergyKcal()),
+                plan.getTargetEnergyKcal(),
+                plan.getTargetProteinPct(), plan.getTargetCarbohydratePct(),
+                plan.getTargetFatPct(), plan.getTargetWeightKg(), plan.getEnergyPlanId(),
+                plan.isTemplate(),
+                meals, totalBuild(dayTotal, plan.getTargetEnergyKcal(), plan),
                 plan.getCreatedAt(), plan.getUpdatedAt());
     }
 
     private PrescriptionDtos.ItemResponse buildItemAnswer(MealItem item) {
         return new PrescriptionDtos.ItemResponse(
-                item.getId(), item.getFoodId(), item.getMeasureId(),
+                item.getId(), item.getKind(), item.getFoodId(), item.getMeasureId(),
                 item.getDescription(), item.servingFormatted(),
                 item.getQuantity(), item.getGrams(), item.getOrder(), item.getNotes(),
                 item.getSubstitutions().stream()
@@ -514,7 +584,26 @@ public class MealPlanService {
 
     private PrescriptionDtos.TotalResponse totalBuild(NutritionalCalculator.Total total,
                                                      BigDecimal targetKcal) {
+        return totalBuild(total, targetKcal, null);
+    }
+
+    /**
+     * @param plan quando presente, a resposta traz a comparação prescrito ×
+     *             teórico. O total de uma refeição isolada não a traz: a
+     *             distribuição planejada é do dia, e repeti-la por refeição
+     *             compararia cada uma com a meta do dia inteiro.
+     */
+    private PrescriptionDtos.TotalResponse totalBuild(NutritionalCalculator.Total total,
+                                                     BigDecimal targetKcal,
+                                                     MealPlan plan) {
         var distribution = calculator.macrosDistribution(total.composition());
+        BigDecimal adequacy = calculator.adequacyEnergy(total.composition(), targetKcal);
+
+        var comparison = plan == null ? List.<NutritionalCalculator.MacroComparison>of()
+                : calculator.comparison(total.composition(), targetKcal,
+                        plan.getTargetProteinPct(), plan.getTargetCarbohydratePct(),
+                        plan.getTargetFatPct(), plan.getTargetWeightKg());
+
         return new PrescriptionDtos.TotalResponse(
                 CompositionDto.from(total.composition()),
                 total.itemsInCalculation(), total.itemsOutsideCalculation(),
@@ -523,6 +612,17 @@ public class MealPlanService {
                 distribution == null ? null : new PrescriptionDtos.DistributionResponse(
                         distribution.proteinPct(), distribution.carbohydratePct(),
                         distribution.lipidPct(), distribution.calculatedEnergyKcal()),
-                calculator.adequacyEnergy(total.composition(), targetKcal));
+                adequacy, AdequacyBand.of(adequacy), comparison);
+    }
+
+    private static BigDecimal sumOrNull(BigDecimal... values) {
+        BigDecimal sum = null;
+        for (BigDecimal value : values) {
+            if (value == null) {
+                continue;
+            }
+            sum = sum == null ? value : sum.add(value);
+        }
+        return sum;
     }
 }

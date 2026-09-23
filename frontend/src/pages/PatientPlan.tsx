@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ErrorApi, api } from "../api/client";
 import type { PublicItem, PublicPlan } from "../api/types";
+import { RichTextView } from "../components/RichText/RichTextView";
+import { emptyDoc, parseRichDoc } from "../components/RichText/document";
 
 /**
  * The plan as the patient receives it.
@@ -113,9 +115,7 @@ export default function PatientPlan() {
         {plan.handouts && (
           <div className="card">
             <h2 style={{ fontSize: "1.05rem", marginBottom: "0.5rem" }}>Orientações gerais</h2>
-            <p style={{ margin: 0, whiteSpace: "pre-line", fontSize: "0.92rem" }}>
-              {plan.handouts}
-            </p>
+            <RichTextView doc={parseRichDoc(plan.handouts) ?? emptyDoc()} empty="" />
           </div>
         )}
 
@@ -124,7 +124,7 @@ export default function PatientPlan() {
             {plan.handoutsAttached.map((o, i) => (
               <div className="handout-attached" key={o.id ?? i} style={i === 0 ? { marginTop: 0 } : undefined}>
                 <h3>{o.title}</h3>
-                <p>{o.body}</p>
+                <RichTextView doc={parseRichDoc(o.body) ?? emptyDoc()} empty="" />
                 {/* Public route: the address arrives ready in the response and
                     the tag fetches on its own, with no credential at all. */}
                 {/* No `loading="lazy"`: these are one or two small figures, and
@@ -158,7 +158,9 @@ export default function PatientPlan() {
                 <section className="meal-patient">
                   <h2>{meal.name}</h2>
                   {meal.notes && (
-                    <p className="note-meal">{meal.notes}</p>
+                    <div className="note-meal">
+                      <RichTextView doc={parseRichDoc(meal.notes) ?? emptyDoc()} empty="" />
+                    </div>
                   )}
                   {meal.items.map((item, i) => (
                     <Item item={item} key={i} />
@@ -168,6 +170,27 @@ export default function PatientPlan() {
             </div>
           ))}
         </div>
+
+        {/*
+          O modo de preparo das receitas do cardápio, na mesma posição do PDF:
+          depois das refeições. Quem acabou de ler o que vai comer é quem
+          precisa saber como fazer — antes do cardápio seria instrução para
+          uma coisa que ainda não foi apresentada.
+        */}
+        {plan.recipes?.length > 0 && (
+          <div className="card">
+            <h2 style={{ fontSize: "1.05rem", marginBottom: "0.5rem" }}>Modo de preparo</h2>
+            {plan.recipes.map((receita) => (
+              <div className="handout-attached" key={receita.foodId}>
+                <h3>{receita.name}</h3>
+                <RichTextView
+                  doc={parseRichDoc(receita.modeInstructions) ?? emptyDoc()}
+                  empty=""
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {plan.method !== "QUALITATIVE" && plan.summary.energyKcal !== undefined && (
           <div className="card">
@@ -206,9 +229,9 @@ function Item({ item }: { item: PublicItem }) {
         )}
       </span>
       {item.notes && (
-        <p className="discreto" style={{ margin: "0.3rem 0 0", fontSize: "0.85rem" }}>
-          {item.notes}
-        </p>
+        <div className="discreto observacao-item">
+          <RichTextView doc={parseRichDoc(item.notes) ?? emptyDoc()} empty="" />
+        </div>
       )}
       {item.substitutions.length > 0 && (
         <div className="substitutions">

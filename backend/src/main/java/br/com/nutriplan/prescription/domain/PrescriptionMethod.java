@@ -25,11 +25,11 @@ public enum PrescriptionMethod {
     QUALITATIVE("Qualitativo", false);
 
     private final String description;
-    private final boolean quantificado;
+    private final boolean quantified;
 
-    PrescriptionMethod(String description, boolean quantificado) {
+    PrescriptionMethod(String description, boolean quantified) {
         this.description = description;
-        this.quantificado = quantificado;
+        this.quantified = quantified;
     }
 
     public String getDescription() {
@@ -37,11 +37,20 @@ public enum PrescriptionMethod {
     }
 
     /** Says whether the items require a quantity and enter the totals. */
-    public boolean isQuantificado() {
-        return quantificado;
+    public boolean isQuantified() {
+        return quantified;
     }
 
+    /**
+     * Says whether an item may carry alternatives to the main option.
+     *
+     * A substitution swaps one portion for another, so it only means something
+     * where there is a portion: it follows quantification, not the method. Tying
+     * it to {@link #SUBSTITUTIONS} would be reading the name instead of the
+     * rule — a food plan offers "papaya or banana" for the same slot without
+     * ever touching an exchange table.
+     */
     public boolean admitsSubstitutions() {
-        return this == SUBSTITUTIONS;
+        return quantified;
     }
 }

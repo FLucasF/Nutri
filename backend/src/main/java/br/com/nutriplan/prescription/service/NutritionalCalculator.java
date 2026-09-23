@@ -1,6 +1,7 @@
 package br.com.nutriplan.prescription.service;
 
 import br.com.nutriplan.food.domain.Food;
+import br.com.nutriplan.prescription.domain.AdequacyBand;
 import br.com.nutriplan.food.domain.NutritionalComposition;
 import br.com.nutriplan.food.domain.Nutrient;
 import br.com.nutriplan.prescription.domain.MealItem;
@@ -92,7 +93,7 @@ public class NutritionalCalculator {
         int outside = 0;
 
         for (MealItem item : items) {
-            if (!item.entersNoCalculation()) {
+            if (!item.entersCalculation()) {
                 outside++;
                 continue;
             }
@@ -118,10 +119,17 @@ public class NutritionalCalculator {
         return new Total(accumulated, inside, outside, Map.copyOf(coverage));
     }
 
-    /** Total of the whole plan, adding up every meal. */
+    /**
+     * Total of the whole plan, adding up every meal that counts.
+     *
+     * A meal switched out of the calculation is skipped here and nowhere else:
+     * it keeps its own total, which is what makes it useful as a substitute —
+     * the professional prescribes two options for lunch and sees what each one
+     * is worth, while the day adds up only once.
+     */
     public Total totalMeals(List<Meal> meals, Map<Long, Food> foodsById) {
         List<MealItem> all = new ArrayList<>();
-        meals.forEach(r -> all.addAll(r.getItems()));
+        meals.stream().filter(Meal::isInCalculation).forEach(r -> all.addAll(r.getItems()));
         return total(all, foodsById);
     }
 
@@ -160,6 +168,88 @@ public class NutritionalCalculator {
                 percentage(kcalLipid, totalKcal),
                 totalKcal.setScale(1, RoundingMode.HALF_UP));
     }
+
+    /**
+     * O que foi prescrito contra o que foi planejado, macro a macro.
+     *
+     * É a aba de distribuição da página 32: uma coluna do prescrito, uma do
+     * teórico, uma da diferença, e a faixa que decide a cor do rótulo.
+     *
+     * O teórico sai da meta energética repartida pelas porcentagens
+     * planejadas, convertida em gramas pelos mesmos fatores de Atwater que o
+     * resto da classe usa. Usar outro fator aqui faria as duas colunas
+     * responderem perguntas ligeiramente diferentes.
+     *
+     * @param weightKg peso programado, para o g/kg. Nulo omite a coluna.
+     */
+    public List<MacroComparison> comparison(NutritionalComposition prescribed,
+                                            BigDecimal targetKcal,
+                                            BigDecimal proteinPct,
+                                            BigDecimal carbohydratePct,
+                                            BigDecimal fatPct,
+                                            BigDecimal weightKg) {
+        if (targetKcal == null || targetKcal.signum() <= 0) {
+            return List.of();
+        }
+        var rows = new ArrayList<MacroComparison>();
+        rows.add(row("protein", "Proteínas", prescribed.getProteinG(),
+                targetKcal, proteinPct, KCAL_BY_G_PROTEIN, weightKg));
+        rows.add(row("carbohydrate", "Carboidratos", prescribed.getCarbohydrateG(),
+                targetKcal, carbohydratePct, KCAL_BY_G_CARBOHYDRATE, weightKg));
+        rows.add(row("fat", "Gorduras", prescribed.getFatG(),
+                targetKcal, fatPct, KCAL_BY_G_LIPID, weightKg));
+        return List.copyOf(rows);
+    }
+
+    private MacroComparison row(String macro, String description,
+                                BigDecimal prescribedG, BigDecimal targetKcal,
+                                BigDecimal pct, BigDecimal kcalByG, BigDecimal weightKg) {
+        BigDecimal theoreticalKcal = pct == null ? null
+                : targetKcal.multiply(pct).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal theoreticalG = theoreticalKcal == null ? null
+                : theoreticalKcal.divide(kcalByG, 1, RoundingMode.HALF_UP);
+
+        BigDecimal prescribed = prescribedG == null ? null
+                : prescribedG.setScale(1, RoundingMode.HALF_UP);
+        BigDecimal difference = (prescribed == null || theoreticalG == null) ? null
+                : prescribed.subtract(theoreticalG);
+
+        BigDecimal adequacy = null;
+        if (prescribed != null && theoreticalG != null && theoreticalG.signum() > 0) {
+            adequacy = prescribed.multiply(BigDecimal.valueOf(100))
+                    .divide(theoreticalG, 1, RoundingMode.HALF_UP);
+        }
+
+        return new MacroComparison(macro, description,
+                prescribed, theoreticalG, difference,
+                prescribed == null ? null : prescribed.multiply(kcalByG),
+                theoreticalKcal,
+                adequacy, AdequacyBand.of(adequacy),
+                perKg(prescribed, weightKg), perKg(theoreticalG, weightKg));
+    }
+
+    /** Gramas por quilo do peso programado. Nulo quando não há peso. */
+    private BigDecimal perKg(BigDecimal grams, BigDecimal weightKg) {
+        if (grams == null || weightKg == null || weightKg.signum() <= 0) {
+            return null;
+        }
+        return grams.divide(weightKg, 2, RoundingMode.HALF_UP);
+    }
+
+    public record MacroComparison(
+            String macro,
+            String description,
+            BigDecimal prescribedG,
+            BigDecimal theoreticalG,
+            BigDecimal differenceG,
+            BigDecimal prescribedKcal,
+            BigDecimal theoreticalKcal,
+            BigDecimal adequacyPct,
+            AdequacyBand band,
+            /** g/kg sobre o peso programado. Ele não usa na tela, mas quer no relatório. */
+            BigDecimal prescribedPerKg,
+            BigDecimal theoreticalPerKg
+    ) {}
 
     public record DistributionMacros(
             BigDecimal proteinPct,

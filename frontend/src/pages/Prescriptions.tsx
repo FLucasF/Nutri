@@ -93,7 +93,6 @@ export default function Prescriptions() {
               <tr>
                 <th>Plano</th>
                 {tab === "plans" && <th>Paciente</th>}
-                <th>Método</th>
                 <th>Situação</th>
                 <th className="num">Itens</th>
                 <th className="num">kcal/dia</th>
@@ -113,7 +112,6 @@ export default function Prescriptions() {
                     </div>
                   </td>
                   {tab === "plans" && <td className="discreto">{plan.patientName ?? "—"}</td>}
-                  <td className="discreto">{labelMethod(plan.method)}</td>
                   <td>
                     {plan.template ? (
                       <span className="tag">modelo</span>
@@ -131,10 +129,4 @@ export default function Prescriptions() {
       )}
     </>
   );
-}
-
-export function labelMethod(method: string) {
-  if (method === "FOODS") return "por alimentos";
-  if (method === "SUBSTITUTIONS") return "por equivalentes";
-  return "qualitative";
 }

@@ -6,12 +6,31 @@ import { useFeedback } from "../components/Feedback";
 import { formatBr, todayIso } from "../api/dates";
 import type {
   LabtestResult,
+  LabtestPanel,
   LabtestParameter,
   Patient,
   LabtestSeries,
   LabtestOrder,
 } from "../api/types";
 import { count } from "../text";
+import { Own } from "../components/Own";
+
+/**
+ * Compara ignorando acento e caixa.
+ *
+ * "Hemoglobina glicada" tem de ser achado por "glicada" e por "HEMOGLOBINA".
+ * Quem digita numa consulta não vai acertar o acento, e não deveria precisar.
+ */
+function matches(text: string | undefined, term: string): boolean {
+  if (!term.trim()) return true;
+  if (!text) return false;
+  const normalize = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase();
+  return normalize(text).includes(normalize(term));
+}
 
 /** Tag color according to the position against the reference. */
 const CLASSE_BY_CLASSIFICATION: Record<string, string> = {
@@ -41,6 +60,8 @@ export default function Labtests() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [panel, setPanel] = useState<"none" | "entry" | "request">("none");
+  /** Filtro do histórico: nome do exame, grupo ou observação. */
+  const [term, setTerm] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -106,6 +127,10 @@ export default function Labtests() {
   }
 
   const changed = labtests.filter((e) => e.classification && e.classification !== "NORMAL");
+  /** O histórico já filtrado pelo que foi digitado na busca. */
+  const shown = labtests.filter(
+    (e) => matches(e.parameter, term) || matches(e.group, term) || matches(e.notes, term),
+  );
 
   return (
     <>
@@ -175,6 +200,17 @@ export default function Labtests() {
           Nenhum exame registrado. Use <strong>Registrar resultado</strong> quando o laudo chegar.
         </div>
       ) : (
+        <>
+        <div className="field" style={{ marginBottom: "0.7rem", maxWidth: 360 }}>
+          <label htmlFor="ex-busca">Buscar exame</label>
+          <input
+            id="ex-busca"
+            type="search"
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            placeholder="Glicose, TGP, vitamina D…"
+          />
+        </div>
         <div className="rolagem">
           <table>
             <thead>
@@ -188,7 +224,7 @@ export default function Labtests() {
               </tr>
             </thead>
             <tbody>
-              {labtests.map((e) => (
+              {shown.map((e) => (
                 <tr key={e.id}>
                   <td>
                     <button
@@ -238,6 +274,10 @@ export default function Labtests() {
             </tbody>
           </table>
         </div>
+        {shown.length === 0 && (
+          <p className="empty">Nenhum exame com “{term}”.</p>
+        )}
+        </>
       )}
 
       {requests.length > 0 && (
@@ -352,6 +392,8 @@ function FormResult({
   onSave: () => Promise<void>;
 }) {
   const [parameterId, setParameterId] = useState("");
+  /** Filtra a lista de exames; não escolhe nenhum por si. */
+  const [filter, setFilter] = useState("");
   const [dateCollection, setDateCollection] = useState(todayIso());
   const [value, setValue] = useState("");
   const [unit, setUnit] = useState("");
@@ -392,6 +434,21 @@ function FormResult({
 
       <div className="grid three" style={{ marginTop: "0.8rem" }}>
         <div className="field" style={{ gridColumn: "span 2" }}>
+          <label htmlFor="ex-filtro">Buscar exame</label>
+          {/*
+            O filtro fica antes da lista em vez de substituí-la: a lista
+            continua sendo um select nativo, que no celular abre a roda do
+            sistema e responde ao teclado sem que a gente reimplemente nada.
+          */}
+          <input
+            id="ex-filtro"
+            type="search"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Glicose, TGP, vitamina D…"
+          />
+        </div>
+        <div className="field" style={{ gridColumn: "span 2" }}>
           <label htmlFor="ex-parametro">Exame</label>
           <select
             id="ex-parametro"
@@ -403,12 +460,14 @@ function FormResult({
             required
           >
             <option value="">Selecione…</option>
-            {parameters.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.group ? `${p.group} · ` : ""}
-                {p.name}
-              </option>
-            ))}
+            {parameters
+              .filter((p) => matches(p.name, filter) || matches(p.group, filter))
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.group ? `${p.group} · ` : ""}
+                  {p.name}
+                </option>
+              ))}
           </select>
           {chosen && chosen.ranges.length > 0 && (
             <span className="minusculo">
@@ -482,10 +541,57 @@ function FormOrder({
   onSave: () => Promise<void>;
 }) {
   const [chosen, setChosen] = useState<number[]>([]);
+  const [panels, setPanels] = useState<LabtestPanel[]>([]);
+  const [savingPanel, setSavingPanel] = useState(false);
+  /** Filtra a lista de exames do pedido, sem mexer no que está marcado. */
+  const [filter, setFilter] = useState("");
   const [date, setDate] = useState(todayIso());
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.labtests
+      .panels()
+      .then(setPanels)
+      .catch(() => setPanels([]));
+  }, []);
+
+  /**
+   * Um clique no painel acrescenta os parâmetros dele ao pedido.
+   *
+   * Acrescenta, nunca substitui: ele descreve juntar painéis — "caso ele
+   * queira selecionar alguns como eu fiz nos de cima e formular um seu". E o
+   * que já estava marcado é escolha dele, não rascunho.
+   */
+  function applyPanel(panel: LabtestPanel) {
+    setChosen((current) => {
+      const next = [...current];
+      panel.parameters.forEach((p) => {
+        if (!next.includes(p.id)) next.push(p.id);
+      });
+      return next;
+    });
+  }
+
+  /** Guarda o que está marcado como um painel do consultório. */
+  async function savePanel() {
+    if (chosen.length === 0) {
+      setError("Marque os exames antes de salvar como painel.");
+      return;
+    }
+    const name = window.prompt("Nome do painel:", "Primeira consulta");
+    if (!name?.trim()) return;
+    setSavingPanel(true);
+    try {
+      await api.labtests.createPanel({ name: name.trim(), parameterIds: chosen });
+      setPanels(await api.labtests.panels());
+    } catch (e) {
+      setError(explainError(e, "salvar o painel"));
+    } finally {
+      setSavingPanel(false);
+    }
+  }
 
   function toggle(id: number) {
     setChosen((current) =>
@@ -515,10 +621,12 @@ function FormOrder({
   }
 
   const byGroup = new Map<string, LabtestParameter[]>();
-  parameters.forEach((p) => {
-    const key = p.group ?? "Outros";
-    byGroup.set(key, [...(byGroup.get(key) ?? []), p]);
-  });
+  parameters
+    .filter((p) => matches(p.name, filter) || matches(p.group, filter))
+    .forEach((p) => {
+      const key = p.group ?? "Outros";
+      byGroup.set(key, [...(byGroup.get(key) ?? []), p]);
+    });
 
   return (
     <form className="card" style={{ marginBottom: "0.9rem" }} onSubmit={send}>
@@ -532,6 +640,59 @@ function FormOrder({
           {error}
         </div>
       )}
+
+      {panels.length > 0 && (
+        <div className="paineis">
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <span className="minusculo">
+              Painéis — um clique acrescenta os exames dele ao pedido
+            </span>
+            <button
+              type="button"
+              className="button secundario pequeno"
+              onClick={() => void savePanel()}
+              disabled={savingPanel || chosen.length === 0}
+              title="Guarda o que está marcado como um painel seu"
+            >
+              Salvar como painel
+            </button>
+          </div>
+          <div className="row paineis-botoes">
+            {panels.map((panel) => (
+              <button
+                type="button"
+                key={panel.id}
+                className={`button secundario pequeno${panel.own ? " meu-painel" : ""}`}
+                onClick={() => applyPanel(panel)}
+                title={panel.parameters.map((p) => p.name).join(", ")}
+              >
+                {panel.name}
+                {panel.own && <Own />}
+                <span className="minusculo"> {panel.parameters.length}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="field" style={{ maxWidth: 360, marginBottom: "0.6rem" }}>
+        <label htmlFor="sol-busca">Buscar exame</label>
+        {/*
+          A busca some com os grupos que não têm nada a ver e deixa à vista só
+          o que foi procurado. O que já estava marcado continua marcado: filtrar
+          é olhar de outro jeito, não desmarcar.
+        */}
+        <input
+          id="sol-busca"
+          type="search"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Glicose, TGP, vitamina D…"
+        />
+        {chosen.length > 0 && (
+          <span className="minusculo">{chosen.length} marcado(s) no pedido</span>
+        )}
+      </div>
 
       <div className="grid two">
         {[...byGroup.entries()].map(([group, list]) => (

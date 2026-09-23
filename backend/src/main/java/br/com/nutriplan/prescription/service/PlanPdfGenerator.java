@@ -1,6 +1,10 @@
 package br.com.nutriplan.prescription.service;
 
 import br.com.nutriplan.prescription.dto.PrescriptionDtos;
+import br.com.nutriplan.shared.richtext.RichTextPdf;
+import br.com.nutriplan.prescription.domain.MealItemKind;
+import com.lowagie.text.Chunk;
+import com.lowagie.text.pdf.draw.LineSeparator;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -11,6 +15,7 @@ import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.awt.Color;
@@ -39,7 +44,11 @@ import java.time.format.DateTimeFormatter;
  * patient already knows what rice is; what they do not know is how much.
  */
 @Component
+@Slf4j
+@lombok.RequiredArgsConstructor
 public class PlanPdfGenerator {
+
+    private final com.fasterxml.jackson.databind.ObjectMapper mapper;
 
     private static final Color PITCH = new Color(0x13, 0x1c, 0x18);
     private static final Color BEETROOT = new Color(0x5e, 0x1a, 0x46);
@@ -81,6 +90,16 @@ public class PlanPdfGenerator {
      */
     public byte[] generate(PrescriptionDtos.PublicPlanResponse plan, boolean draft,
                         Map<Long, byte[]> figures) {
+        return generate(plan, draft, figures, Map.of());
+    }
+
+    /**
+     * @param mealPhotos conteúdo das fotos de prato, por id de refeição. Vem de
+     *                   fora pela mesma razão das figuras: quem desenha a folha
+     *                   não é quem segura a transação.
+     */
+    public byte[] generate(PrescriptionDtos.PublicPlanResponse plan, boolean draft,
+                        Map<Long, byte[]> figures, Map<Long, byte[]> mealPhotos) {
         var output = new ByteArrayOutputStream();
         var document = new Document(PageSize.A4, 48, 48, 44, 52);
         PdfWriter writer = PdfWriter.getInstance(document, output);
@@ -102,7 +121,24 @@ public class PlanPdfGenerator {
             if (hasText(plan.handouts())) {
                 document.add(handouts(plan.handouts()));
             }
-            document.add(meals(plan));
+            document.add(meals(plan, mealPhotos));
+
+            // O preparo das receitas vem logo depois do cardápio, e antes do
+            // material educativo: quem está na cozinha acabou de ler o que vai
+            // comer e precisa saber como fazer.
+            if (!plan.recipes().isEmpty()) {
+                // O rótulo da seção vai dentro do primeiro bloco, e não solto
+                // antes dele: solto, ele descia sozinho para o pé da página
+                // anterior, anunciando um preparo que só começava na seguinte.
+                boolean first = true;
+                for (var recipe : plan.recipes()) {
+                    document.add(textBlock(
+                            recipe.name(), recipe.modeInstructions(),
+                            first ? "MODO DE PREPARO" : null));
+                    first = false;
+                }
+            }
+
             // After the meals: whoever reads the sheet in the kitchen looks for
             // the meal, not the educational text.
             for (var attachment : plan.handoutsAttached()) {
@@ -196,8 +232,18 @@ public class PlanPdfGenerator {
         return textBlock("ORIENTAÇÕES GERAIS", text);
     }
 
-    /** Text with a title, marked by the beetroot bar in the margin. */
     private Element textBlock(String title, String body) {
+        return textBlock(title, body, null);
+    }
+
+    /**
+     * Text with a title, marked by the beetroot bar in the margin.
+     *
+     * @param section quando presente, o rótulo da seção que começa neste bloco.
+     *                Vai dentro da mesma célula para não se separar dela na
+     *                quebra de página.
+     */
+    private Element textBlock(String title, String body, String section) {
         var table = new PdfPTable(1);
         table.setWidthPercentage(100);
         table.setSpacingAfter(16);
@@ -210,8 +256,15 @@ public class PlanPdfGenerator {
         cell.setPaddingLeft(10);
         cell.setPaddingTop(2);
         cell.setPaddingBottom(6);
+        if (section != null) {
+            var label = new Paragraph(section, source(10, Font.BOLD, PITCH));
+            label.setSpacingAfter(5);
+            cell.addElement(label);
+        }
         cell.addElement(new Paragraph(title.toUpperCase(), TAG));
-        cell.addElement(new Paragraph(body, source(9.5f, Font.NORMAL, PITCH)));
+        for (Element element : RichTextPdf.render(body, mapper)) {
+            cell.addElement(element);
+        }
         table.addCell(cell);
         return table;
     }
@@ -224,7 +277,8 @@ public class PlanPdfGenerator {
      * element as on screen, here made of a cell border because that is what
      * the PDF knows how to draw without absolute positioning.
      */
-    private Element meals(PrescriptionDtos.PublicPlanResponse plan) {
+    private Element meals(PrescriptionDtos.PublicPlanResponse plan,
+                          Map<Long, byte[]> mealPhotos) {
         var table = new PdfPTable(new float[] {1f, 6.4f});
         table.setWidthPercentage(100);
         table.setSpacingAfter(14);
@@ -233,7 +287,7 @@ public class PlanPdfGenerator {
 
         for (var meal : plan.meals()) {
             table.addCell(hourCell(meal));
-            table.addCell(mealCell(meal));
+            table.addCell(mealCell(meal, mealPhotos));
         }
         return table;
     }
@@ -251,7 +305,8 @@ public class PlanPdfGenerator {
         return cell;
     }
 
-    private PdfPCell mealCell(PrescriptionDtos.PublicMealResponse meal) {
+    private PdfPCell mealCell(PrescriptionDtos.PublicMealResponse meal,
+                              Map<Long, byte[]> mealPhotos) {
         var cell = new PdfPCell();
         cell.setBorder(PdfPCell.LEFT);
         cell.setBorderColor(ROW);
@@ -262,10 +317,39 @@ public class PlanPdfGenerator {
 
         cell.addElement(new Paragraph(meal.name(), MEAL));
         if (hasText(meal.notes())) {
-            cell.addElement(new Paragraph(meal.notes(), NOTE));
+            // A observação é documento do editor. Desenhada pelo mesmo
+            // renderizador do resto, ela sai com a formatação que ele deu —
+            // e não como o JSON que a guarda.
+            for (Element element : RichTextPdf.render(meal.notes(), mapper)) {
+                cell.addElement(element);
+            }
+        }
+
+        byte[] photo = mealPhotos.get(meal.id());
+        if (photo != null) {
+            try {
+                var figure = com.lowagie.text.Image.getInstance(photo);
+                figure.scaleToFit(WIDTH_UTIL / 2, 160);
+                figure.setSpacingBefore(6);
+                cell.addElement(figure);
+            } catch (Exception e) {
+                // Uma foto ilegível não pode impedir a entrega do cardápio: o
+                // que o paciente precisa é do que comer, e a figura ilustra.
+                log.warn("Foto da refeição {} não pôde ser desenhada", meal.id());
+            }
         }
 
         for (var item : meal.items()) {
+            // O separador vira no papel o que é na tela: uma linha entre os
+            // alimentos que se comem juntos. Sem texto, porque não é um item.
+            if (item.kind() == MealItemKind.SEPARATOR) {
+                var rule = new Paragraph();
+                rule.setSpacingBefore(6);
+                rule.add(new Chunk(new LineSeparator(0.7f, 100, ROW, Element.ALIGN_CENTER, -2)));
+                cell.addElement(rule);
+                continue;
+            }
+
             var block = new Paragraph();
             block.setSpacingBefore(7);
             block.add(new Phrase(item.description() + "\n", FOOD));
@@ -275,8 +359,12 @@ public class PlanPdfGenerator {
             }
             cell.addElement(block);
 
+            // A observação do item passou a ser documento formatado, como as
+            // outras. Imprimi-la como frase sairia com o JSON cru na folha.
             if (hasText(item.notes())) {
-                cell.addElement(new Paragraph(item.notes(), NOTE));
+                for (Element element : RichTextPdf.render(item.notes(), mapper, NOTE.getSize())) {
+                    cell.addElement(element);
+                }
             }
             for (var substitution : item.substitutions()) {
                 var choice = new Paragraph(

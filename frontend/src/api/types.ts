@@ -40,17 +40,39 @@ export interface Page<T> {
   size: number;
 }
 
+export interface PatientTag {
+  id: number;
+  name: string;
+  /** TAG do sistema: ponto de partida, comum a todos. */
+  systemTag: boolean;
+  own: boolean;
+}
+
+export interface PatientNote {
+  id: number;
+  body: string;
+  createdAt: string;
+  createdBy?: string;
+}
+
+/** Só preenchida para mulher; a ausência diz "nenhuma das duas". */
+export type BiologicalCondition = "PREGNANT" | "LACTATING";
+
 export interface PatientSummary {
   id: number;
   name: string;
   email?: string;
   age?: number;
   active: boolean;
+  /** As TAGs vêm na listagem porque é nela que elas servem para varrer. */
+  tags: string[];
 }
 
 export interface Patient {
   id: number;
   name: string;
+  nickname?: string;
+  biologicalCondition?: BiologicalCondition;
   email?: string;
   phone?: string;
   dateBirth?: string;
@@ -61,7 +83,7 @@ export interface Patient {
   goal?: string;
   notes?: string;
   active: boolean;
-  hasAccessAoApp: boolean;
+  hasAccessToApp: boolean;
   createdAt: string;
 }
 
@@ -139,7 +161,31 @@ export interface Total {
   reliable: boolean;
   distribution?: Distribution;
   adequacyEnergyPct?: number;
+  energyBand?: AdequacyBand;
+  /** Prescrito × teórico × diferença. Vazio quando não há meta energética. */
+  comparison: MacroComparison[];
 }
+
+/** Onde o prescrito caiu em relação ao planejado. 95 a 105% é dentro. */
+export type AdequacyBand = "BELOW" | "WITHIN" | "ABOVE";
+
+export interface MacroComparison {
+  macro: "protein" | "carbohydrate" | "fat";
+  description: string;
+  prescribedG?: number;
+  theoreticalG?: number;
+  differenceG?: number;
+  prescribedKcal?: number;
+  theoreticalKcal?: number;
+  adequacyPct?: number;
+  band?: AdequacyBand;
+  /** g/kg do peso programado. Ele não usa na tela, mas quer no relatório. */
+  prescribedPerKg?: number;
+  theoreticalPerKg?: number;
+}
+
+/** Linha de alimento ou a barra que separa alimentos dentro da refeição. */
+export type MealItemKind = "FOOD" | "SEPARATOR";
 
 export interface Substitution {
   id?: number;
@@ -151,6 +197,7 @@ export interface Substitution {
 
 export interface Item {
   id?: number;
+  kind?: MealItemKind;
   foodId?: number;
   measureId?: number;
   description: string;
@@ -168,6 +215,10 @@ export interface MealResponse {
   time?: string;
   order?: number;
   notes?: string;
+  /** Desligada, a refeição não soma no dia: é opção substituta. */
+  inCalculation: boolean;
+  hasPhoto: boolean;
+  photoName?: string;
   items: Item[];
   total: Total;
 }
@@ -187,6 +238,11 @@ export interface PlanResponse {
   handouts?: string;
   internalNotes?: string;
   targetEnergyKcal?: number;
+  targetProteinPct?: number;
+  targetCarbohydratePct?: number;
+  targetFatPct?: number;
+  targetWeightKg?: number;
+  energyPlanId?: number;
   template: boolean;
   meals: MealResponse[];
   dayTotal: Total;
@@ -220,6 +276,8 @@ export interface SubstitutionRequest {
 }
 
 export interface ItemRequest {
+  /** FOOD por omissão. SEPARATOR desenha a barra entre alimentos. */
+  kind?: MealItemKind;
   foodId?: number;
   measureId?: number;
   description?: string;
@@ -232,6 +290,8 @@ export interface MealRequest {
   name: string;
   time?: string;
   notes?: string;
+  /** Nulo vale como sim. Desligada, a refeição não soma no dia. */
+  inCalculation?: boolean;
   items: ItemRequest[];
 }
 
@@ -244,6 +304,13 @@ export interface PlanRequest {
   handouts?: string;
   internalNotes?: string;
   targetEnergyKcal?: number;
+  /** Distribuição planejada, em porcentagem da energia. Precisa somar 100. */
+  targetProteinPct?: number;
+  targetCarbohydratePct?: number;
+  targetFatPct?: number;
+  /** Peso programado, base do g/kg do relatório. */
+  targetWeightKg?: number;
+  energyPlanId?: number;
   template: boolean;
   meals: MealRequest[];
 }
@@ -275,6 +342,12 @@ export interface PublicHandout {
   image?: string;
 }
 
+export interface PublicRecipe {
+  foodId: number;
+  name: string;
+  modeInstructions: string;
+}
+
 export interface PublicPlan {
   title: string;
   patientName?: string;
@@ -292,6 +365,8 @@ export interface PublicPlan {
   /** Handouts attached, in the text frozen at the moment of attaching. */
   handoutsAttached: PublicHandout[];
   meals: PublicMeal[];
+  /** O modo de preparo das receitas usadas, para o paciente saber como fazer. */
+  recipes: PublicRecipe[];
   summary: {
     energyKcal?: number;
     proteinG?: number;
@@ -355,8 +430,24 @@ export interface Assessment {
   date: string;
   weightKg?: number;
   heightCm?: number;
+  /** Idade na data da avaliação. A tela usa para saber se trava a altura. */
+  ageYears?: number;
   skinfolds: Record<string, number>;
-  circumferences: Record<string, number>;
+  circumferences: CircumferenceValue[];
+  diameterHumerus?: number;
+  diameterWrist?: number;
+  diameterFemur?: number;
+  heightSittingCm?: number;
+  heightKneeCm?: number;
+  biaFatPercentage?: number;
+  biaFatMassKg?: number;
+  biaMusclePercentage?: number;
+  biaMuscleMassKg?: number;
+  biaLeanMassKg?: number;
+  biaBoneMassKg?: number;
+  biaVisceralFat?: number;
+  biaBodyWaterPercentage?: number;
+  biaMetabolicAge?: number;
   bmi?: number;
   classificationBmi: Derived<BmiClassification>;
   ratioWaistHip?: number;
@@ -409,7 +500,21 @@ export interface AssessmentRequest {
   weightKg?: number;
   heightCm?: number;
   skinfolds?: Record<string, number>;
-  circumferences?: Record<string, number>;
+  circumferences?: CircumferenceValue[];
+  diameterHumerus?: number;
+  diameterWrist?: number;
+  diameterFemur?: number;
+  heightSittingCm?: number;
+  heightKneeCm?: number;
+  biaFatPercentage?: number;
+  biaFatMassKg?: number;
+  biaMusclePercentage?: number;
+  biaMuscleMassKg?: number;
+  biaLeanMassKg?: number;
+  biaBoneMassKg?: number;
+  biaVisceralFat?: number;
+  biaBodyWaterPercentage?: number;
+  biaMetabolicAge?: number;
   protocolComposition?: CompositionProtocol;
   equationExpenditure?: EquationExpenditure;
   factorActivity?: number;
@@ -797,4 +902,241 @@ export interface PublicForm {
   description?: string;
   alreadyAnswered: boolean;
   questions: QuestionnaireQuestion[];
+}
+
+// ------------------------------------------------------------------ anamnese
+
+/**
+ * Um ponto que o consultório quer em toda anamnese.
+ *
+ * A lista é do consultório, não do sistema: foi o que o cliente pediu ao
+ * responder que queria escolher os pontos — "um textbox com um label
+ * informando o propósito da consulta".
+ */
+export interface AnamnesisField {
+  id: number;
+  label: string;
+  order: number;
+  /** Se o valor aparece na listagem, sem precisar abrir a anamnese. */
+  showInListing: boolean;
+}
+
+export interface AnamnesisValue {
+  /** Nulo quando o campo saiu da lista do consultório depois desta anamnese. */
+  fieldId: number | null;
+  /** Congelado no preenchimento: renomear o campo não reescreve o passado. */
+  label: string;
+  value: string | null;
+  order: number;
+}
+
+export interface AnamnesisSummary {
+  id: number;
+  name: string;
+  date: string;
+  highlights: AnamnesisValue[];
+}
+
+export interface Anamnesis {
+  id: number;
+  patientId: number;
+  name: string;
+  date: string;
+  /** Documento do editor, em JSON. Nulo enquanto estiver em branco. */
+  body: string | null;
+  values: AnamnesisValue[];
+}
+
+export interface AnamnesisRequest {
+  patientId: number;
+  name: string;
+  date: string;
+  body?: string;
+  values?: { fieldId: number; value: string }[];
+}
+
+// -------------------------------------------------------- cálculo energético
+
+export type ActivityLevel = "INACTIVE" | "LOW_ACTIVE" | "ACTIVE" | "VERY_ACTIVE";
+
+export type EnergyEquationName =
+  | "HARRIS_BENEDICT_1984"
+  | "MIFFLIN_ST_JEOR"
+  | "FAO_WHO_2004"
+  | "EER_IOM_2005"
+  | "EER_2023";
+
+export interface EquationOption {
+  equation: EnergyEquationName;
+  description: string;
+  /** Se o nível de atividade já está dentro do resultado da equação. */
+  total: boolean;
+  /** Menor idade para a qual a equação foi publicada. */
+  ageMinimum: number;
+}
+
+export interface ActivityOption {
+  level: ActivityLevel;
+  description: string;
+}
+
+export interface EnergyOptions {
+  equations: EquationOption[];
+  activityLevels: ActivityOption[];
+}
+
+export interface EquationResult {
+  equation: EnergyEquationName;
+  description: string;
+  /** Ausente quando a equação já responde o gasto do dia inteiro. */
+  basalKcal?: number;
+  totalKcal: number;
+}
+
+/** A faixa de peso que mantém o adulto em eutrofia, pela altura. */
+export interface HealthyWeight {
+  minimumKg: number;
+  maximumKg: number;
+  bmiMinimum: number;
+  bmiMaximum: number;
+}
+
+export interface EnergyPlan {
+  id: number;
+  patientId: number;
+  name: string;
+  date: string;
+  assessmentId?: number;
+  weightKg: number;
+  heightCm: number;
+  ageYears: number;
+  sex: Sex;
+  activityLevel: ActivityLevel;
+  activityDescription: string;
+  injuryFactor: number;
+  metKcal?: number;
+  targetWeightKg?: number;
+  targetDate?: string;
+  /** Negativo para perda de peso. */
+  adjustmentKcal?: number;
+  averageKcal: number;
+  prescribedKcal: number;
+  equations: EquationResult[];
+  healthyWeight?: HealthyWeight;
+  notes?: string;
+}
+
+export interface EnergyPlanSummary {
+  id: number;
+  name: string;
+  date: string;
+  prescribedKcal: number;
+  equations: string[];
+}
+
+export interface EnergyPlanRequest {
+  patientId: number;
+  name?: string;
+  date: string;
+  assessmentId?: number;
+  weightKg?: number;
+  heightCm?: number;
+  activityLevel: ActivityLevel;
+  injuryFactor?: number;
+  metKcal?: number;
+  equations: EnergyEquationName[];
+  targetWeightKg?: number;
+  targetDate?: string;
+  notes?: string;
+}
+
+
+/** Onde uma circunferência é medida. Sete dos treze locais têm lado. */
+export type CircumferenceSite =
+  | "NECK"
+  | "SHOULDER"
+  | "CHEST"
+  | "WAIST"
+  | "ABDOMEN"
+  | "HIP"
+  | "ARM_RELAXED"
+  | "ARM_CONTRACTED"
+  | "FOREARM"
+  | "THIGH_PROXIMAL"
+  | "THIGH_MEDIAL"
+  | "THIGH_DISTAL"
+  | "CALF";
+
+/**
+ * SINGLE não é preenchimento: significa que a medida não tem lado, porque o
+ * local não tem ou porque quem mediu não registrou qual era.
+ */
+export type Side = "SINGLE" | "RIGHT" | "LEFT";
+
+export interface CircumferenceValue {
+  site: CircumferenceSite;
+  side: Side;
+  valueCm: number;
+  /** Só vem na resposta, para a tela não repetir a tradução. */
+  description?: string;
+}
+
+
+// ----------------------------------------------------- refeições favoritas
+
+export interface FavoriteMeal {
+  id: number;
+  /** O nome sob o qual ele salvou. */
+  name: string;
+  /** O nome da refeição em si — "Café da Manhã". */
+  mealName: string;
+  notes?: string;
+  items: Item[];
+  energyKcal?: number;
+  itemsTotal: number;
+}
+
+export interface FavoriteMealRequest {
+  name: string;
+  meal: MealRequest;
+}
+
+
+// ------------------------------------------------- painéis de biomarcadores
+
+export interface PanelParameter {
+  id: number;
+  name: string;
+  unit?: string;
+  group?: string;
+}
+
+export interface LabtestPanel {
+  id: number;
+  name: string;
+  /** Painel do sistema não é editável: é acervo compartilhado. */
+  systemPanel: boolean;
+  /** A TAG que separa os do consultório dos 25 que o sistema traz. */
+  own: boolean;
+  parameters: PanelParameter[];
+}
+
+
+// ------------------------------------------------------------ arquivos anexos
+
+export type AttachmentKind = "FILE" | "LINK";
+
+export interface PatientAttachment {
+  id: number;
+  title: string;
+  kind: AttachmentKind;
+  kindDescription: string;
+  fileName?: string;
+  fileType?: string;
+  fileSize?: number;
+  url?: string;
+  notes?: string;
+  /** A data do documento, que raramente é a data em que ele foi anexado. */
+  referenceDate?: string;
+  createdAt: string;
 }

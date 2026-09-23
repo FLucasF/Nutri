@@ -13,6 +13,7 @@ import br.com.nutriplan.handout.repository.HandoutRepository;
 import br.com.nutriplan.prescription.service.MealPlanService;
 import br.com.nutriplan.shared.error.NotFoundException;
 import br.com.nutriplan.shared.error.BusinessRuleException;
+import br.com.nutriplan.shared.richtext.RichTextDocument;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -42,6 +43,7 @@ public class HandoutService {
     private final PlanImageRepository planImage;
     private final MealPlanService planService;
     private final CurrentContext contextCurrent;
+    private final com.fasterxml.jackson.databind.ObjectMapper mapper;
 
     // ---------------------------------------------------------------- library
 
@@ -59,7 +61,8 @@ public class HandoutService {
 
     @Transactional
     public HandoutDtos.HandoutResponse create(HandoutDtos.HandoutRequest req) {
-        var handout = new Handout(contextCurrent.accountId(), req.title(), req.body());
+        var handout = new Handout(contextCurrent.accountId(), req.title(),
+                RichTextDocument.ofTextOrDocument(req.body(), mapper).json());
         handoutRepository.save(handout);
         log.info("Orientação criada: id={} conta={}", handout.getId(), handout.getAccountId());
         return HandoutDtos.HandoutResponse.from(handout);
@@ -84,7 +87,7 @@ public class HandoutService {
     public HandoutDtos.HandoutResponse update(Long id, HandoutDtos.HandoutRequest req) {
         Handout handout = accountRequire(id);
         handout.setTitle(req.title());
-        handout.setBody(req.body());
+        handout.setBody(RichTextDocument.ofTextOrDocument(req.body(), mapper).json());
         return HandoutDtos.HandoutResponse.from(handout);
     }
 
@@ -165,7 +168,7 @@ public class HandoutService {
             Long planId, Long attachmentId, HandoutDtos.HandoutRequest req) {
         PlanHandout attachment = requireAttachment(planId, attachmentId);
         attachment.setTitle(req.title());
-        attachment.setBody(req.body());
+        attachment.setBody(RichTextDocument.ofTextOrDocument(req.body(), mapper).json());
         return HandoutDtos.PlanHandoutResponse.from(attachment);
     }
 

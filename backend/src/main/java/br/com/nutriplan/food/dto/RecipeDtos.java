@@ -41,7 +41,7 @@ public final class RecipeDtos {
             BigDecimal yieldGrams,
             @Min(value = 1, message = "A receita precisa render ao menos uma porção")
             Integer servings,
-            @Size(max = 4000) String modeInstructions,
+            @Size(max = 20_000) String modeInstructions,
             @NotEmpty(message = "Uma receita precisa de ao menos um ingrediente")
             @Valid List<IngredientRequest> ingredients
     ) {}

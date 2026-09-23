@@ -28,6 +28,7 @@ public class PlanPrintingService {
     private final PublicPlanService publicPlanService;
     private final PlanPdfGenerator generator;
     private final PlanImageRepository planImageRepository;
+    private final br.com.nutriplan.prescription.repository.MealPhotoRepository mealPhotoRepository;
 
     public record PlanPdf(String fileName, byte[] content) {}
 
@@ -39,8 +40,27 @@ public class PlanPrintingService {
         // route refusing.
         boolean draft = plan.getStatus() == PlanStatus.DRAFT;
         var view = publicPlanService.build(plan);
-        byte[] content = generator.generate(view, draft, figuresDe(view));
+        byte[] content = generator.generate(view, draft, figuresDe(view), photosOf(view));
         return new PlanPdf(fileName(plan.getTitle()), content);
+    }
+
+    /**
+     * Carrega as fotos de prato das refeições deste plano.
+     *
+     * Uma consulta por foto, e só das refeições que declaram ter uma: a maioria
+     * não tem, e trazer a tabela inteira por causa de duas fotos seria arrastar
+     * arquivo de plano nenhum para a memória.
+     */
+    private Map<Long, byte[]> photosOf(
+            br.com.nutriplan.prescription.dto.PrescriptionDtos.PublicPlanResponse view) {
+        var photos = new HashMap<Long, byte[]>();
+        for (var meal : view.meals()) {
+            if (meal.photoName() != null && meal.id() != null) {
+                mealPhotoRepository.findById(meal.id())
+                        .ifPresent(photo -> photos.put(meal.id(), photo.getContent()));
+            }
+        }
+        return photos;
     }
 
     /**

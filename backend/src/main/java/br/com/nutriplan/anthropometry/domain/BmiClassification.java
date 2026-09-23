@@ -37,6 +37,16 @@ public enum BmiClassification {
         return description;
     }
 
+    /** The lower bound of the band, or null when the band is open below. */
+    public Double getLimitInferior() {
+        return limitInferior;
+    }
+
+    /** The upper bound of the band, or null when the band is open above. */
+    public Double getLimitSuperior() {
+        return limitSuperior;
+    }
+
     /**
      * Classifies an adult's BMI.
      *

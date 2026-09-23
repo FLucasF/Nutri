@@ -40,7 +40,14 @@ public class LabtestParameter extends BaseEntity {
      * Unit in which the catalog expects the value. It serves to compare series:
      * a value in another unit does not enter the same timeline.
      */
-    @Column(name = "standard_unit", nullable = false, length = 20)
+    /**
+     * A unidade padrão, quando se sabe qual é.
+     *
+     * Aceita nulo porque um parâmetro que se pede não precisa de unidade — os
+     * 154 da lista do cliente vêm sem nenhuma. Quem precisa de unidade é o
+     * resultado, e esse tem a sua em {@code Labtest.unit}.
+     */
+    @Column(name = "standard_unit", length = 20)
     private String unitStandard;
 
     @Column(name = "group_name", length = 60)

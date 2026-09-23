@@ -15,7 +15,9 @@ public record PatientRequest(
         @PastOrPresent(message = "A data de nascimento não pode ser futura") LocalDate dateBirth,
         Sex sex,
         @Size(max = 20) String cpf,
+        @Size(max = 80) String nickname,
+        br.com.nutriplan.patient.domain.BiologicalCondition biologicalCondition,
         @Size(max = 100) String occupation,
         @Size(max = 500) String goal,
-        @Size(max = 2000) String notes
+        @Size(max = 8000) String notes
 ) {}

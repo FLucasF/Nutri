@@ -1,3 +1,11 @@
+-- Nota: quebra de linha e chr(10) e nao CHAR(10).
+--
+-- No H2, CHAR(10) e a funcao que devolve o caractere de codigo 10. No
+-- PostgreSQL, CHAR(10) e a declaracao de um tipo de dez caracteres, e a
+-- concatenacao vira erro de sintaxe. chr(10) e a mesma funcao nos dois.
+-- Isto so apareceu quando as migracoes rodaram num PostgreSQL de verdade:
+-- o H2 em modo de compatibilidade aceitava a forma que o Postgres recusa.
+--
 -- Orientacoes nutricionais: os textos que o nutricionista entrega junto do plano.
 --
 -- Sao duas tabelas e nao uma porque servem a dois momentos diferentes. A
@@ -52,30 +60,30 @@ CREATE INDEX ix_orientacao_plano ON orientacao_do_plano (plano_id);
 -- editavel, e nao prescricao: o nutricionista copia e adapta ao paciente.
 INSERT INTO orientacao (conta_id, titulo, corpo, ativo, criado_em) VALUES
 (NULL, 'Como montar o prato',
- 'Divida o prato em quatro partes iguais.' || CHAR(10) ||
- 'Duas partes de legumes e verduras, cruas ou cozidas.' || CHAR(10) ||
- 'Uma parte de arroz, macarrao, batata, mandioca ou pao.' || CHAR(10) ||
- 'Uma parte de carne, ovo, peixe ou leguminosas.' || CHAR(10) || CHAR(10) ||
+ 'Divida o prato em quatro partes iguais.' || chr(10) ||
+ 'Duas partes de legumes e verduras, cruas ou cozidas.' || chr(10) ||
+ 'Uma parte de arroz, macarrao, batata, mandioca ou pao.' || chr(10) ||
+ 'Uma parte de carne, ovo, peixe ou leguminosas.' || chr(10) || chr(10) ||
  'Sirva-se uma vez so e coma sentado, sem tela por perto.',
  TRUE, CURRENT_TIMESTAMP),
 (NULL, 'Hidratacao ao longo do dia',
- 'Beba de 30 a 35 ml de agua por quilo de peso, distribuidos no dia.' || CHAR(10) ||
- 'Deixe uma garrafa a vista: sede nao e um bom aviso, ela chega tarde.' || CHAR(10) ||
+ 'Beba de 30 a 35 ml de agua por quilo de peso, distribuidos no dia.' || chr(10) ||
+ 'Deixe uma garrafa a vista: sede nao e um bom aviso, ela chega tarde.' || chr(10) ||
  'Cha sem acucar e agua de coco contam. Refrigerante e suco de caixa, nao.',
  TRUE, CURRENT_TIMESTAMP),
 (NULL, 'Leitura de rotulo',
- 'Olhe primeiro a lista de ingredientes, e nao a tabela nutricional.' || CHAR(10) ||
- 'Os ingredientes vem em ordem de quantidade: o primeiro e o que mais tem.' || CHAR(10) ||
- 'Acucar aparece com muitos nomes — xarope de glicose, dextrose, maltodextrina.' || CHAR(10) ||
+ 'Olhe primeiro a lista de ingredientes, e nao a tabela nutricional.' || chr(10) ||
+ 'Os ingredientes vem em ordem de quantidade: o primeiro e o que mais tem.' || chr(10) ||
+ 'Acucar aparece com muitos nomes — xarope de glicose, dextrose, maltodextrina.' || chr(10) ||
  'Quanto mais curta a lista, menos processado o produto.',
  TRUE, CURRENT_TIMESTAMP),
 (NULL, 'Organizacao das compras',
- 'Faca a lista antes de sair e nao va ao mercado com fome.' || CHAR(10) ||
- 'Circule pelas bordas do mercado: e onde ficam hortifruti, carnes e laticinios.' || CHAR(10) ||
+ 'Faca a lista antes de sair e nao va ao mercado com fome.' || chr(10) ||
+ 'Circule pelas bordas do mercado: e onde ficam hortifruti, carnes e laticinios.' || chr(10) ||
  'Deixe legumes lavados e porcionados assim que chegar em casa.',
  TRUE, CURRENT_TIMESTAMP),
 (NULL, 'Comer fora de casa',
- 'Escolha o prato antes de sentar, olhando o cardapio com calma.' || CHAR(10) ||
- 'Peca o molho a parte e prefira grelhado a frito.' || CHAR(10) ||
+ 'Escolha o prato antes de sentar, olhando o cardapio com calma.' || chr(10) ||
+ 'Peca o molho a parte e prefira grelhado a frito.' || chr(10) ||
  'Uma refeicao fora do plano nao desfaz a semana. Retome na proxima.',
  TRUE, CURRENT_TIMESTAMP);

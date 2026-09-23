@@ -6,6 +6,7 @@ import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
 import type { PatientSummary, ResultImport } from "../api/types";
 import { count, plural } from "../text";
+import { Avatar } from "../components/Avatar";
 
 export default function Patients() {
   const navigate = useNavigate();
@@ -134,7 +135,21 @@ export default function Patients() {
                   onClick={() => navigate(`/patients/${p.id}`)}
                 >
                   <td>
-                    <strong>{p.name}</strong>
+                    <div className="row linha-paciente">
+                      <Avatar name={p.name} />
+                      <div>
+                        <strong>{p.name}</strong>
+                        {p.tags.length > 0 && (
+                          <div className="tags-paciente">
+                            {p.tags.map((tag) => (
+                              <span className="tag-paciente" key={tag}>
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td className="discreto">{p.email ?? "—"}</td>
                   <td className="num">{p.age ?? "—"}</td>

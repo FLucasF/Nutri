@@ -4,6 +4,14 @@ import { explainError } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
 import type { Handout } from "../api/types";
 import { count } from "../text";
+import { RichTextEditor } from "../components/RichText/LazyEditor";
+import { RichTextView } from "../components/RichText/RichTextView";
+import {
+  emptyDoc,
+  isEmptyDoc,
+  parseRichDoc,
+  type RichDoc,
+} from "../components/RichText/document";
 
 /**
  * The practice's library of handouts.
@@ -162,7 +170,9 @@ function Card({
         {handout.systemTemplate && <span className="tag">do sistema</span>}
       </header>
 
-      <p className={`body-handout ${open ? "open" : ""}`}>{handout.body}</p>
+      <div className={`body-handout ${open ? "open" : ""}`}>
+        <RichTextView doc={parseRichDoc(handout.body) ?? emptyDoc()} empty="" />
+      </div>
 
       {handout.hasImage && (
         <Figure
@@ -204,7 +214,9 @@ function Editor({
   onSave: () => Promise<void>;
 }) {
   const [title, setTitle] = useState(handout?.title ?? "");
-  const [body, setBody] = useState(handout?.body ?? "");
+  const [body, setBody] = useState<RichDoc>(
+    () => parseRichDoc(handout?.body ?? "") ?? emptyDoc(),
+  );
   const [figure, setFigure] = useState<File | null>(null);
   const feedback = useFeedback();
   const [error, setError] = useState<string | null>(null);
@@ -215,7 +227,10 @@ function Editor({
     setError(null);
     setSaving(true);
     try {
-      const data = { title: title.trim(), body: body.trim() };
+      const data = {
+        title: title.trim(),
+        body: isEmptyDoc(body) ? "" : JSON.stringify(body),
+      };
       // The figure goes after the text because it needs the identifier — in a
       // new handout it only exists once the handout is saved.
       const saved = handout
@@ -256,14 +271,11 @@ function Editor({
 
       <div className="field" style={{ marginTop: "0.7rem" }}>
         <label htmlFor="or-corpo">Texto</label>
-        <textarea
-          id="or-corpo"
-          rows={10}
+        <RichTextEditor
           value={body}
-          onChange={(e) => setBody(e.target.value)}
-          required
-          maxLength={8000}
-          placeholder="Escreva como falaria com o paciente."
+          onChange={setBody}
+          label="Texto da orientação"
+          minHeight="14rem"
         />
         <span className="minusculo">
           Este texto vai para o paciente como você escrever — no link do plano e no PDF.

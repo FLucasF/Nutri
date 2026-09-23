@@ -1,5 +1,7 @@
 package br.com.nutriplan.food.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import br.com.nutriplan.shared.richtext.RichTextDocument;
 import br.com.nutriplan.food.domain.Food;
 import br.com.nutriplan.food.domain.DataSource;
 import br.com.nutriplan.food.domain.RecipeIngredient;
@@ -48,6 +50,7 @@ public class RecipeService {
     private final HouseholdMeasureRepository householdMeasureRepository;
     private final RecipeCalculator calculator;
     private final CurrentContext contextCurrent;
+    private final ObjectMapper mapper;
 
     @Transactional(readOnly = true)
     public Page<RecipeDtos.RecipeSummary> list(String term, Pageable pageable) {
@@ -107,7 +110,8 @@ public class RecipeService {
 
     private void apply(RecipeDtos.RecipeRequest req, Food recipe) {
         recipe.setGroup(req.group());
-        recipe.setModeInstructions(req.modeInstructions());
+        recipe.setModeInstructions(
+                RichTextDocument.ofTextOrDocument(req.modeInstructions(), mapper).json());
         recipe.setYieldGrams(req.yieldGrams());
         recipe.setServings(req.servings());
 

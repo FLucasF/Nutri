@@ -1,6 +1,8 @@
 package br.com.nutriplan.anthropometry.domain;
 
 import br.com.nutriplan.shared.domain.AccountEntity;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,7 +16,9 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -62,16 +66,42 @@ public class AnthropometricAssessment extends AccountEntity {
     @Column(name = "thigh_skinfold",         precision = 6, scale = 2) private BigDecimal skinfoldThigh;
     @Column(name = "calf_skinfold",  precision = 6, scale = 2) private BigDecimal skinfoldCalf;
     @Column(name = "skinfold_mean_axillary", precision = 6, scale = 2) private BigDecimal skinfoldMeanAxillary;
+    @Column(name = "supraspinal_skinfold", precision = 6, scale = 2) private BigDecimal skinfoldSupraspinal;
 
-    // --- circumferences, in centimeters ------------------------------------
-    @Column(name = "waist_circumference",     precision = 6, scale = 2) private BigDecimal circumferenceWaist;
-    @Column(name = "hip_circumference",     precision = 6, scale = 2) private BigDecimal circumferenceHip;
-    @Column(name = "abdomen_circumference",     precision = 6, scale = 2) private BigDecimal circumferenceAbdomen;
-    @Column(name = "arm_circumference",       precision = 6, scale = 2) private BigDecimal circumferenceArm;
-    @Column(name = "forearm_circumference",   precision = 6, scale = 2) private BigDecimal circumferenceForearm;
-    @Column(name = "thigh_circumference",        precision = 6, scale = 2) private BigDecimal circumferenceThigh;
-    @Column(name = "calf_circumference", precision = 6, scale = 2) private BigDecimal circumferenceCalf;
-    @Column(name = "chest_circumference",       precision = 6, scale = 2) private BigDecimal circumferenceChest;
+    /**
+     * Circumferences, in centimetres.
+     *
+     * A child collection and not columns because seven of the thirteen sites
+     * are measured on both sides. See {@link CircumferenceSite}.
+     */
+    @OneToMany(mappedBy = "assessment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AssessmentCircumference> circumferences = new ArrayList<>();
+
+    // --- diâmetros ósseos, em centímetros -----------------------------------
+    @Column(name = "humerus_diameter_cm", precision = 6, scale = 2) private BigDecimal diameterHumerus;
+    @Column(name = "wrist_diameter_cm",   precision = 6, scale = 2) private BigDecimal diameterWrist;
+    @Column(name = "femur_diameter_cm",   precision = 6, scale = 2) private BigDecimal diameterFemur;
+
+    // --- alturas de apoio, em centímetros ------------------------------------
+    @Column(name = "sitting_height_cm", precision = 6, scale = 2) private BigDecimal heightSittingCm;
+    @Column(name = "knee_height_cm",    precision = 6, scale = 2) private BigDecimal heightKneeCm;
+
+    /**
+     * Bioimpedance, as the scale reported it.
+     *
+     * These are typed in, never derived. If the device says 22.4% fat, that is
+     * what the record says — recomputing it by another route would replace a
+     * measurement with an estimate and keep calling it a measurement.
+     */
+    @Column(name = "bia_fat_percentage",        precision = 5, scale = 2) private BigDecimal biaFatPercentage;
+    @Column(name = "bia_fat_mass_kg",           precision = 6, scale = 2) private BigDecimal biaFatMassKg;
+    @Column(name = "bia_muscle_percentage",     precision = 5, scale = 2) private BigDecimal biaMusclePercentage;
+    @Column(name = "bia_muscle_mass_kg",        precision = 6, scale = 2) private BigDecimal biaMuscleMassKg;
+    @Column(name = "bia_lean_mass_kg",          precision = 6, scale = 2) private BigDecimal biaLeanMassKg;
+    @Column(name = "bia_bone_mass_kg",          precision = 6, scale = 2) private BigDecimal biaBoneMassKg;
+    @Column(name = "bia_visceral_fat",          precision = 5, scale = 2) private BigDecimal biaVisceralFat;
+    @Column(name = "bia_body_water_percentage", precision = 5, scale = 2) private BigDecimal biaBodyWaterPercentage;
+    @Column(name = "bia_metabolic_age")                                   private Integer biaMetabolicAge;
 
     // ---- body composition, derived and stored -----------------------------
     @Enumerated(EnumType.STRING)
@@ -101,7 +131,7 @@ public class AnthropometricAssessment extends AccountEntity {
     @Column(name = "total_expenditure_kcal", precision = 8, scale = 2)
     private BigDecimal totalExpenditureKcal;
 
-    @Column(length = 2000)
+    @Column(length = 8000)
     private String notes;
 
     // --------------------------------------------------------------- pregnancy
@@ -147,6 +177,8 @@ public class AnthropometricAssessment extends AccountEntity {
      * allow inferring the distribution of fat.
      */
     public BigDecimal getRatioWaistHip() {
+        BigDecimal circumferenceWaist = circumference(CircumferenceSite.WAIST, Side.SINGLE);
+        BigDecimal circumferenceHip = circumference(CircumferenceSite.HIP, Side.SINGLE);
         if (circumferenceWaist == null || circumferenceHip == null || circumferenceHip.signum() <= 0) {
             return null;
         }
@@ -165,6 +197,7 @@ public class AnthropometricAssessment extends AccountEntity {
         add(map, Skinfold.THIGH, skinfoldThigh);
         add(map, Skinfold.CALF, skinfoldCalf);
         add(map, Skinfold.MEAN_AXILLARY, skinfoldMeanAxillary);
+        add(map, Skinfold.SUPRASPINAL, skinfoldSupraspinal);
         return map;
     }
 
@@ -179,6 +212,7 @@ public class AnthropometricAssessment extends AccountEntity {
             case THIGH -> skinfoldThigh = value;
             case CALF -> skinfoldCalf = value;
             case MEAN_AXILLARY -> skinfoldMeanAxillary = value;
+            case SUPRASPINAL -> skinfoldSupraspinal = value;
         }
     }
 
@@ -205,5 +239,53 @@ public class AnthropometricAssessment extends AccountEntity {
         if (value != null && value.signum() > 0) {
             map.put(skinfold, value.doubleValue());
         }
+    }
+
+    // ------------------------------------------------------- circunferências
+
+    /** The value at one site and side, or null when it was not measured. */
+    public BigDecimal circumference(CircumferenceSite site, Side side) {
+        return circumferences.stream()
+                .filter(measure -> measure.getSite() == site && measure.getSide() == side)
+                .map(AssessmentCircumference::getValueCm)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void clearCircumferences() {
+        circumferences.clear();
+    }
+
+    /**
+     * Define uma circunferencia, reaproveitando a linha que ja existir.
+     *
+     * Apagar tudo e inserir de novo parece mais simples e nao funciona numa
+     * edicao: ha um UNIQUE (assessment_id, site, side), e o Hibernate manda os
+     * INSERT antes dos DELETE — a cintura reenviada colidia com a cintura que
+     * ainda estava la, e a correcao de um peso voltava 409.
+     *
+     * Reaproveitar tambem preserva o id da medida, que e o que liga a linha ao
+     * historico de comparacao.
+     */
+    public void set(CircumferenceSite site, Side side, BigDecimal valueCm) {
+        for (AssessmentCircumference measure : circumferences) {
+            if (measure.getSite() == site && measure.getSide() == side) {
+                measure.setValueCm(valueCm);
+                return;
+            }
+        }
+        add(site, side, valueCm);
+    }
+
+    /** Remove as que nao vieram no pedido. */
+    public void keepOnly(java.util.Set<String> wanted) {
+        circumferences.removeIf(
+                measure -> !wanted.contains(measure.getSite().name() + "|" + measure.getSide()));
+    }
+
+    public void add(CircumferenceSite site, Side side, BigDecimal valueCm) {
+        var measure = new AssessmentCircumference(site, side, valueCm);
+        measure.setAssessment(this);
+        circumferences.add(measure);
     }
 }

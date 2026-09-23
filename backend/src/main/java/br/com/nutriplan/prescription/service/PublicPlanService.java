@@ -100,7 +100,8 @@ public class PublicPlanService {
 
         List<PrescriptionDtos.PublicMealResponse> meals = plan.getMeals().stream()
                 .map(meal -> new PrescriptionDtos.PublicMealResponse(
-                        meal.getName(), meal.getTime(), meal.getNotes(),
+                        meal.getId(), meal.getName(), meal.getTime(), meal.getNotes(),
+                        meal.getPhotoName(),
                         meal.getItems().stream().map(this::buildItem).toList()))
                 .toList();
 
@@ -124,6 +125,7 @@ public class PublicPlanService {
                                 imageAddress(plan.getPublicIdentifier(), o)))
                         .toList(),
                 meals,
+                recipesOf(plan, foods),
                 new PrescriptionDtos.PublicSummaryResponse(
                         composition.getEnergyKcal(),
                         composition.getProteinG(),
@@ -171,8 +173,44 @@ public class PublicPlanService {
                 file.getContent());
     }
 
+    /**
+     * As receitas usadas no cardapio, com o preparo que o paciente precisa ler.
+     *
+     * Na ordem em que aparecem, e sem repetir: a mesma receita costuma entrar
+     * no almoco e no jantar, e imprimi-la duas vezes dobraria a folha sem dizer
+     * nada de novo. Entram so as que tem preparo escrito — uma receita sem
+     * instrucao nenhuma viraria um titulo solto embaixo de "Modo de preparo".
+     */
+    private List<PrescriptionDtos.PublicRecipeResponse> recipesOf(
+            MealPlan plan, java.util.Map<Long, br.com.nutriplan.food.domain.Food> foods) {
+
+        var output = new java.util.ArrayList<PrescriptionDtos.PublicRecipeResponse>();
+        var seen = new java.util.HashSet<Long>();
+
+        for (var meal : plan.getMeals()) {
+            for (var item : meal.getItems()) {
+                Long foodId = item.getFoodId();
+                if (foodId == null || !seen.add(foodId)) {
+                    continue;
+                }
+                var food = foods.get(foodId);
+                if (food == null || !food.isRecipe()) {
+                    continue;
+                }
+                String preparation = food.getModeInstructions();
+                if (preparation == null || preparation.isBlank()) {
+                    continue;
+                }
+                output.add(new PrescriptionDtos.PublicRecipeResponse(
+                        foodId, food.getDescription(), preparation));
+            }
+        }
+        return output;
+    }
+
     private PrescriptionDtos.PublicItemResponse buildItem(MealItem item) {
         return new PrescriptionDtos.PublicItemResponse(
+                item.getKind(),
                 item.getDescription(),
                 item.servingFormatted(),
                 item.getGrams(),

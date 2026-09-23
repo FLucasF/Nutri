@@ -13,6 +13,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    # As migrações têm acento. Sem declarar, o Flyway lê no charset da
+    # plataforma, e a mesma migração passaria a significar coisas diferentes
+    # conforme a máquina que a aplica.
+    encoding: UTF-8
   jackson:
     default-property-inclusion: non_null
     serialization:

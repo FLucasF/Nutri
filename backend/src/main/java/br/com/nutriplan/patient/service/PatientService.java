@@ -1,5 +1,7 @@
 package br.com.nutriplan.patient.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import br.com.nutriplan.shared.richtext.RichTextDocument;
 import br.com.nutriplan.auth.service.CurrentContext;
 import br.com.nutriplan.auth.service.AuthenticatedUser;
 import br.com.nutriplan.patient.domain.Patient;
@@ -18,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 @Service
@@ -28,12 +32,31 @@ public class PatientService {
     private final PatientRepository patientRepository;
     private final CurrentContext contextCurrent;
     private final PatientsImporter importer;
+    private final br.com.nutriplan.patient.repository.PatientTagLinkRepository tagLinkRepository;
+    private final ObjectMapper mapper;
 
     @Transactional(readOnly = true)
     public Page<PatientSummary> list(String term, Boolean active, Pageable pageable) {
         String search = StringUtils.hasText(term) ? term.trim() : null;
-        return patientRepository.find(contextCurrent.accountId(), search, active, pageable)
-                .map(PatientSummary::from);
+        Page<br.com.nutriplan.patient.domain.Patient> page =
+                patientRepository.find(contextCurrent.accountId(), search, active, pageable);
+
+        // As TAGs da página inteira numa consulta só. Uma por paciente daria
+        // vinte e cinco consultas para desenhar uma lista.
+        List<Long> ids = page.getContent().stream()
+                .map(br.com.nutriplan.patient.domain.Patient::getId)
+                .toList();
+        Map<Long, List<String>> tagsByPatient = new HashMap<>();
+        if (!ids.isEmpty()) {
+            for (var link : tagLinkRepository.ofPatients(ids)) {
+                tagsByPatient
+                        .computeIfAbsent(link.getPatientId(), key -> new ArrayList<>())
+                        .add(link.getTag().getName());
+            }
+        }
+
+        return page.map(patient -> PatientSummary.from(patient,
+                tagsByPatient.getOrDefault(patient.getId(), List.of())));
     }
 
     @Transactional(readOnly = true)
@@ -172,8 +195,15 @@ public class PatientService {
         patient.setDateBirth(req.dateBirth());
         patient.setSex(req.sex());
         patient.setCpf(req.cpf());
+        patient.setNickname(req.nickname());
+        // A condição biológica só se aplica a mulher. Guardá-la para um homem
+        // seria registrar um fato que não existe.
+        patient.setBiologicalCondition(
+                req.sex() == br.com.nutriplan.patient.domain.Sex.FEMALE
+                        ? req.biologicalCondition()
+                        : null);
         patient.setOccupation(req.occupation());
         patient.setGoal(req.goal());
-        patient.setNotes(req.notes());
+        patient.setNotes(RichTextDocument.ofTextOrDocument(req.notes(), mapper).json());
     }
 }

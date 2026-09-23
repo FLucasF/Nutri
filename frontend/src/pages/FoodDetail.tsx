@@ -5,6 +5,7 @@ import { explainError } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
 import { NUTRIENTS, formatNutrient } from "../api/nutrients";
 import type { FoodDetail as Food, CalculatedServing } from "../api/types";
+import { Own, Reference } from "../components/Own";
 
 const GROUPS_SHOWN = [
   { group: "energy", title: "Energia" },
@@ -86,7 +87,11 @@ export default function FoodDetail() {
             {food.brand ? ` · ${food.brand}` : ""} · Fonte: {food.sourceDescription}
           </p>
         </div>
-        {food.publicBase && <span className="tag">tabela de referência</span>}
+        {food.publicBase ? (
+          <Reference>tabela de referência</Reference>
+        ) : (
+          <Own>alimento seu</Own>
+        )}
       </div>
 
       {error && <div className="warning error" style={{ marginBottom: "0.9rem" }}>{error}</div>}
@@ -234,7 +239,7 @@ function Measures({ food, onChange }: { food: Food; onChange: () => void }) {
                   </td>
                   <td className="num">{formatWeight(m.grams)}</td>
                   <td>
-                    <span className="tag">{m.forCatalogBase ? "do sistema" : "sua"}</span>
+                    {m.forCatalogBase ? <Reference>do sistema</Reference> : <Own />}
                   </td>
                   <td style={{ textAlign: "right" }}>
                     {m.editable && (

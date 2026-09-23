@@ -3,6 +3,8 @@ package br.com.nutriplan.prescription.domain;
 import br.com.nutriplan.shared.domain.BaseEntity;
 import br.com.nutriplan.shared.util.PluralMeasure;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -56,6 +58,11 @@ public class MealItem extends BaseEntity {
     private Meal meal;
 
     /** Null in a purely textual item, used in the qualitative method. */
+    /** Food line or separator. See {@link MealItemKind}. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private MealItemKind kind = MealItemKind.FOOD;
+
     @Column(name = "food_id")
     private Long foodId;
 
@@ -85,7 +92,7 @@ public class MealItem extends BaseEntity {
     @Column(name = "sort_order", nullable = false)
     private Integer order;
 
-    @Column(length = 500)
+    @Column(length = 8000)
     private String notes;
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -101,9 +108,20 @@ public class MealItem extends BaseEntity {
         substitutions.add(substitution);
     }
 
-    /** An item with a known weight enters the totals; without a weight, it does not. */
-    public boolean entersNoCalculation() {
-        return foodId != null && grams != null && grams.signum() > 0;
+    /**
+     * Whether the line reaches the totals.
+     *
+     * A separator has nothing to add up, and an item without a known weight
+     * has no number to add — "salada a vontade" is a prescription, not a
+     * quantity.
+     */
+    public boolean entersCalculation() {
+        return kind == MealItemKind.FOOD
+                && foodId != null && grams != null && grams.signum() > 0;
+    }
+
+    public boolean isSeparator() {
+        return kind == MealItemKind.SEPARATOR;
     }
 
     /** Ready-made portion text, the way the patient reads it. */

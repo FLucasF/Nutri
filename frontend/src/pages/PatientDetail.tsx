@@ -5,6 +5,12 @@ import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
 import { formatBr } from "../api/dates";
+import { Avatar } from "../components/Avatar";
+import { PatientAttachments } from "../components/PatientAttachments";
+import { PatientAppointment } from "../components/PatientAppointment";
+import { WeightChart } from "../components/WeightChart";
+import { PatientNotes, PatientTags } from "../components/PatientProfile";
+import { NotesField, NotesView } from "../components/RichText/NotesField";
 import type {
   Patient,
   PlanSummary,
@@ -73,19 +79,35 @@ export default function PatientDetail() {
           <Link to="/patients" className="minusculo">
             ← Pacientes
           </Link>
-          <h1 style={{ marginTop: "0.2rem" }}>{patient.name}</h1>
-          <p>
-            {patient.age ? `${patient.age} anos` : "Idade não informada"}
-            {patient.goal ? ` · ${patient.goal}` : ""}
-          </p>
+          <div className="row" style={{ alignItems: "center", gap: "0.7rem" }}>
+            <Avatar name={patient.name} size={44} />
+            <div>
+              <h1 style={{ margin: "0.2rem 0 0" }}>{patient.name}</h1>
+              <p style={{ margin: 0 }}>
+                {patient.nickname ? `"${patient.nickname}" · ` : ""}
+                {patient.age ? `${patient.age} anos` : "Idade não informada"}
+                {patient.biologicalCondition === "PREGNANT" ? " · gestante" : ""}
+                {patient.biologicalCondition === "LACTATING" ? " · lactante" : ""}
+                {patient.goal ? ` · ${patient.goal}` : ""}
+              </p>
+            </div>
+          </div>
+          <PatientTags patientId={patient.id} />
         </div>
         <div className="row">
           {!patient.active && <span className="tag">inativo</span>}
           <button className="button secundario" onClick={() => setEditing((v) => !v)}>
             {editing ? "Cancelar edição" : "Editar"}
           </button>
+          <PatientAppointment patientId={patient.id} />
+          <Link className="button secundario" to={`/patients/${patient.id}/anamneses`}>
+            Anamnese
+          </Link>
           <Link className="button secundario" to={`/patients/${patient.id}/anthropometry`}>
             Antropometria
+          </Link>
+          <Link className="button secundario" to={`/patients/${patient.id}/energy`}>
+            Cálculo energético
           </Link>
           <Link className="button secundario" to={`/patients/${patient.id}/labtests`}>
             Exames
@@ -125,12 +147,15 @@ export default function PatientDetail() {
               value={patient.sex === "FEMALE" ? "Feminino" : patient.sex === "MALE" ? "Masculino" : undefined}
             />
             <Datum label="CPF" value={patient.cpf} />
+            <Datum label="Apelido" value={patient.nickname} />
             <Datum label="Profissão" value={patient.occupation} />
           </div>
           {patient.notes && (
             <div style={{ marginTop: "0.9rem" }}>
               <span className="minusculo">Observações</span>
-              <p style={{ margin: "0.2rem 0 0", fontSize: "0.9rem" }}>{patient.notes}</p>
+              <div style={{ marginTop: "0.2rem", fontSize: "0.9rem" }}>
+                <NotesView value={patient.notes} />
+              </div>
             </div>
           )}
           <div className="row" style={{ marginTop: "1rem" }}>
@@ -143,6 +168,12 @@ export default function PatientDetail() {
           </div>
         </div>
       )}
+
+      <WeightChart patientId={patient.id} />
+
+      <PatientNotes patientId={patient.id} />
+
+      <PatientAttachments patientId={patient.id} />
 
       <QuestionnairesSection patientId={patient.id} />
 
@@ -157,7 +188,6 @@ export default function PatientDetail() {
             <thead>
               <tr>
                 <th>Plano</th>
-                <th>Método</th>
                 <th>Situação</th>
                 <th className="num">Refeições</th>
                 <th className="num">kcal</th>
@@ -173,7 +203,6 @@ export default function PatientDetail() {
                   <td>
                     <strong>{plan.title}</strong>
                   </td>
-                  <td className="discreto">{plan.method.toLowerCase()}</td>
                   <td>
                     <TagStatus status={plan.status} />
                   </td>
@@ -238,7 +267,7 @@ function QuestionnairesSection({ patientId }: { patientId: number }) {
   }
 
   async function copy(sending: QuestionnaireAnswer) {
-    const address = `${window.location.origin}/formulario/${sending.publicIdentifier}`;
+    const address = `${window.location.origin}/form/${sending.publicIdentifier}`;
     try {
       await navigator.clipboard.writeText(address);
       setCopied(sending.id);
@@ -379,6 +408,8 @@ function FormEdit({
     dateBirth: patient.dateBirth ?? "",
     sex: patient.sex ?? "",
     cpf: patient.cpf ?? "",
+    nickname: patient.nickname ?? "",
+    biologicalCondition: patient.biologicalCondition ?? "",
     occupation: patient.occupation ?? "",
     goal: patient.goal ?? "",
     notes: patient.notes ?? "",
@@ -404,6 +435,13 @@ function FormEdit({
         dateBirth: data.dateBirth || undefined,
         sex: (data.sex || undefined) as never,
         cpf: data.cpf || undefined,
+        nickname: data.nickname || undefined,
+        // Só faz sentido para mulher. O servidor descarta de qualquer forma;
+        // não mandar evita a tela sugerir que faz.
+        biologicalCondition:
+          data.sex === "FEMALE"
+            ? ((data.biologicalCondition || undefined) as never)
+            : undefined,
         occupation: data.occupation || undefined,
         goal: data.goal || undefined,
         notes: data.notes || undefined,
@@ -464,6 +502,29 @@ function FormEdit({
           <FieldError field="cpf" errors={fields.errors} />
         </div>
         <div className="field">
+          <label htmlFor="ed-apelido">Apelido</label>
+          <input
+            id="ed-apelido"
+            value={data.nickname}
+            onChange={(e) => change("nickname", e.target.value)}
+            maxLength={80}
+          />
+        </div>
+        {data.sex === "FEMALE" && (
+          <div className="field">
+            <label htmlFor="ed-condicao">Condição biológica</label>
+            <select
+              id="ed-condicao"
+              value={data.biologicalCondition}
+              onChange={(e) => change("biologicalCondition", e.target.value)}
+            >
+              <option value="">Não gestante</option>
+              <option value="PREGNANT">Gestante</option>
+              <option value="LACTATING">Lactante</option>
+            </select>
+          </div>
+        )}
+        <div className="field">
           <label htmlFor="ed-prof">Profissão</label>
           <input id="ed-prof" value={data.occupation} onChange={(e) => change("occupation", e.target.value)} name="occupation" {...fields.props("occupation")} />
           <FieldError field="occupation" errors={fields.errors} />
@@ -474,13 +535,13 @@ function FormEdit({
           <FieldError field="goal" errors={fields.errors} />
         </div>
       </div>
-      <div className="field" style={{ marginTop: "0.85rem" }}>
-        <label htmlFor="ed-obs">Observações</label>
-        <textarea
-          id="ed-obs"
-          rows={3}
-          value={data.notes}
-          onChange={(e) => change("notes", e.target.value)}
+      <div style={{ marginTop: "0.85rem" }}>
+        <NotesField
+          label="Observações"
+          value={data.notes ?? ""}
+          onChange={(next) => change("notes", next)}
+          minHeight="7rem"
+          onDemand
         />
       </div>
       <div className="row end" style={{ marginTop: "0.9rem" }}>

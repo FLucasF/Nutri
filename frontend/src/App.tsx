@@ -14,6 +14,8 @@ import PlanEditor from "./pages/PlanEditor";
 import RecipeEditor from "./pages/RecipeEditor";
 import PatientPlan from "./pages/PatientPlan";
 import Anthropometry from "./pages/Anthropometry";
+import Anamneses from "./pages/Anamneses";
+import EnergyPlans from "./pages/EnergyPlans";
 import Schedule from "./pages/Schedule";
 import Team from "./pages/Team";
 import Labtests from "./pages/Labtests";
@@ -154,6 +156,8 @@ export default function App() {
                   <Route path="/" element={<Navigate to="/patients" replace />} />
                   <Route path="/patients" element={<Patients />} />
                   <Route path="/patients/:id" element={<PatientDetail />} />
+                  <Route path="/patients/:id/anamneses" element={<Anamneses />} />
+                  <Route path="/patients/:id/energy" element={<EnergyPlans />} />
                   <Route path="/patients/:id/anthropometry" element={<Anthropometry />} />
                   <Route path="/patients/:id/labtests" element={<Labtests />} />
                   <Route path="/schedule" element={<Schedule />} />
