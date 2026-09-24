@@ -7,7 +7,10 @@ import { acharAlimento, criarAvaliacao, criarPaciente, type Conta } from "./cont
  * em todos os seus estados: paciente com TAGs, anotações e anexo; três
  * avaliações; dois cálculos energéticos (um com avisos); anamnese com campos;
  * exames com resultados e pedido; questionário enviado e outro respondido;
- * agenda de hoje; financeiro pago e pendente; orientação anexada ao plano;
+ * agenda de hoje; financeiro pago e pendente; parceiro que indicou o
+ * paciente; pacote de três encontros na consulta de hoje, já paga; consulta
+ * realizada no mês passado (com atestado); receita parcelada em três;
+ * orientação anexada ao plano;
  * receita usada no cardápio; refeição salva; plano publicado com item à
  * vontade, separador e substituição; um rascunho; um modelo; uma secretária.
  *
@@ -28,6 +31,10 @@ export type CenarioCompleto = {
   formularioRespondido: string;
   calculoComAvisos: number;
   hoje: string;
+  parceiro: { id: number; name: string };
+  pacote: { id: number; name: string };
+  /** A consulta realizada no mês passado: tem atestado e ainda não foi paga. */
+  consultaRealizada: number;
 };
 
 function docSimples(texto: string, negrito = false) {
@@ -59,9 +66,40 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
   const hojeIso = isoLocal(hoje);
   const amanha = new Date(hoje.getTime() + 24 * 3600 * 1000);
 
+  // --------------------------------------------------- parceiros e pacotes
+  const parceiro = await ok(
+    await api.post("/api/partners", {
+      data: {
+        name: "Academia Corpo Leve",
+        kind: "Academia",
+        contact: "(11) 98888-7777",
+        notes: "Indica alunos do treino funcional.",
+      },
+    }),
+    "parceiro",
+  );
+  const outroParceiro = await ok(
+    await api.post("/api/partners", { data: { name: "Dra. Helena Prado", kind: "Médico" } }),
+    "parceiro 2",
+  );
+  const pacote = await ok(
+    await api.post("/api/packages", {
+      data: {
+        name: "Acompanhamento trimestral",
+        amount: 900,
+        sessions: 3,
+        intervalDays: 30,
+        notes: "Três encontros presenciais.",
+      },
+    }),
+    "pacote",
+  );
+  await ok(await api.post("/api/packages", { data: { name: "Consulta avulsa", amount: 250 } }), "pacote 2");
+
   // ------------------------------------------------------------ pacientes
   const paciente = await criarPaciente(conta, {
     name: "Aparência Completa da Silva",
+    partnerId: parceiro.id,
     sex: "FEMALE",
     dateBirth: "1990-05-20",
     cpf: "123.456.789-09",
@@ -309,7 +347,7 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
   await anonima.dispose();
 
   // ------------------------------------------------------------------ agenda
-  await ok(
+  const deHoje = await ok(
     await api.post("/api/schedule", {
       data: {
         patientId: paciente.id,
@@ -317,9 +355,16 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
         durationMinutes: 60,
         type: "FOLLOWUP",
         notes: "Retorno de três meses.",
+        packageId: pacote.id,
       },
     }),
     "atendimento de hoje",
+  );
+  await ok(
+    await api.post(`/api/finance/appointments/${deHoje.id}/payment`, {
+      data: { paymentMethod: "PIX", documentNumber: "REC-2026-014" },
+    }),
+    "pagamento da consulta de hoje",
   );
   await ok(
     await api.post("/api/schedule", {
@@ -328,9 +373,27 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
         start: `${isoLocal(amanha)}T10:30:00`,
         durationMinutes: 90,
         type: "FIRST_CONSULTATION",
+        partnerId: outroParceiro.id,
       },
     }),
     "atendimento de amanhã",
+  );
+  const mesPassado = new Date(hoje.getFullYear(), hoje.getMonth() - 1, Math.min(hoje.getDate(), 28));
+  const realizada = await ok(
+    await api.post("/api/schedule", {
+      data: {
+        patientId: paciente.id,
+        start: `${isoLocal(mesPassado)}T14:00:00`,
+        durationMinutes: 60,
+        type: "FIRST_CONSULTATION",
+        notes: "Primeira consulta.",
+      },
+    }),
+    "consulta do mês passado",
+  );
+  await ok(
+    await api.post(`/api/schedule/${realizada.id}/status`, { data: { status: "COMPLETED" } }),
+    "consulta realizada",
   );
 
   // -------------------------------------------------------------- financeiro
@@ -352,6 +415,23 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
   await ok(
     await api.post(`/api/finance/transactions/${receita.id}/pay`, { data: { datePayment: hojeIso } }),
     "baixa",
+  );
+  await ok(
+    await api.post("/api/finance/transactions", {
+      data: {
+        type: "INCOME",
+        value: 600,
+        accrual: hojeIso,
+        due: hojeIso,
+        category: "Pacote",
+        description: "Pacote parcelado em três",
+        patientId: paciente.id,
+        packageId: pacote.id,
+        documentNumber: "NF 1234",
+        installments: 3,
+      },
+    }),
+    "receita parcelada",
   );
   await ok(
     await api.post("/api/finance/transactions", {
@@ -534,5 +614,8 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
     formularioRespondido: envio2.publicIdentifier,
     calculoComAvisos: agressivo.id,
     hoje: hojeIso,
+    parceiro: { id: parceiro.id, name: parceiro.name },
+    pacote: { id: pacote.id, name: pacote.name },
+    consultaRealizada: realizada.id,
   };
 }

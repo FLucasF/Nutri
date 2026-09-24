@@ -58,6 +58,8 @@ function estadosInternos(): Estado[] {
     { nome: "ficha: editando o cadastro", rota: ficha, preparar: clicar("Editar", true) },
     { nome: "ficha: TAGs abertas", rota: ficha, preparar: clicar("alterar") },
     { nome: "ficha: consulta aberta", rota: ficha, preparar: clicar("Consulta") },
+    { nome: "ficha: pagamento pela ficha", rota: ficha, preparar: clicar("Registrar pagamento") },
+    { nome: "ficha: recibo pela ficha", rota: ficha, preparar: clicar("Recibo") },
     { nome: "ficha: anexar arquivo", rota: ficha, preparar: clicar("Anexar arquivo") },
     { nome: "ficha: guardar link", rota: ficha, preparar: clicar("Guardar link") },
     { nome: "ficha: respostas do questionário", rota: ficha, preparar: async (page) => {
@@ -98,10 +100,30 @@ function estadosInternos(): Estado[] {
     { nome: "agenda: semana", rota: () => "/schedule", preparar: clicar("Semana") },
     { nome: "agenda: novo atendimento", rota: () => "/schedule", preparar: clicar("Novo atendimento") },
     { nome: "agenda: assinatura do calendário", rota: () => "/schedule", preparar: clicar("Ver no meu calendário") },
+    { nome: "agenda: mês", rota: () => "/schedule", preparar: clicar("Mês") },
+    { nome: "agenda: pagamento da consulta na semana", rota: () => "/schedule", preparar: async (page) => {
+      await clicar("Semana")(page);
+      await clicar("Registrar pagamento")(page);
+    } },
+    { nome: "agenda: recibo da consulta", rota: () => "/schedule", preparar: clicar("Recibo") },
 
     { nome: "financeiro: lista", rota: () => "/finance" },
     { nome: "financeiro: novo lançamento", rota: () => "/finance", preparar: clicar("Novo lançamento") },
     { nome: "financeiro: recibo", rota: () => "/finance", preparar: clicar("Recibo") },
+    { nome: "financeiro: lançamento parcelado", rota: () => "/finance", preparar: async (page) => {
+      await clicar("Novo lançamento")(page);
+      await page.getByLabel("Valor (R$)").fill("900");
+      await page.getByLabel("Parcelas").fill("3");
+    } },
+    { nome: "financeiro: vindo da ficha", rota: () => `/finance?patientId=${c.paciente.id}` },
+
+    { nome: "parceiros: lista e relatório", rota: () => "/partners" },
+    { nome: "parceiros: novo parceiro", rota: () => "/partners", preparar: clicar("Novo parceiro") },
+    { nome: "parceiros: editando", rota: () => "/partners", preparar: clicar("Editar", true) },
+    { nome: "pacotes: lista", rota: () => "/packages" },
+    { nome: "pacotes: novo pacote", rota: () => "/packages", preparar: clicar("Novo pacote") },
+    { nome: "estatísticas: 6 meses", rota: () => "/statistics" },
+    { nome: "estatísticas: 12 meses", rota: () => "/statistics", preparar: clicar("12 meses") },
 
     { nome: "alimentos: lista", rota: () => "/foods" },
     { nome: "alimentos: busca", rota: () => "/foods", preparar: async (page) => {
@@ -202,6 +224,9 @@ test.describe("contraste em todas as telas (1440)", () => {
       `/patients/${p}/labtests`,
       "/schedule",
       "/finance",
+      "/partners",
+      "/packages",
+      "/statistics",
       "/foods",
       `/foods/${c.alimentoId}`,
       `/recipes/${c.receitaId}`,
