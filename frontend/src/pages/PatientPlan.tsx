@@ -6,6 +6,7 @@ import type { PublicItem, PublicMeal, PublicPlan } from "../api/types";
 import { MacroRing } from "../components/MacroRing";
 import { RichTextView } from "../components/RichText/RichTextView";
 import { emptyDoc, parseRichDoc } from "../components/RichText/document";
+import { PlanGate, readPlanAccess } from "../components/PlanGate";
 
 /**
  * The plan as the patient receives it.
@@ -25,15 +26,30 @@ export default function PatientPlan() {
   const [plan, setPlan] = useState<PublicPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** O plano pede a data de nascimento antes de abrir. */
+  const [gated, setGated] = useState(false);
+  const [access, setAccess] = useState<string | undefined>(() =>
+    identifier ? readPlanAccess(identifier) : undefined,
+  );
   // Read once: the "current" meal is the one the patient is in when the page
   // opens, and it must not jump while they are reading.
   const [now] = useState(() => new Date());
 
   useEffect(() => {
     if (!identifier) return;
+    setLoading(true);
+    // Pergunta antes se o link abre: uma recusa no meio do caminho normal
+    // viraria erro no console de todo paciente que abre o plano.
     api
-      .publicPlan(identifier)
-      .then(setPlan)
+      .publicPlanGate(identifier, access)
+      .then(async (gate) => {
+        if (!gate.allowed) {
+          setGated(true);
+          return;
+        }
+        setPlan(await api.publicPlan(identifier, access));
+        setGated(false);
+      })
       .catch((e) =>
         setError(
           e instanceof ErrorApi
@@ -42,7 +58,7 @@ export default function PatientPlan() {
         ),
       )
       .finally(() => setLoading(false));
-  }, [identifier]);
+  }, [identifier, access]);
 
   useEffect(() => {
     if (plan?.title) {
@@ -56,6 +72,10 @@ export default function PatientPlan() {
         <p className="loading">Carregando seu plano…</p>
       </div>
     );
+  }
+
+  if (gated && identifier) {
+    return <PlanGate identifier={identifier} onOpened={setAccess} />;
   }
 
   if (error || !plan) {
@@ -164,7 +184,17 @@ export default function PatientPlan() {
                 {/* No `loading="lazy"`: these are one or two small figures, and
                     the patient tends to print this page. A deferred image is an
                     image that risks coming out blank on paper. */}
-                {o.image && <img className="plan-figure" src={o.image} alt={o.title} />}
+                {o.image && (
+                  <img
+                    className="plan-figure"
+                    src={
+                      plan.accessToken
+                        ? `${o.image}?access=${encodeURIComponent(plan.accessToken)}`
+                        : o.image
+                    }
+                    alt={o.title}
+                  />
+                )}
               </article>
             ))}
           </section>

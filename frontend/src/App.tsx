@@ -13,6 +13,7 @@ import {
   Monitor,
   Moon,
   Package,
+  Star,
   Sun,
   UserCog,
   Users,
@@ -50,6 +51,7 @@ import Handouts from "./pages/Handouts";
 import Partners from "./pages/Partners";
 import Packages from "./pages/Packages";
 import Statistics from "./pages/Statistics";
+import Favorites from "./pages/Favorites";
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -74,6 +76,7 @@ const SCHEDULE: NavEntry = { to: "/schedule", label: "Agenda", icon: CalendarDay
 const PRESCRIPTIONS: NavEntry = { to: "/prescriptions", label: "Prescrições", icon: ClipboardList };
 const FOODS: NavEntry = { to: "/foods", label: "Alimentos", icon: Apple };
 const HANDOUTS: NavEntry = { to: "/handouts", label: "Orientações", icon: BookOpen };
+const FAVORITES: NavEntry = { to: "/favorites", label: "Favoritos", icon: Star };
 const QUESTIONNAIRES: NavEntry = { to: "/questionnaires", label: "Questionários", icon: ListChecks };
 const FINANCE: NavEntry = { to: "/finance", label: "Financeiro", icon: Wallet };
 const TEAM: NavEntry = { to: "/team", label: "Equipe", icon: UserCog };
@@ -92,7 +95,7 @@ function groupsFor(isAssistant: boolean): NavGroup[] {
   }
   return [
     { label: "Clínica", items: [PATIENTS, SCHEDULE, PRESCRIPTIONS] },
-    { label: "Biblioteca", items: [FOODS, HANDOUTS, QUESTIONNAIRES] },
+    { label: "Biblioteca", items: [FOODS, HANDOUTS, QUESTIONNAIRES, FAVORITES] },
     { label: "Consultório", items: [FINANCE, STATISTICS, PARTNERS, PACKAGES, TEAM] },
   ];
 }
@@ -479,6 +482,7 @@ export default function App() {
                   <Route path="/schedule" element={<Schedule />} />
                   <Route path="/finance" element={<Finance />} />
                   <Route path="/statistics" element={<Statistics />} />
+                  <Route path="/favorites" element={<Favorites />} />
                   <Route path="/partners" element={<Partners />} />
                   <Route path="/packages" element={<Packages />} />
                   <Route path="/foods" element={<Foods />} />

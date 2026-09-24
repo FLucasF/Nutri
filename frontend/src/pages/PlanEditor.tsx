@@ -38,7 +38,8 @@ import { QuickFood, QuickMeasure } from "../components/QuickFood";
 import { RichTextEditor } from "../components/RichText/LazyEditor";
 import { RichTextView } from "../components/RichText/RichTextView";
 import { emptyDoc, isEmptyDoc, parseRichDoc } from "../components/RichText/document";
-import { ErrorApi, api } from "../api/client";
+import { ErrorApi, allPages, api } from "../api/client";
+import { MicronutrientAdequacy } from "../components/MicronutrientAdequacy";
 import { formatBr } from "../api/dates";
 import { explainError, whereLook } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
@@ -254,9 +255,8 @@ export default function PlanEditor() {
   }, []);
 
   useEffect(() => {
-    api.patients
-      .list({ active: true, size: 200 })
-      .then((p) => setPatients(p.content))
+    allPages((page, size) => api.patients.list({ active: true, page, size }))
+      .then(setPatients)
       .catch(() => setPatients([]));
   }, []);
 
@@ -284,9 +284,8 @@ export default function PlanEditor() {
 
   useEffect(() => {
     if (planId) return;
-    api.prescriptions
-      .list({ template: true, size: 100 })
-      .then((page) => setTemplates(page.content))
+    allPages((page, size) => api.prescriptions.list({ template: true, page, size }))
+      .then(setTemplates)
       .catch(() => setTemplates([]));
   }, [planId]);
 
@@ -1114,6 +1113,7 @@ export default function PlanEditor() {
         comparison={totalSaved?.comparison ?? []}
         weightKg={plan?.targetWeightKg}
       />
+      {plan && !plan.template && <MicronutrientAdequacy planId={plan.id} version={totalSaved} />}
       {plan && <PanelHandouts planId={plan.id} onlyRead={!podeEdit} />}
       {plan && !plan.template && (
         <PanelPublication plan={plan} onRun={action} onFlush={flush} />
@@ -2900,9 +2900,8 @@ function PanelHandouts({
 
   useEffect(() => {
     void load();
-    api.handouts
-      .list({ size: 100 })
-      .then((p) => setLibrary(p.content))
+    allPages((page, size) => api.handouts.list({ page, size }))
+      .then(setLibrary)
       .catch(() => setLibrary([]));
   }, [load]);
 

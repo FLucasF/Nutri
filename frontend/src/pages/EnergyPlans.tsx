@@ -204,6 +204,7 @@ function Editor({
   const [date, setDate] = useState(todayIso());
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
+  const [leanMass, setLeanMass] = useState("");
   const [activity, setActivity] = useState<ActivityLevel>("INACTIVE");
   const [injury, setInjury] = useState("1");
   const [met, setMet] = useState("");
@@ -228,6 +229,7 @@ function Editor({
         setDate(plan.date);
         setWeight(String(plan.weightKg));
         setHeight(String(plan.heightCm));
+        setLeanMass(plan.leanMassKg ? String(plan.leanMassKg) : "");
         setActivity(plan.activityLevel);
         setInjury(String(plan.injuryFactor));
         setMet(plan.metKcal ? String(plan.metKcal) : "");
@@ -264,6 +266,7 @@ function Editor({
         date,
         weightKg: number(weight),
         heightCm: number(height),
+        leanMassKg: number(leanMass),
         activityLevel: activity,
         injuryFactor: number(injury),
         metKcal: number(met),
@@ -285,6 +288,11 @@ function Editor({
       setSaving(false);
     }
   }
+
+  /** Alguma equação escolhida parte da massa magra? */
+  const needsLean = options.equations.some(
+    (option) => chosen.includes(option.equation) && option.requiresLeanMass,
+  );
 
   /** Alguma equação escolhida usa o fator de atividade por multiplicação? */
   const hasBasal = useMemo(
@@ -369,6 +377,22 @@ function Editor({
                     onChange={(e) => setHeight(e.target.value)}
                   />
                 </div>
+                <div className="field">
+                  <label htmlFor="en-magra">Massa magra (kg)</label>
+                  <input
+                    id="en-magra"
+                    inputMode="decimal"
+                    value={leanMass}
+                    placeholder="64"
+                    onChange={(e) => setLeanMass(e.target.value)}
+                    aria-describedby="en-magra-dica"
+                  />
+                  <span className="field-hint" id="en-magra-dica">
+                    {needsLean
+                      ? "Obrigatória para as equações por massa magra escolhidas."
+                      : "Só para Katch-McArdle, Cunningham e Tinsley por massa magra."}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -399,7 +423,9 @@ function Editor({
                       <span className="equacao-nota">
                         {option.total
                           ? "Já inclui o nível de atividade"
-                          : "Gasto basal — recebe o fator de atividade"}
+                          : option.requiresLeanMass
+                            ? "Basal, pela massa magra — recebe o fator de atividade"
+                            : "Gasto basal — recebe o fator de atividade"}
                       </span>
                     </span>
                   </label>

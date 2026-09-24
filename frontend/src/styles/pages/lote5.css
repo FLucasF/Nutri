@@ -1,0 +1,242 @@
+/* ================================================================== lote 5
+   A porta do link do plano (data de nascimento), o painel de micronutrientes
+   contra as DRI no trilho do editor, e a página de favoritos. Tabela, tag,
+   botão e campo vêm de components.css.
+   ========================================================================== */
+
+/* ------------------------------------------------------------ plan gate */
+
+.plan-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+}
+.plan-gate-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+}
+.plan-gate-card > h1 {
+  margin: 0;
+  font-size: 22px;
+}
+.plan-gate-card > p {
+  margin: 0;
+  text-align: center;
+  line-height: 1.5;
+}
+.plan-gate-card > .warning {
+  width: 100%;
+}
+.plan-gate-field {
+  width: 100%;
+}
+.plan-gate-field input {
+  font-size: 16px; /* 16 on purpose: below it, iOS zooms into the field */
+}
+
+/* ------------------------------------------------ micronutrients x DRI */
+
+.adequacy-card {
+  padding: 0;
+}
+.adequacy-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.adequacy-toggle:hover {
+  background: var(--surface-2);
+}
+.adequacy-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.adequacy-toggle > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.adequacy-toggle > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-3);
+}
+.adequacy-summary {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.adequacy-body {
+  padding: 0 16px 14px;
+}
+.adequacy-unavailable {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.adequacy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adequacy-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.adequacy-label {
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 500;
+}
+.adequacy-partial {
+  margin-left: 2px;
+  color: var(--warning);
+  font-weight: 700;
+}
+.adequacy-value {
+  flex: none;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.adequacy-state {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+/* The track is a lighter step of the fill's own family; the 80-120% zone is
+   marked on it, so "adequate" is a place on the bar and not only a word. */
+.adequacy-track {
+  position: relative;
+  height: 8px;
+  margin: 5px 0 3px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+}
+.adequacy-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(80 / 150 * 100%);
+  width: calc(40 / 150 * 100%);
+  background: var(--success-soft);
+}
+.adequacy-track.limit::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(100 / 150 * 100%);
+  width: 2px;
+  background: var(--ink-3);
+}
+.adequacy-fill {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 0;
+  border-radius: var(--radius-pill);
+  background: var(--ink-3);
+}
+.adequacy-row.ok .adequacy-fill {
+  background: var(--success);
+}
+.adequacy-row.warn .adequacy-fill {
+  background: var(--warning);
+}
+.adequacy-row.high .adequacy-fill {
+  background: var(--info);
+}
+.adequacy-row.danger .adequacy-fill {
+  background: var(--danger);
+}
+.adequacy-readout {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.adequacy-note {
+  margin: 12px 0 0;
+  line-height: 1.45;
+}
+
+/* ------------------------------------------------------------ favorites */
+
+.favorites-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.favorite-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.favorite-row:first-child {
+  border-top: 0;
+}
+.favorite-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+.favorite-icon > svg {
+  width: 16px;
+  height: 16px;
+}
+.favorite-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.favorite-meta {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.favorite-items {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .favorite-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+  .favorite-row > .button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
