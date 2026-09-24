@@ -60,6 +60,7 @@ import type {
   EnergyPlanSummary,
   Partner,
   PartnerRequest,
+  QuestionnaireRequest,
   ReferralReport,
   ServicePackage,
   PackageRequest,
@@ -426,6 +427,13 @@ export const api = {
 
     detail: (id: number) => request<Questionnaire>(`/questionnaires/${id}`),
 
+    create: (data: QuestionnaireRequest) =>
+      request<Questionnaire>("/questionnaires", { method: "POST", body: data }),
+
+    /** Substitui o questionário inteiro; as respostas já recebidas guardam a versão de então. */
+    update: (id: number, data: QuestionnaireRequest) =>
+      request<Questionnaire>(`/questionnaires/${id}`, { method: "PUT", body: data }),
+
     duplicate: (id: number) =>
       request<Questionnaire>(`/questionnaires/${id}/duplicate`, { method: "POST" }),
 
@@ -673,6 +681,10 @@ export const api = {
 
     duplicate: (id: number) =>
       request<Anamnesis>(`/anamneses/${id}/duplicate`, { method: "POST" }),
+
+    /** A anamnese feita do que o paciente respondeu antes da consulta. Uma vez por envio. */
+    fromSending: (sendingId: number) =>
+      request<Anamnesis>(`/anamneses/from-sending/${sendingId}`, { method: "POST" }),
 
     remove: (id: number) => request<void>(`/anamneses/${id}`, { method: "DELETE" }),
 

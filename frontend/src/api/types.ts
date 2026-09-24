@@ -1081,7 +1081,14 @@ export interface AccountUser {
 
 // --- questionnaires ----
 
-export type QuestionType = "TEXT" | "NUMBER" | "CHOICE_SINGLE" | "MULTIPLE";
+export type QuestionType =
+  | "TEXT"
+  | "PARAGRAPH"
+  | "NUMBER"
+  | "DATE"
+  | "CHOICE_SINGLE"
+  | "MULTIPLE"
+  | "SECTION";
 
 export interface AnswerOption {
   label: string;
@@ -1097,6 +1104,29 @@ export interface QuestionnaireQuestion {
   order: number;
   ajuda?: string;
   options: AnswerOption[];
+  /** Aparece na listagem de anamneses sem abrir o registro. */
+  highlight: boolean;
+}
+
+export interface QuestionRequest {
+  statement: string;
+  type: QuestionType;
+  required?: boolean;
+  /** "Nunca=0|Às vezes=1|Sempre=2"; a pontuação é opcional. */
+  options?: string;
+  ajuda?: string;
+  highlight?: boolean;
+}
+
+export interface QuestionnaireRequest {
+  name: string;
+  description?: string;
+  instrument?: string;
+  version?: string;
+  scorable?: boolean;
+  /** "0-5=Baixo|6-10=Moderado|11-99=Alto". */
+  cutoffRange?: string;
+  questions: QuestionRequest[];
 }
 
 export interface Questionnaire {
@@ -1173,6 +1203,20 @@ export interface AnamnesisSummary {
   name: string;
   date: string;
   highlights: AnamnesisValue[];
+  /** O questionário de que a anamnese nasceu, quando nasceu de um. */
+  questionnaireName?: string;
+  /** O envio pré-consulta de que foi importada, quando foi. */
+  sendingId?: number;
+}
+
+/** A resposta a uma pergunta do questionário da anamnese, com o enunciado congelado. */
+export interface AnamnesisAnswer {
+  questionId: number | null;
+  statement: string;
+  type: QuestionType;
+  value: string | null;
+  highlight: boolean;
+  order: number;
 }
 
 export interface Anamnesis {
@@ -1183,6 +1227,11 @@ export interface Anamnesis {
   /** Documento do editor, em JSON. Nulo enquanto estiver em branco. */
   body: string | null;
   values: AnamnesisValue[];
+  questionnaireId?: number;
+  questionnaireName?: string;
+  templateVersion?: number;
+  sendingId?: number;
+  answers: AnamnesisAnswer[];
 }
 
 export interface AnamnesisRequest {
@@ -1191,6 +1240,8 @@ export interface AnamnesisRequest {
   date: string;
   body?: string;
   values?: { fieldId: number; value: string }[];
+  questionnaireId?: number;
+  answers?: { questionId: number; value: string }[];
 }
 
 // -------------------------------------------------------- cálculo energético

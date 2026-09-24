@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { CircleCheck, FileQuestion } from "lucide-react";
 import { ErrorApi, api } from "../api/client";
 import { explainError } from "../api/errors";
+import { QuestionInput, kindOf } from "../components/QuestionInput";
 import type { PublicForm, QuestionnaireQuestion } from "../api/types";
 
 /**
@@ -12,8 +13,8 @@ import type { PublicForm, QuestionnaireQuestion } from "../api/types";
  * they read the plan. The page is deliberately simpler than the rest of the
  * system because whoever opens it is not a user of the product: they open it
  * once, answer and leave. One question per card, so that a phone shows one
- * thing to answer at a time, and a progress line so that a long questionnaire
- * says how much is left.
+ * thing to answer at a time, a section as a plain heading between cards, and
+ * a progress line so that a long questionnaire says how much is left.
  */
 export default function PatientForm() {
   const { identifier } = useParams();
@@ -95,9 +96,12 @@ export default function PatientForm() {
 
   if (!form) return null;
 
-  const total = form.questions.length;
-  const answered = form.questions.filter((p) => (answers[p.id] ?? "").trim()).length;
-  const hasRequired = form.questions.some((p) => p.required);
+  const answerable = form.questions.filter((p) => p.type !== "SECTION");
+  const total = answerable.length;
+  const answered = answerable.filter((p) => (answers[p.id] ?? "").trim()).length;
+  const hasRequired = answerable.some((p) => p.required);
+
+  let position = 0;
 
   return (
     <div className="page-patient">
@@ -159,16 +163,27 @@ export default function PatientForm() {
             )}
 
             <ol className="question-list">
-              {form.questions.map((p, index) => (
-                <Question
-                  key={p.id}
-                  question={p}
-                  index={index + 1}
-                  total={total}
-                  value={answers[p.id] ?? ""}
-                  onChange={(value) => setAnswers((r) => ({ ...r, [p.id]: value }))}
-                />
-              ))}
+              {form.questions.map((p) => {
+                if (p.type === "SECTION") {
+                  return (
+                    <li key={p.id} className="question-section">
+                      <h2>{p.statement}</h2>
+                      {p.ajuda && <p>{p.ajuda}</p>}
+                    </li>
+                  );
+                }
+                position += 1;
+                return (
+                  <Question
+                    key={p.id}
+                    question={p}
+                    index={position}
+                    total={total}
+                    value={answers[p.id] ?? ""}
+                    onChange={(value) => setAnswers((r) => ({ ...r, [p.id]: value }))}
+                  />
+                );
+              })}
             </ol>
 
             <div className="form-patient-actions">
@@ -194,78 +209,43 @@ type QuestionProps = {
   onChange: (value: string) => void;
 };
 
-function kindOf(type: QuestionnaireQuestion["type"]): "choice" | "number" | "text" {
-  if (type === "CHOICE_SINGLE" || type === "MULTIPLE") return "choice";
-  if (type === "NUMBER") return "number";
-  return "text";
-}
-
 /**
  * One card per question. The label keeps the `p-{id}` pairing — it is the only
  * accessible name the control has — and the help text, when there is one, is
  * tied to the control through aria-describedby so that it is read with it.
+ * A choice group names itself by the statement, so the label becomes plain
+ * text there.
  */
 function Question({ question: p, index, total, value, onChange }: QuestionProps) {
   const id = `p-${p.id}`;
   const hintId = p.ajuda ? `${id}-hint` : undefined;
   const kind = kindOf(p.type);
+  const grouped = kind === "single" || kind === "multiple";
+
+  const statement = (
+    <>
+      {p.statement}
+      {p.required && (
+        <span className="required" aria-hidden>
+          {" "}
+          *
+        </span>
+      )}
+    </>
+  );
 
   return (
     <li className="card question-card field" data-kind={kind}>
       <span className="question-index readout">
         {index}/{total}
       </span>
-      <label htmlFor={id}>
-        {p.statement}
-        {p.required && (
-          <span className="required" aria-hidden>
-            {" "}
-            *
-          </span>
-        )}
-      </label>
+      {grouped ? <span className="question-label">{statement}</span> : <label htmlFor={id}>{statement}</label>}
       {p.ajuda && (
         <p className="field-hint" id={hintId}>
           {p.ajuda}
         </p>
       )}
-
-      {kind === "choice" ? (
-        <select
-          id={id}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          required={p.required}
-          aria-describedby={hintId}
-        >
-          <option value="">Selecione…</option>
-          {p.options.map((o) => (
-            <option key={o.label} value={o.label}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      ) : kind === "number" ? (
-        // Text with a decimal keyboard, not type=number: "1,5" is how the
-        // patient writes it, and a number input would refuse the comma.
-        <input
-          id={id}
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          required={p.required}
-          aria-describedby={hintId}
-        />
-      ) : (
-        <textarea
-          id={id}
-          rows={3}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          required={p.required}
-          aria-describedby={hintId}
-        />
-      )}
+      <QuestionInput question={p} id={id} value={value} onChange={onChange} describedBy={hintId} large />
     </li>
   );
 }

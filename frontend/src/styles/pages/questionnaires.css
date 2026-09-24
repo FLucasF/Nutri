@@ -1,0 +1,253 @@
+/* ============================================================ questionários
+   O construtor de questionários (a "anamnese programável" do cliente), os
+   grupos de escolha que servem ao formulário do paciente e à anamnese na
+   consulta, e a anamnese preenchida pelo modelo. Tabela, tag, botão e campo
+   vêm de components.css; a listagem de cartões, de library.css.
+   ========================================================================== */
+
+/* ------------------------------------------------------------- construtor */
+
+.qb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.qb-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 8px 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+/* A section is a heading, not a question: it sits on the secondary surface
+   so the eye reads the list as blocks. */
+.qb-item.section {
+  background: var(--surface-2);
+}
+.qb-index {
+  padding-top: 30px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.qb-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.qb-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 10px 12px;
+}
+.qb-row > .field {
+  min-width: 0;
+}
+.qb-options textarea {
+  min-height: 84px;
+}
+.qb-presets {
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.qb-presets > .field-hint {
+  margin: 0;
+}
+.qb-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+.qb-flags .check-inline {
+  margin-top: 0;
+}
+.qb-item-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.qb-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.qb-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+@media (max-width: 600px) {
+  .qb-item {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
+  }
+  .qb-index {
+    display: none;
+  }
+  .qb-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .qb-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .qb-actions > .button:last-child {
+    margin-left: auto;
+  }
+  .qb-foot > .button {
+    flex: 1 1 auto;
+  }
+}
+
+/* In the library list, a section row reads as a heading between questions. */
+.questions > li.question-section-row::before {
+  content: "";
+}
+.question-section-title {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* ---------------------------------------------------------- choice groups */
+
+/* Radios and checkboxes as rows the finger can hit: the whole row toggles,
+   and the chosen one is painted so the state is read without the tiny box. */
+.choice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.choice-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+  cursor: pointer;
+}
+.choice-option:hover {
+  background: var(--surface-2);
+}
+.choice-option:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--on-soft);
+}
+.choice-option:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.choice-option > input {
+  flex: none;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+}
+.question-card .choice-option {
+  font-size: 16px;
+  padding: 11px 14px;
+}
+.question-label {
+  font-weight: 600;
+  color: var(--ink);
+}
+.question-card > .question-label {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+/* The public form: a section is a plain heading between the cards. */
+.question-section {
+  padding: 12px 4px 0;
+}
+.question-section > h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.3;
+}
+.question-section > p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* ------------------------------------------------------- anamnesis by model */
+
+.anamnese-perguntas {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.anamnese-secao {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.anamnese-secao:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.anamnese-secao > h3 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+.anamnese-secao > p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.anamnese-pergunta > label,
+.anamnese-pergunta > .question-label {
+  font-weight: 600;
+}
+.anamnese-pergunta[data-kind="number"] input,
+.anamnese-pergunta[data-kind="date"] input {
+  max-width: 220px;
+}
+.anamnese-retirada > label {
+  color: var(--ink-3);
+}
+.field-static-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.field-static-value {
+  padding-top: 4px;
+  font-size: 15px;
+  color: var(--ink);
+}
+.card-anamnese-modelo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.preconsulta .card-sub {
+  max-width: 60ch;
+}
