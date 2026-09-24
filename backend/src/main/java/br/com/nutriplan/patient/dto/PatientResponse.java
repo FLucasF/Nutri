@@ -38,13 +38,20 @@ public record PatientResponse(
          */
         HealthyWeightRange healthyWeight,
         BigDecimal lastWeightKg,
-        LocalDate lastAssessmentDate
+        LocalDate lastAssessmentDate,
+        /** Quem indicou o paciente, quando foi indicação. */
+        Long partnerId,
+        String partnerName
 ) {
     public static PatientResponse from(Patient p) {
-        return from(p, null);
+        return from(p, null, null);
     }
 
     public static PatientResponse from(Patient p, AnthropometricAssessment last) {
+        return from(p, last, null);
+    }
+
+    public static PatientResponse from(Patient p, AnthropometricAssessment last, String partnerName) {
         return new PatientResponse(
                 p.getId(), p.getName(), p.getEmail(), p.getPhone(),
                 p.getDateBirth(), p.getAge(), p.getSex(), p.getCpf(),
@@ -53,6 +60,7 @@ public record PatientResponse(
                 p.isActive(), p.hasAccessToApp(), p.getCreatedAt(),
                 last == null ? null : HealthyWeightRange.forAdult(last.getHeightCm(), p.getAge()),
                 last == null ? null : last.getWeightKg(),
-                last == null ? null : last.getDate());
+                last == null ? null : last.getDate(),
+                p.getPartnerId(), partnerName);
     }
 }

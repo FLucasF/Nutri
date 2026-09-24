@@ -19,5 +19,7 @@ public record PatientRequest(
         br.com.nutriplan.patient.domain.BiologicalCondition biologicalCondition,
         @Size(max = 100) String occupation,
         @Size(max = 500) String goal,
-        @Size(max = 8000) String notes
+        @Size(max = 8000) String notes,
+        /** Quem indicou o paciente, quando foi indicação. */
+        Long partnerId
 ) {}

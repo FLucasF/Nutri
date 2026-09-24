@@ -56,6 +56,18 @@ public class Appointment extends AccountEntity {
     @Column(name = "outcome_reason", length = 500)
     private String reasonOutcome;
 
+    /**
+     * Parceiro a quem esta consulta se atribui, quando difere de quem indicou
+     * o paciente. Vazio na maioria: o relatório de indicações cai então no
+     * parceiro do paciente.
+     */
+    @Column(name = "partner_id")
+    private Long partnerId;
+
+    /** Pacote de trabalho de que esta consulta faz parte. */
+    @Column(name = "package_id")
+    private Long packageId;
+
     public Appointment(Long accountId, Long patientId, LocalDateTime start, int durationMinutes) {
         setAccountId(accountId);
         this.patientId = patientId;

@@ -3,6 +3,8 @@ package br.com.nutriplan.finance.dto;
 import br.com.nutriplan.finance.domain.TransactionStatus;
 import br.com.nutriplan.finance.domain.TransactionType;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -27,10 +29,42 @@ public final class FinanceDtos {
             @Size(max = 40) String paymentMethod,
             @Size(max = 500) String description,
             Long patientId,
-            Long appointmentId
-    ) {}
+            Long appointmentId,
+            /** Número do recibo ou da nota emitida fora do sistema, quando há. */
+            @Size(max = 60) String documentNumber,
+            /** Pacote de trabalho que originou a receita. */
+            Long packageId,
+            /**
+             * Em quantas parcelas dividir o valor. Só vale ao criar: cada
+             * parcela vira um lançamento, na competência do seu mês. Nulo ou 1
+             * é à vista.
+             */
+            @Min(value = 1, message = "O parcelamento mínimo é de uma parcela")
+            @Max(value = 48, message = "O parcelamento máximo é de 48 parcelas")
+            Integer installments
+    ) {
+        public int installmentsOrOne() {
+            return installments == null || installments < 1 ? 1 : installments;
+        }
+    }
 
     public record PaymentRequest(LocalDate datePayment) {}
+
+    /**
+     * Pagamento registrado a partir da consulta.
+     *
+     * O valor vem do pacote da consulta quando não informado; sem pacote e
+     * sem valor, o pedido é recusado — não se registra recebimento de
+     * quantia desconhecida.
+     */
+    public record AppointmentPaymentRequest(
+            @DecimalMin(value = "0.01", message = "O valor deve ser maior que zero")
+            BigDecimal value,
+            @Size(max = 40) String paymentMethod,
+            LocalDate datePayment,
+            @Size(max = 60) String documentNumber,
+            @Size(max = 80) String category
+    ) {}
 
     public record TransactionResponse(
             Long id,
@@ -48,7 +82,13 @@ public final class FinanceDtos {
             Long patientId,
             String patientName,
             Long appointmentId,
-            boolean overdue
+            boolean overdue,
+            String documentNumber,
+            Integer installmentIndex,
+            Integer installmentCount,
+            String installmentGroup,
+            Long packageId,
+            String packageName
     ) {}
 
     /**
@@ -88,6 +128,9 @@ public final class FinanceDtos {
             String valueByWords,
             LocalDate datePayment,
             String related,
-            String emitidoAt
+            String emitidoAt,
+            String documentNumber,
+            /** "2/6" quando o lançamento é uma parcela. */
+            String installment
     ) {}
 }

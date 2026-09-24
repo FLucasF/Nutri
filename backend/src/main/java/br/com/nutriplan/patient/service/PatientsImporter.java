@@ -128,7 +128,8 @@ public class PatientsImporter {
                         null,
                         trim(value(fields, columns.get("occupation")), 100),
                         trim(value(fields, columns.get("goal")), 500),
-                        trim(value(fields, columns.get("notes")), 2000))));
+                        trim(value(fields, columns.get("notes")), 2000),
+                        null)));
             }
         }
 

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,4 +68,19 @@ public interface FinanceTransactionRepository extends JpaRepository<FinanceTrans
             Long accountId, Long patientId);
 
     long countByAccountIdAndAppointmentId(Long accountId, Long appointmentId);
+
+    List<FinanceTransaction> findByAccountIdAndAppointmentId(Long accountId, Long appointmentId);
+
+    List<FinanceTransaction> findByAccountIdAndAppointmentIdIn(Long accountId, Collection<Long> appointmentIds);
+
+    /** O que foi pago no período, pela data do pagamento: caixa, não competência. */
+    @Query("""
+           select l from FinanceTransaction l
+           where l.accountId = :accountId
+             and l.status = br.com.nutriplan.finance.domain.TransactionStatus.PAID
+             and l.datePayment >= :from and l.datePayment <= :to
+           """)
+    List<FinanceTransaction> paidBetween(@Param("accountId") Long accountId,
+                                         @Param("from") LocalDate from,
+                                         @Param("to") LocalDate to);
 }

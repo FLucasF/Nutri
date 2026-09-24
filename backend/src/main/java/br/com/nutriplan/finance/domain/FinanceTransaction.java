@@ -79,6 +79,31 @@ public class FinanceTransaction extends AccountEntity {
     @Column(name = "appointment_id")
     private Long appointmentId;
 
+    /** Número do recibo ou da nota emitida fora do sistema, quando há. */
+    @Column(name = "document_number", length = 60)
+    private String documentNumber;
+
+    /** As parcelas de um mesmo parcelamento compartilham o grupo. */
+    @Column(name = "installment_group", length = 36)
+    private String installmentGroup;
+
+    @Column(name = "installment_index")
+    private Integer installmentIndex;
+
+    @Column(name = "installment_count")
+    private Integer installmentCount;
+
+    /** Pacote de trabalho que originou a receita. */
+    @Column(name = "package_id")
+    private Long packageId;
+
+    /** "2/6" quando o lançamento é uma parcela; nulo quando é à vista. */
+    public String installmentLabel() {
+        return installmentIndex == null || installmentCount == null
+                ? null
+                : installmentIndex + "/" + installmentCount;
+    }
+
     public FinanceTransaction(Long accountId, TransactionType type,
                                 BigDecimal value, LocalDate accrual, String category) {
         setAccountId(accountId);

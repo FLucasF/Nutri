@@ -395,7 +395,7 @@ class LabtestTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"date":"%s","parameterIds":[]}""".formatted(LocalDate.now())))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnprocessableEntity());
     }
 
     // ------------------------------------------------------------------- isolation

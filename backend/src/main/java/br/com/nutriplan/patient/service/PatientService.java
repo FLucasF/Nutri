@@ -9,6 +9,8 @@ import br.com.nutriplan.patient.dto.PatientRequest;
 import br.com.nutriplan.patient.dto.PatientResponse;
 import br.com.nutriplan.patient.dto.PatientSummary;
 import br.com.nutriplan.patient.repository.PatientRepository;
+import br.com.nutriplan.partner.domain.Partner;
+import br.com.nutriplan.partner.repository.PartnerRepository;
 import br.com.nutriplan.shared.error.NotFoundException;
 import br.com.nutriplan.shared.error.BusinessRuleException;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ public class PatientService {
     private final PatientsImporter importer;
     private final br.com.nutriplan.patient.repository.PatientTagLinkRepository tagLinkRepository;
     private final ObjectMapper mapper;
+    private final PartnerRepository partnerRepository;
 
     @Transactional(readOnly = true)
     public Page<PatientSummary> list(String term, Boolean active, Pageable pageable) {
@@ -65,7 +68,8 @@ public class PatientService {
         Patient patient = accountRequire(id);
         return PatientResponse.from(patient,
                 assessmentRepository.findFirstByAccountIdAndPatientIdOrderByDateDescIdDesc(
-                        patient.getAccountId(), patient.getId()).orElse(null));
+                        patient.getAccountId(), patient.getId()).orElse(null),
+                partnerName(patient));
     }
 
     /**
@@ -94,14 +98,14 @@ public class PatientService {
         patientRepository.save(patient);
 
         log.info("Paciente criado: id={} conta={}", patient.getId(), user.getAccountId());
-        return PatientResponse.from(patient);
+        return PatientResponse.from(patient, null, partnerName(patient));
     }
 
     @Transactional
     public PatientResponse update(Long id, PatientRequest req) {
         Patient patient = accountRequire(id);
         apply(req, patient);
-        return PatientResponse.from(patient);
+        return PatientResponse.from(patient, null, partnerName(patient));
     }
 
     /**
@@ -200,6 +204,7 @@ public class PatientService {
         patient.setSex(req.sex());
         patient.setCpf(req.cpf());
         patient.setNickname(req.nickname());
+        patient.setPartnerId(requirePartner(req.partnerId(), patient.getAccountId()));
         // A condição biológica só se aplica a mulher. Guardá-la para um homem
         // seria registrar um fato que não existe.
         patient.setBiologicalCondition(
@@ -209,5 +214,22 @@ public class PatientService {
         patient.setOccupation(req.occupation());
         patient.setGoal(req.goal());
         patient.setNotes(RichTextDocument.ofTextOrDocument(req.notes(), mapper).json());
+    }
+
+    /** O parceiro tem de ser do mesmo consultório: indicação de outra conta não existe. */
+    private Long requirePartner(Long partnerId, Long accountId) {
+        if (partnerId == null) {
+            return null;
+        }
+        return partnerRepository.findByIdAndAccountId(partnerId, accountId)
+                .orElseThrow(() -> new NotFoundException("Parceiro", partnerId))
+                .getId();
+    }
+
+    private String partnerName(Patient patient) {
+        if (patient.getPartnerId() == null) {
+            return null;
+        }
+        return partnerRepository.findById(patient.getPartnerId()).map(Partner::getName).orElse(null);
     }
 }

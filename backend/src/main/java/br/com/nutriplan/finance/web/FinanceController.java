@@ -82,10 +82,23 @@ public class FinanceController {
 
     @PostMapping("/transactions")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Registra um lançamento")
+    @Operation(summary = "Registra um lançamento",
+            description = "Com parcelas, cria um lançamento por parcela, cada um na "
+                    + "competência do seu mês, e devolve o primeiro.")
     public FinanceDtos.TransactionResponse create(
             @Valid @RequestBody FinanceDtos.TransactionRequest req) {
         return transactionService.create(req);
+    }
+
+    @PostMapping("/appointments/{appointmentId}/payment")
+    @Operation(summary = "Registra o pagamento de uma consulta",
+            description = "Quita a cobrança pendente da consulta ou, sem cobrança, cria a "
+                    + "receita já paga, ligada à consulta, ao paciente e ao pacote. O valor "
+                    + "vem do pacote quando não informado.")
+    public FinanceDtos.TransactionResponse payAppointment(
+            @PathVariable Long appointmentId,
+            @Valid @RequestBody(required = false) FinanceDtos.AppointmentPaymentRequest req) {
+        return transactionService.payAppointment(appointmentId, req);
     }
 
     @PutMapping("/transactions/{id}")

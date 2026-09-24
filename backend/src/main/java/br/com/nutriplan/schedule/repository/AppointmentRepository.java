@@ -54,4 +54,13 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     long countByAccountIdAndPatientIdAndStatus(Long accountId, Long patientId,
                                                 AppointmentStatus status);
+
+    /** A última consulta realizada de cada paciente, para achar quem sumiu. */
+    @Query("""
+           select a.patientId, max(a.start) from Appointment a
+           where a.accountId = :accountId
+             and a.status = br.com.nutriplan.schedule.domain.AppointmentStatus.COMPLETED
+           group by a.patientId
+           """)
+    List<Object[]> lastCompletedByPatient(@Param("accountId") Long accountId);
 }

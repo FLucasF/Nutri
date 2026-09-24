@@ -20,4 +20,13 @@ public interface AnthropometricAssessmentRepository
             Long accountId, Long patientId);
 
     long countByAccountIdAndPatientId(Long accountId, Long patientId);
+
+    /** Só as datas, para as estatísticas contarem avaliações por mês. */
+    @org.springframework.data.jpa.repository.Query("""
+           select a.date from AnthropometricAssessment a
+           where a.accountId = :accountId and a.date >= :from
+           """)
+    List<java.time.LocalDate> datesSince(
+            @org.springframework.data.repository.query.Param("accountId") Long accountId,
+            @org.springframework.data.repository.query.Param("from") java.time.LocalDate from);
 }

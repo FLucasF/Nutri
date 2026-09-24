@@ -79,7 +79,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,
                         "/patients/**", "/prescriptions/**", "/plan/**", "/form/**",
                         "/schedule/**", "/foods/**", "/recipes/**", "/handouts/**",
-                        "/questionnaires/**", "/finance/**", "/team/**", "/access")
+                        "/questionnaires/**", "/finance/**", "/team/**", "/partners/**",
+                        "/packages/**", "/statistics/**", "/access")
                     .permitAll()
                 .requestMatchers("/docs/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                 // A plan opened by the link handed to the patient. The authorization
@@ -98,6 +99,11 @@ public class SecurityConfig {
                 // does not need to see in order to run the front desk. The
                 // separation comes from the domain: prescribing is reserved,
                 // and the finances belong to the owner.
+                // Parceiros e pacotes: a recepção precisa lê-los para agendar e
+                // cadastrar; mantê-los, e o relatório de indicações, é do dono.
+                .requestMatchers(HttpMethod.GET, "/api/partners", "/api/packages").authenticated()
+                .requestMatchers("/api/partners/**", "/api/packages/**").hasAnyRole("NUTRITIONIST", "ADMIN")
+                .requestMatchers("/api/statistics/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/finance/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/prescriptions/**").hasAnyRole("NUTRITIONIST", "ADMIN")
                 .requestMatchers("/api/meal-favorites/**").hasAnyRole("NUTRITIONIST", "ADMIN")

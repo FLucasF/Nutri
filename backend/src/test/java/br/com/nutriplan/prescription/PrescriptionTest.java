@@ -195,7 +195,7 @@ class PrescriptionTest {
         JsonNode plan = postJson(tokenA, "/api/prescriptions", body, 201);
         JsonNode items = plan.get("meals").get(0).get("items");
 
-        assertThat(items.get(0).get("serving").asText()).isEqualTo("a vontade");
+        assertThat(items.get(0).get("serving").asText()).isEqualTo("à vontade");
         // Even though a quantity arrived, the qualitative method does not record it.
         assertThat(items.get(1).has("grams")).isFalse();
         assertThat(plan.get("dayTotal").get("itemsInCalculation").asInt()).isZero();

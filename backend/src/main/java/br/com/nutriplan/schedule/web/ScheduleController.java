@@ -10,7 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -104,6 +107,18 @@ public class ScheduleController {
     @Operation(summary = "Remove um atendimento")
     public void remove(@PathVariable Long id) {
         appointmentService.remove(id);
+    }
+
+    @GetMapping(value = "/{id}/certificate", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Atestado de comparecimento em PDF",
+            description = "Só de consulta realizada: atestar presença em consulta que não "
+                    + "aconteceu seria uma declaração falsa.")
+    public ResponseEntity<byte[]> certificate(@PathVariable Long id) {
+        byte[] pdf = appointmentService.certificate(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"atestado-" + id + ".pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     // ---------------------------------------------------- subscription (ics)

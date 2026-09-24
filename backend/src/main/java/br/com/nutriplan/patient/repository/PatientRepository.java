@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -44,4 +45,10 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     boolean existsByAccountIdAndCpf(Long accountId, String cpf);
 
     Optional<Patient> findByUserId(Long userId);
+
+    /** Todos os pacientes da conta, para as estatísticas somarem em memória. */
+    List<Patient> findByAccountId(Long accountId);
+
+    /** Os que vieram por indicação, para o relatório de parceiros. */
+    List<Patient> findByAccountIdAndPartnerIdIsNotNull(Long accountId);
 }

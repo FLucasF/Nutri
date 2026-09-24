@@ -65,6 +65,10 @@ public class Patient extends AccountEntity {
     @Column(name = "user_id")
     private Long userId;
 
+    /** Quem indicou o paciente ao consultório, quando foi indicação. */
+    @Column(name = "partner_id")
+    private Long partnerId;
+
     @Column(nullable = false)
     private boolean active = true;
 

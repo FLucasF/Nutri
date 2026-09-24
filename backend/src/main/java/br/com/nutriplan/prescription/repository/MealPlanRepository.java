@@ -60,4 +60,12 @@ public interface MealPlanRepository extends JpaRepository<MealPlan, Long> {
     List<MealPlan> findByAccountIdAndPatientIdOrderByCreatedAtDesc(Long accountId, Long patientId);
 
     long countByAccountIdAndPatientId(Long accountId, Long patientId);
+
+    /** Quando cada cardápio (não modelo) foi criado, para as estatísticas. */
+    @Query("""
+           select p.createdAt from MealPlan p
+           where p.accountId = :accountId and p.template = false and p.createdAt >= :from
+           """)
+    List<java.time.Instant> createdSince(@Param("accountId") Long accountId,
+                                         @Param("from") java.time.Instant from);
 }
