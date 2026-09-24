@@ -119,6 +119,15 @@
   --macro-fat-text: #6446a8;
   --macro-fat-text: light-dark(#6446a8, #b39ce8);
 
+  /* -------------------------------------------------------------- charts */
+  /* One series per chart, in the brand green. The dark step is darker than
+     --primary's dark value: validated inside the chart lightness band
+     (OKLCH L 0.48-0.67) against the dark surface, at >= 3:1. */
+  --chart-line: #127a5b;
+  --chart-line: light-dark(#127a5b, #34a97d);
+  --chart-band: #e2f2ea;
+  --chart-band: light-dark(#e2f2ea, #1c3328);
+
   /* ----------------------------------------------------------- typography */
   --f-display: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;

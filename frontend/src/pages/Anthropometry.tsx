@@ -11,6 +11,8 @@ import {
   Trash2,
   X,
   Eye,
+  UserRound,
+  MapPin,
 } from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
@@ -34,6 +36,8 @@ import type {
 import { count } from "../text";
 import { AREAS_HIDDEN } from "../features";
 import { NotesField, NotesView } from "../components/RichText/NotesField";
+import { EvolutionCharts } from "../components/EvolutionCharts";
+import { MeasureGuide } from "../components/MeasureGuide";
 
 const SKINFOLDS: { key: string; label: string }[] = [
   { key: "TRICEPS", label: "Tricipital" },
@@ -286,7 +290,12 @@ export default function Anthropometry() {
           patientId={patientId}
           latest={shown.id === moreRecent?.id}
           onBackToLatest={() => setViewingId(null)}
+          onError={setError}
         />
+      )}
+
+      {progress && progress.points.length > 1 && (
+        <EvolutionCharts progress={progress} healthyWeight={moreRecent?.healthyWeight} />
       )}
 
       {progress && progress.points.length > 1 && <ProgressTable progress={progress} />}
@@ -425,13 +434,31 @@ function AssessmentSummary({
   patientId,
   latest,
   onBackToLatest,
+  onError,
 }: {
   assessment: Assessment;
   patientId: number;
   /** Se é a mais recente. Quando não é, o título diz a data e oferece voltar. */
   latest: boolean;
   onBackToLatest: () => void;
+  onError: (message: string) => void;
 }) {
+  const [opening, setOpening] = useState<"PROFESSIONAL" | "PATIENT" | null>(null);
+
+  /** O relatório desta avaliação, numa guia nova: a do profissional ou a do paciente. */
+  async function openReport(audience: "PROFESSIONAL" | "PATIENT") {
+    setOpening(audience);
+    try {
+      const { url } = await api.anthropometry.assessmentReport(assessment.id, audience);
+      window.open(url, "_blank", "noopener");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      onError(explainError(e, "gerar o relatório da avaliação"));
+    } finally {
+      setOpening(null);
+    }
+  }
+
   const composition = assessment.composition;
   const fractionation = assessment.fractionation;
   const anyFraction =
@@ -455,6 +482,29 @@ function AssessmentSummary({
             </button>
           )}
         </span>
+      </div>
+
+      <div className="summary-reports">
+        <button
+          type="button"
+          className="button secundario pequeno"
+          onClick={() => void openReport("PROFESSIONAL")}
+          disabled={opening !== null}
+          title="Todas as medidas, o protocolo e a comparação com a anterior. Abre em outra guia."
+        >
+          <FileText aria-hidden="true" />
+          {opening === "PROFESSIONAL" ? "Gerando…" : "Relatório da avaliação"}
+        </button>
+        <button
+          type="button"
+          className="button secundario pequeno"
+          onClick={() => void openReport("PATIENT")}
+          disabled={opening !== null}
+          title="Em linguagem para o paciente, com o que mudou e o gráfico do peso. Abre em outra guia."
+        >
+          <UserRound aria-hidden="true" />
+          {opening === "PATIENT" ? "Gerando…" : "Versão para o paciente"}
+        </button>
       </div>
 
       <div className="stats">
@@ -995,8 +1045,16 @@ function FormAssessment({
   );
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  /** O guia de onde medir aberto, e o local aceso nele. */
+  const [guide, setGuide] = useState<"skinfold" | "circumference" | null>(null);
+  const [guideSite, setGuideSite] = useState<string | undefined>(undefined);
   const fields = useFieldErrors();
   const feedback = useFeedback();
+
+  function toggleGuide(kind: "skinfold" | "circumference") {
+    setGuideSite(undefined);
+    setGuide((current) => (current === kind ? null : kind));
+  }
 
   const chosen = protocols.find((p) => p.protocol === protocol);
   // Not knowing the patient's sex here, it highlights the union of both lists.
@@ -1112,7 +1170,24 @@ function FormAssessment({
       <section className="card form-section">
         <div className="form-section-head">
           <h3>Circunferências (cm)</h3>
+          <button
+            type="button"
+            className="button ghost pequeno"
+            aria-expanded={guide === "circumference"}
+            onClick={() => toggleGuide("circumference")}
+          >
+            <MapPin aria-hidden="true" />
+            Onde medir
+          </button>
         </div>
+        {guide === "circumference" && (
+          <MeasureGuide
+            kind="circumference"
+            active={guideSite}
+            onChoose={setGuideSite}
+            onClose={() => setGuide(null)}
+          />
+        )}
         <div className="form-grid">
           {CIRCUMFERENCES.flatMap((c) =>
             (c.bilateral ? (["RIGHT", "LEFT"] as Side[]) : (["SINGLE"] as Side[])).map((side) => {
@@ -1125,6 +1200,7 @@ function FormAssessment({
                   <input
                     id={`circ-${key}`}
                     inputMode="decimal"
+                    onFocus={() => setGuideSite(c.site)}
                     value={circumferences[key] ?? ""}
                     onChange={(e) =>
                       setCircumferences((v) => ({ ...v, [key]: e.target.value }))
@@ -1181,7 +1257,24 @@ function FormAssessment({
       <section className="card form-section">
         <div className="form-section-head">
           <h3>Dobras cutâneas (mm)</h3>
+          <button
+            type="button"
+            className="button ghost pequeno"
+            aria-expanded={guide === "skinfold"}
+            onClick={() => toggleGuide("skinfold")}
+          >
+            <MapPin aria-hidden="true" />
+            Onde medir
+          </button>
         </div>
+        {guide === "skinfold" && (
+          <MeasureGuide
+            kind="skinfold"
+            active={guideSite}
+            onChoose={setGuideSite}
+            onClose={() => setGuide(null)}
+          />
+        )}
         <div className="form-grid">
           {SKINFOLDS.map((d) => {
             const mandatory = required.has(d.key);
@@ -1194,6 +1287,7 @@ function FormAssessment({
                 <input
                   id={`dobra-${d.key}`}
                   inputMode="decimal"
+                  onFocus={() => setGuideSite(d.key)}
                   value={skinfolds[d.key] ?? ""}
                   onChange={(e) => setSkinfolds((v) => ({ ...v, [d.key]: e.target.value }))}
                 />

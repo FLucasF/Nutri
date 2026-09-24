@@ -311,3 +311,277 @@
     min-height: 44px;
   }
 }
+
+/* ------------------------------------------------------ evolution charts
+   One chart per measure, each on its own axis: small multiples, never two
+   scales on one plot. One series per chart, so no legend box: the title
+   names it. The line wears --chart-line; every text wears text tokens. */
+
+.summary-reports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 14px;
+}
+
+.evolution-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+@media (max-width: 900px) {
+  .evolution-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.evolution-chart {
+  min-width: 0;
+  margin: 0;
+  padding: 12px 12px 4px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.evolution-chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin-bottom: 4px;
+}
+.evolution-chart-title {
+  font-family: var(--f-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.evolution-chart-delta {
+  font-size: 12px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.evolution-chart-frame {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+.evolution-chart-frame > svg {
+  display: block;
+  max-width: 100%;
+  touch-action: pan-y;
+}
+.evolution-chart-frame > svg:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-chip);
+}
+.chart-grid line {
+  stroke: var(--border);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.chart-grid text,
+.chart-axis text {
+  fill: var(--ink-3);
+  font-size: 11px;
+  font-family: var(--f-text);
+  font-variant-numeric: tabular-nums;
+}
+.chart-band rect {
+  fill: var(--chart-band);
+}
+.chart-band text {
+  fill: var(--ink-2);
+  font-size: 10.5px;
+  font-family: var(--f-text);
+}
+.chart-line {
+  fill: none;
+  stroke: var(--chart-line);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.chart-dot {
+  fill: var(--chart-line);
+  stroke: var(--surface-2);
+  stroke-width: 2;
+}
+.chart-dot.active {
+  stroke: var(--surface);
+}
+.chart-crosshair {
+  stroke: var(--ink-3);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.chart-end-label {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--f-text);
+  font-variant-numeric: tabular-nums;
+}
+.chart-hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+.chart-tooltip {
+  position: absolute;
+  top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 160px;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-2);
+  pointer-events: none;
+}
+.chart-tooltip > strong {
+  font-size: 15px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chart-tooltip-delta {
+  color: var(--ink-3);
+}
+
+/* ------------------------------------------------------- measure guide */
+
+.form-section-head > .button {
+  margin-left: auto;
+}
+.measure-guide {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px 20px;
+  margin: 0 0 14px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.measure-guide-figure {
+  display: flex;
+  gap: 8px;
+}
+.measure-guide-figure figure {
+  margin: 0;
+  text-align: center;
+}
+.measure-guide-figure figcaption {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.guide-body {
+  display: block;
+  width: 104px;
+  height: 260px;
+}
+.guide-silhouette > circle,
+.guide-silhouette > rect,
+.guide-silhouette > path:not(.guide-limb) {
+  fill: var(--surface-3);
+}
+.guide-limb {
+  fill: none;
+  stroke: var(--surface-3);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.guide-limb.leg {
+  stroke-width: 18;
+}
+.guide-spine {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  fill: none;
+}
+.guide-navel {
+  fill: var(--border-strong);
+}
+.guide-mark.fold {
+  fill: var(--ink-3);
+  stroke: var(--surface-2);
+  stroke-width: 1.5;
+}
+.guide-mark.tape {
+  stroke: var(--ink-3);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.guide-mark.fold.active {
+  fill: var(--accent);
+}
+.guide-mark.tape.active {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+.measure-guide-text {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.measure-guide-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.measure-guide-head > h4 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: 15px;
+}
+.measure-guide-instruction {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.measure-guide-sites {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.measure-guide-site {
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.measure-guide-site:hover {
+  background: var(--surface-3);
+}
+.measure-guide-site[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.measure-guide-site:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.measure-guide .minusculo {
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .measure-guide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .measure-guide-figure {
+    justify-content: center;
+  }
+}
