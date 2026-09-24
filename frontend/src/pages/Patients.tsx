@@ -5,7 +5,7 @@ import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
-import type { PatientSummary, PatientTag, ResultImport } from "../api/types";
+import type { Partner, PatientSummary, PatientTag, ResultImport } from "../api/types";
 import { count, plural } from "../text";
 import { Avatar } from "../components/Avatar";
 import { useIsNarrow } from "../hooks/useMediaQuery";
@@ -373,6 +373,8 @@ function FormNovoPatient({
   const [cpf, setCpf] = useState("");
   const [nickname, setNickname] = useState("");
   const [tags, setTags] = useState<PatientTag[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partnerId, setPartnerId] = useState("");
   const [chosenTags, setChosenTags] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -384,6 +386,7 @@ function FormNovoPatient({
       .tags()
       .then(setTags)
       .catch(() => setTags([]));
+    api.partners.list().then(setPartners).catch(() => setPartners([]));
   }, []);
 
   async function createTag() {
@@ -413,6 +416,7 @@ function FormNovoPatient({
         cpf: cpf.trim() || undefined,
         nickname: nickname.trim() || undefined,
         goal: goal.trim() || undefined,
+        partnerId: partnerId ? Number(partnerId) : undefined,
       });
       // As TAGs são um vínculo à parte do cadastro; o paciente já existe
       // quando elas são marcadas, e falhar aqui não desfaz o cadastro.
@@ -533,6 +537,19 @@ function FormNovoPatient({
             />
             <FieldError field="nickname" errors={fields.errors} />
           </div>
+          {partners.length > 0 && (
+            <div className="field">
+              <label htmlFor="np-parceiro">Indicado por</label>
+              <select id="np-parceiro" value={partnerId} onChange={(e) => setPartnerId(e.target.value)}>
+                <option value="">Ninguém / não sei</option>
+                {partners.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="bloco-tags np-tags">

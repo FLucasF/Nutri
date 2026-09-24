@@ -2,14 +2,17 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, matchPath, useLocation } from "react-router-dom";
 import {
   Apple,
+  BarChart3,
   BookOpen,
   CalendarDays,
+  Handshake,
   ClipboardList,
   ListChecks,
   LogOut,
   Menu,
   Monitor,
   Moon,
+  Package,
   Sun,
   UserCog,
   Users,
@@ -44,6 +47,9 @@ import Team from "./pages/Team";
 import Labtests from "./pages/Labtests";
 import Finance from "./pages/Finance";
 import Handouts from "./pages/Handouts";
+import Partners from "./pages/Partners";
+import Packages from "./pages/Packages";
+import Statistics from "./pages/Statistics";
 
 function Protected({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -71,6 +77,9 @@ const HANDOUTS: NavEntry = { to: "/handouts", label: "Orientações", icon: Book
 const QUESTIONNAIRES: NavEntry = { to: "/questionnaires", label: "Questionários", icon: ListChecks };
 const FINANCE: NavEntry = { to: "/finance", label: "Financeiro", icon: Wallet };
 const TEAM: NavEntry = { to: "/team", label: "Equipe", icon: UserCog };
+const STATISTICS: NavEntry = { to: "/statistics", label: "Estatísticas", icon: BarChart3 };
+const PARTNERS: NavEntry = { to: "/partners", label: "Parceiros", icon: Handshake };
+const PACKAGES: NavEntry = { to: "/packages", label: "Pacotes", icon: Package };
 
 /**
  * The receptionist runs the front desk. Showing what they cannot open would
@@ -84,7 +93,7 @@ function groupsFor(isAssistant: boolean): NavGroup[] {
   return [
     { label: "Clínica", items: [PATIENTS, SCHEDULE, PRESCRIPTIONS] },
     { label: "Biblioteca", items: [FOODS, HANDOUTS, QUESTIONNAIRES] },
-    { label: "Consultório", items: [FINANCE, TEAM] },
+    { label: "Consultório", items: [FINANCE, STATISTICS, PARTNERS, PACKAGES, TEAM] },
   ];
 }
 
@@ -469,6 +478,9 @@ export default function App() {
                   <Route path="/patients/:id/labtests" element={<Labtests />} />
                   <Route path="/schedule" element={<Schedule />} />
                   <Route path="/finance" element={<Finance />} />
+                  <Route path="/statistics" element={<Statistics />} />
+                  <Route path="/partners" element={<Partners />} />
+                  <Route path="/packages" element={<Packages />} />
                   <Route path="/foods" element={<Foods />} />
                   <Route path="/foods/:id" element={<FoodDetail />} />
                   <Route path="/recipes/new" element={<RecipeEditor />} />
