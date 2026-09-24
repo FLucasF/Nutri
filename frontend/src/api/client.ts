@@ -33,6 +33,7 @@ import type {
   AccountUser,
   LabtestSeries,
   LabtestOrder,
+  LabtestOrderItemRequest,
   Recipe,
   RecipeRequest,
   RecipeSummary,
@@ -51,6 +52,7 @@ import type {
   LabtestPanel,
   PatientAttachment,
   PatientNote,
+  NoteTemplate,
   PatientTag,
   FavoriteMealRequest,
   EnergyPlan,
@@ -270,6 +272,16 @@ export const api = {
 
     removeNote: (patientId: number, noteId: number) =>
       request<void>(`/patients/${patientId}/notes/${noteId}`, { method: "DELETE" }),
+
+    /** Os modelos de anotação do consultório, em ordem alfabética. */
+    noteTemplates: () => request<NoteTemplate[]>("/note-templates"),
+
+    /** Guarda um modelo; o mesmo nome sobrescreve. */
+    saveNoteTemplate: (name: string, body: string) =>
+      request<NoteTemplate>("/note-templates", { method: "POST", body: { name, body } }),
+
+    removeNoteTemplate: (id: number) =>
+      request<void>(`/note-templates/${id}`, { method: "DELETE" }),
 
     create: (data: Partial<Patient>) =>
       request<Patient>("/patients", { method: "POST", body: data }),
@@ -544,12 +556,27 @@ export const api = {
 
     request: (
       patientId: number,
-      data: { date: string; parameterIds: number[]; notes?: string },
+      data: { date: string; items: LabtestOrderItemRequest[]; notes?: string },
     ) =>
       request<LabtestOrder>(`/patients/${patientId}/requests-from-labtest`, {
         method: "POST",
         body: data,
       }),
+
+    /** Religa, desliga ou troca os exames de um pedido já entregue. */
+    updateRequest: (
+      patientId: number,
+      orderId: number,
+      data: { items: LabtestOrderItemRequest[]; notes?: string },
+    ) =>
+      request<LabtestOrder>(`/patients/${patientId}/requests-from-labtest/${orderId}`, {
+        method: "PUT",
+        body: data,
+      }),
+
+    /** O pedido em PDF, agrupado por painel. Só os exames ligados saem. */
+    requestPdf: (patientId: number, orderId: number) =>
+      download(`/patients/${patientId}/requests-from-labtest/${orderId}/pdf`),
   },
 
   // ---------------------------------------------------------------- handouts

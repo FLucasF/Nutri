@@ -85,9 +85,17 @@ public final class EnergyDtos {
             BigDecimal prescribedKcal,
             List<EquationResult> equations,
             HealthyWeight healthyWeight,
+            /**
+             * O que merece um segundo olhar antes de usar o número: a
+             * programação de peso que desconta mais de 1 kg por semana, o
+             * prescrito abaixo do basal, o resultado zerado. São avisos, não
+             * recusas — o cliente pediu "só avisar, nada de limitar".
+             */
+            List<String> warnings,
             String notes
     ) {
-        public static EnergyPlanResponse from(EnergyPlan plan, HealthyWeight healthyWeight) {
+        public static EnergyPlanResponse from(EnergyPlan plan, HealthyWeight healthyWeight,
+                                              List<String> warnings) {
             return new EnergyPlanResponse(
                     plan.getId(), plan.getPatientId(), plan.getName(), plan.getDate(),
                     plan.getAssessmentId(), plan.getWeightKg(), plan.getHeightCm(),
@@ -97,7 +105,7 @@ public final class EnergyDtos {
                     plan.getTargetWeightKg(), plan.getTargetDate(), plan.getAdjustmentKcal(),
                     plan.getAverageKcal(), plan.getPrescribedKcal(),
                     plan.getEquations().stream().map(EquationResult::from).toList(),
-                    healthyWeight, plan.getNotes());
+                    healthyWeight, warnings, plan.getNotes());
         }
     }
 

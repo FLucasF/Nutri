@@ -335,6 +335,14 @@
   margin-top: 16px;
 }
 
+/* The warnings under the figures: the number stays, the reason travels with it. */
+.energia-avisos {
+  margin-top: 12px;
+}
+.energia-avisos p + p {
+  margin-top: 6px;
+}
+
 /* tabular figures for the kcal in the list card (legacy hook kept) */
 .kcal-destaque {
   font-variant-numeric: tabular-nums;

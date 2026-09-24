@@ -71,3 +71,57 @@ for (const caso of CASOS) {
     await conta.api.delete(`/api/energy-plans/${plano.id}`);
   });
 }
+
+/**
+ * O "cardápio de 10 kcal".
+ *
+ * O cliente programou um peso alvo com data próxima e a meta importada no
+ * editor veio zerada: a programação de peso é peso × 7 700 kcal dividido
+ * pelos dias, e nada segurava o desconto. Ele pediu para não limitar — a
+ * decisão é dele — e sim avisar. Então o número continua o mesmo, e vem com
+ * os avisos que o explicam.
+ */
+test("a programação de peso agressiva vem com os avisos que a explicam", async () => {
+  const criado = await conta.api.post("/api/energy-plans", {
+    data: {
+      patientId: paciente.id,
+      name: "meta agressiva",
+      date: "2026-09-22",
+      weightKg: PESO,
+      heightCm: ALTURA,
+      activityLevel: "LOW_ACTIVE",
+      equations: ["EER_2023"],
+      // 10 kg em 30 dias: 2 567 kcal por dia a menos, mais do que o gasto.
+      targetWeightKg: PESO - 10,
+      targetDate: "2026-10-22",
+    },
+  });
+  expect(criado.status(), await criado.text()).toBe(201);
+  const plano = await criado.json();
+
+  // O cálculo não muda: o prescrito ainda zera.
+  expect(Number(plano.prescribedKcal)).toBe(0);
+  // Mas ele não sai mais sozinho.
+  expect(plano.warnings.join(" ")).toContain("kg por semana");
+  expect(plano.warnings.join(" ")).toContain("ficou em zero");
+
+  await conta.api.delete(`/api/energy-plans/${plano.id}`);
+});
+
+test("um cálculo comum não tem aviso nenhum", async () => {
+  const criado = await conta.api.post("/api/energy-plans", {
+    data: {
+      patientId: paciente.id,
+      name: "sem programação",
+      date: "2026-09-22",
+      weightKg: PESO,
+      heightCm: ALTURA,
+      activityLevel: "LOW_ACTIVE",
+      equations: ["EER_2023"],
+    },
+  });
+  expect(criado.status(), await criado.text()).toBe(201);
+  const plano = await criado.json();
+  expect(plano.warnings).toEqual([]);
+  await conta.api.delete(`/api/energy-plans/${plano.id}`);
+});

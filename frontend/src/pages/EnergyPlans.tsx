@@ -561,6 +561,18 @@ function Result({
             <dd className="readout strong">{kcal(plan.averageKcal)} kcal</dd>
           </div>
         )}
+        {plan.injuryFactor !== 1 && (
+          <div>
+            <dt>Fator de injúria</dt>
+            <dd className="readout strong">× {plan.injuryFactor.toLocaleString("pt-BR")}</dd>
+          </div>
+        )}
+        {plan.metKcal !== undefined && plan.metKcal !== null && plan.metKcal > 0 && (
+          <div>
+            <dt>Adicional por MET</dt>
+            <dd className="readout strong">+{kcal(plan.metKcal)} kcal</dd>
+          </div>
+        )}
         {plan.adjustmentKcal !== undefined && plan.adjustmentKcal !== null && (
           <div>
             <dt>Programação de peso</dt>
@@ -571,6 +583,19 @@ function Result({
           </div>
         )}
       </dl>
+
+      {/*
+        O cliente relatou "um cardápio de 10 kcal". O cálculo não muda — ele
+        pediu para não limitar — mas o número não sai mais sozinho: o que o
+        explica vem junto, aqui e ao importar a meta no editor.
+      */}
+      {plan.warnings.length > 0 && (
+        <div className="warning attention energia-avisos" role="status">
+          {plan.warnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </div>
+      )}
 
       {plan.healthyWeight && (
         <div className="stat energia-faixa">

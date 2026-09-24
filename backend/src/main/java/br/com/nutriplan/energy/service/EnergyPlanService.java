@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -14,7 +15,7 @@ import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import br.com.nutriplan.shared.richtext.RichTextDocument;
 import br.com.nutriplan.anthropometry.domain.AnthropometricAssessment;
-import br.com.nutriplan.anthropometry.domain.BmiClassification;
+import br.com.nutriplan.anthropometry.domain.HealthyWeightRange;
 import br.com.nutriplan.anthropometry.repository.AnthropometricAssessmentRepository;
 import br.com.nutriplan.auth.service.CurrentContext;
 import br.com.nutriplan.energy.domain.ActivityLevel;
@@ -72,7 +73,7 @@ public class EnergyPlanService {
     @Transactional(readOnly = true)
     public EnergyDtos.EnergyPlanResponse detail(Long id) {
         EnergyPlan plan = require(id);
-        return EnergyDtos.EnergyPlanResponse.from(plan, healthyWeight(plan.getHeightCm()));
+        return EnergyDtos.EnergyPlanResponse.from(plan, healthyWeight(plan.getHeightCm()), warnings(plan));
     }
 
     /** What the pickers offer. It comes from the enums, so it cannot drift. */
@@ -101,7 +102,7 @@ public class EnergyPlanService {
         planRepository.save(plan);
         log.info("Cálculo energético criado: id={} paciente={} kcal={}",
                 plan.getId(), plan.getPatientId(), plan.getPrescribedKcal());
-        return EnergyDtos.EnergyPlanResponse.from(plan, healthyWeight(plan.getHeightCm()));
+        return EnergyDtos.EnergyPlanResponse.from(plan, healthyWeight(plan.getHeightCm()), warnings(plan));
     }
 
     @Transactional
@@ -112,7 +113,7 @@ public class EnergyPlanService {
         plan.setDate(request.date());
         apply(plan, request, patient);
         planRepository.save(plan);
-        return EnergyDtos.EnergyPlanResponse.from(plan, healthyWeight(plan.getHeightCm()));
+        return EnergyDtos.EnergyPlanResponse.from(plan, healthyWeight(plan.getHeightCm()), warnings(plan));
     }
 
     @Transactional
@@ -209,6 +210,70 @@ public class EnergyPlanService {
     }
 
     /**
+     * Quanto uma perda de 1 kg por semana desconta do dia: 7 700 kcal em 7 dias.
+     * Acima disso o cardápio deixa de ser cumprível, e é o limiar que faz o
+     * aviso aparecer.
+     */
+    private static final BigDecimal KCAL_PER_DAY_ONE_KG_A_WEEK = BigDecimal.valueOf(1100);
+
+    /**
+     * Os avisos sobre o número prescrito.
+     *
+     * O cliente relatou um cardápio "de 10 kcal": a programação de peso é
+     * peso × 7 700 kcal dividido pelos dias até a data alvo, e uma meta
+     * agressiva desconta mais do que o gasto do dia. Ele pediu para não
+     * limitar — a decisão clínica é dele — e sim avisar. Então o cálculo segue
+     * igual, e o resultado vem acompanhado do que o explica.
+     *
+     * O basal de referência é o de Mifflin-St Jeor, recalculado aqui só para
+     * o aviso: as equações escolhidas podem ser todas de gasto total (a EER
+     * não tem basal), e mesmo assim o profissional precisa saber quando o
+     * prescrito ficou abaixo do que o corpo gasta em repouso.
+     */
+    private List<String> warnings(EnergyPlan plan) {
+        List<String> warnings = new ArrayList<>();
+        BigDecimal adjustment = plan.getAdjustmentKcal();
+        if (adjustment != null && adjustment.signum() < 0) {
+            BigDecimal perDay = adjustment.abs();
+            if (perDay.compareTo(KCAL_PER_DAY_ONE_KG_A_WEEK) > 0) {
+                BigDecimal kgPerWeek = perDay.multiply(BigDecimal.valueOf(7))
+                        .divide(EnergyPlan.KCAL_PER_KG_ADIPOSE, 1, RoundingMode.HALF_UP);
+                warnings.add(("A programação de peso desconta %s kcal por dia, o que corresponde a "
+                        + "perder %s kg por semana. Acima de 1 kg por semana (1.100 kcal/dia) o "
+                        + "cardápio fica difícil de cumprir; confira o peso alvo e a data.")
+                        .formatted(number(perDay), number(kgPerWeek)));
+            }
+        }
+        if (plan.getPrescribedKcal() != null && plan.getPrescribedKcal().signum() == 0) {
+            warnings.add("A programação de peso desconta mais do que o gasto do dia: o prescrito "
+                    + "ficou em zero. O cardápio não pode partir deste número.");
+            return warnings;
+        }
+        if (plan.getWeightKg() != null && plan.getHeightCm() != null
+                && plan.getAgeYears() != null && plan.getSex() != null
+                && plan.getPrescribedKcal() != null) {
+            var input = new EnergyEquation.Input(
+                    plan.getWeightKg().doubleValue(), plan.getHeightCm().doubleValue(),
+                    plan.getSex(), plan.getAgeYears(), plan.getActivityLevel());
+            BigDecimal basal = round(EnergyEquation.MIFFLIN_ST_JEOR.basal(input));
+            if (plan.getPrescribedKcal().compareTo(basal) < 0) {
+                warnings.add(("O prescrito (%s kcal) ficou abaixo do gasto basal estimado "
+                        + "(%s kcal por Mifflin-St Jeor): é menos do que o corpo gasta em repouso.")
+                        .formatted(number(plan.getPrescribedKcal()), number(basal)));
+            }
+        }
+        return warnings;
+    }
+
+    /** 2 567 -> "2.567", 1,2 -> "1,2": como o profissional lê o número. */
+    private static String number(BigDecimal value) {
+        var symbols = new java.text.DecimalFormatSymbols(java.util.Locale.of("pt", "BR"));
+        symbols.setGroupingSeparator('.');
+        symbols.setDecimalSeparator(',');
+        return new java.text.DecimalFormat("#,##0.#", symbols).format(value);
+    }
+
+    /**
      * A faixa de peso que mantém o adulto em eutrofia, pela altura.
      *
      * O limite inferior é 18,5 — é a dúvida que o cliente registra no
@@ -216,22 +281,12 @@ public class EnergyPlanService {
      * que o sistema já usa.
      */
     private EnergyDtos.HealthyWeight healthyWeight(BigDecimal heightCm) {
-        if (heightCm == null || heightCm.signum() <= 0) {
+        HealthyWeightRange range = HealthyWeightRange.of(heightCm);
+        if (range == null) {
             return null;
         }
-        Double minimum = BmiClassification.NORMAL.getLimitInferior();
-        Double maximum = BmiClassification.NORMAL.getLimitSuperior();
-        if (minimum == null || maximum == null) {
-            return null;
-        }
-        BigDecimal metresSquared = heightCm
-                .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP)
-                .pow(2);
-        return new EnergyDtos.HealthyWeight(
-                BigDecimal.valueOf(minimum).multiply(metresSquared).setScale(1, RoundingMode.HALF_UP),
-                BigDecimal.valueOf(maximum).multiply(metresSquared).setScale(1, RoundingMode.HALF_UP),
-                BigDecimal.valueOf(minimum),
-                BigDecimal.valueOf(maximum));
+        return new EnergyDtos.HealthyWeight(range.minimumKg(), range.maximumKg(),
+                range.bmiMinimum(), range.bmiMaximum());
     }
 
     // ------------------------------------------------------------------ entradas

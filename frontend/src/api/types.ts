@@ -55,6 +55,14 @@ export interface PatientNote {
   createdBy?: string;
 }
 
+/** Um texto-base para começar anotações, com a formatação do editor. */
+export interface NoteTemplate {
+  id: number;
+  name: string;
+  body: string;
+  updatedAt: string;
+}
+
 /** Só preenchida para mulher; a ausência diz "nenhuma das duas". */
 export type BiologicalCondition = "PREGNANT" | "LACTATING";
 
@@ -82,6 +90,10 @@ export interface Patient {
   occupation?: string;
   goal?: string;
   notes?: string;
+  /** Pela última altura medida; ausente sem avaliação, sem altura ou para criança. */
+  healthyWeight?: HealthyWeight;
+  lastWeightKg?: number;
+  lastAssessmentDate?: string;
   active: boolean;
   hasAccessToApp: boolean;
   createdAt: string;
@@ -204,6 +216,8 @@ export interface Item {
   serving: string;
   quantity?: number;
   grams?: number;
+  /** "À vontade": sem quantidade e fora do somatório do dia. */
+  adLibitum?: boolean;
   order?: number;
   notes?: string;
   substitutions: Substitution[];
@@ -221,6 +235,14 @@ export interface MealResponse {
   photoName?: string;
   items: Item[];
   total: Total;
+  /** Peso do que entra na conta, em gramas. */
+  weightGrams?: number;
+  /** kcal por grama e a faixa em que cai: muito baixa, baixa, média, alta. */
+  energyDensity?: number;
+  energyDensityBand?: "VERY_LOW" | "LOW" | "MEDIUM" | "HIGH";
+  energyDensityDescription?: string;
+  /** Quanto do dia esta refeição representa, em %. */
+  shareOfDayPct?: number;
 }
 
 export interface PlanResponse {
@@ -282,6 +304,8 @@ export interface ItemRequest {
   measureId?: number;
   description?: string;
   quantity?: number;
+  /** "À vontade": sem quantidade e fora do somatório do dia. */
+  adLibitum?: boolean;
   notes?: string;
   substitutions?: SubstitutionRequest[];
 }
@@ -382,7 +406,20 @@ export type CompositionProtocol =
   | "FAULKNER"
   | "POLLOCK_3"
   | "POLLOCK_7"
-  | "DURNIN_WOMERSLEY";
+  | "DURNIN_WOMERSLEY"
+  | "PETROSKI"
+  | "GUEDES";
+
+/** As faixas de Pollock e Wilmore (1993), da menor gordura para a maior. */
+export type FatClassification =
+  | "VERY_LOW"
+  | "EXCELLENT"
+  | "GOOD"
+  | "ABOVE_AVERAGE"
+  | "AVERAGE"
+  | "BELOW_AVERAGE"
+  | "POOR"
+  | "VERY_POOR";
 
 export type EquationExpenditure = "MIFFLIN_ST_JEOR" | "HARRIS_BENEDICT";
 
@@ -413,6 +450,32 @@ export interface CompositionBody {
   percentageFat?: number;
   massFatKg?: number;
   massLeanKg?: number;
+  /** Soma das dobras que o protocolo lê, em mm. */
+  skinfoldSumMm?: number;
+  /** Densidade corporal (g/cm³). Ausente no Faulkner, que não passa por ela. */
+  density?: number;
+  fatClassification: Derived<FatClassification>;
+  fatClassificationDescription?: string;
+  /** Faixa ideal para o sexo e a idade, em %. */
+  fatIdealMin?: number;
+  fatIdealMax?: number;
+  fatReference: string;
+}
+
+/** Gordura, osso, resíduo e músculo: o modelo de quatro compartimentos. */
+export interface Fractionation {
+  boneMassKg: Derived<number>;
+  residualMassKg: Derived<number>;
+  muscleMassKg: Derived<number>;
+  /** "dobras" ou "bioimpedância": de onde veio a massa gorda. */
+  fatSource?: string;
+}
+
+export interface ArmMuscle {
+  circumferenceCm: number;
+  side: CircumferenceValue["side"];
+  /** Preenchido quando só um lado foi medido. */
+  sideDescription?: string;
 }
 
 export interface ExpenditureEnergy {
@@ -450,9 +513,13 @@ export interface Assessment {
   biaMetabolicAge?: number;
   bmi?: number;
   classificationBmi: Derived<BmiClassification>;
+  /** Faixa de peso pela altura, para adulto. */
+  healthyWeight?: HealthyWeight;
   ratioWaistHip?: number;
   riskCardiometabolico: Derived<CardiometabolicRisk>;
+  armMuscle: Derived<ArmMuscle>;
   composition?: CompositionBody;
+  fractionation?: Fractionation;
   expenditureEnergy?: ExpenditureEnergy;
   /** Present when the patient is 19 or younger. */
   childGrowth?: Derived<ChildGrowth>;
@@ -822,11 +889,31 @@ export interface LabtestSeries {
   unitsMixed: boolean;
 }
 
+/** Um exame dentro do pedido: de que painel veio, e se está ligado. */
+export interface LabtestOrderItem {
+  id: number;
+  parameterId: number;
+  name: string;
+  unit?: string;
+  group?: string;
+  panelName?: string;
+  /** Desligado, fica no pedido e sai do PDF. */
+  active: boolean;
+}
+
+export interface LabtestOrderItemRequest {
+  parameterId: number;
+  panelName?: string;
+  active?: boolean;
+}
+
 export interface LabtestOrder {
   id: number;
   date: string;
   notes?: string;
+  /** Só os ligados, pelo nome: é o que vai para o PDF. */
   labtests: string[];
+  items: LabtestOrderItem[];
 }
 
 // ------------ practice team ----
@@ -1023,6 +1110,8 @@ export interface EnergyPlan {
   prescribedKcal: number;
   equations: EquationResult[];
   healthyWeight?: HealthyWeight;
+  /** O que merece um segundo olhar antes de usar o prescrito. Vazio quando não há nada. */
+  warnings: string[];
   notes?: string;
 }
 
