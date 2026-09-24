@@ -2,6 +2,7 @@ package br.com.nutriplan.prescription.dto;
 
 import br.com.nutriplan.food.dto.CompositionDto;
 import br.com.nutriplan.prescription.domain.AdequacyBand;
+import br.com.nutriplan.prescription.domain.EnergyDensityBand;
 import br.com.nutriplan.prescription.domain.MealItemKind;
 import br.com.nutriplan.prescription.service.NutritionalCalculator;
 import br.com.nutriplan.prescription.domain.PrescriptionMethod;
@@ -43,11 +44,17 @@ public final class PrescriptionDtos {
             @Size(max = 250) String description,
             @DecimalMin(value = "0.001", message = "A quantidade deve ser maior que zero")
             BigDecimal quantity,
+            /** "À vontade": sem quantidade e fora do somatório. Nulo vale como não. */
+            Boolean adLibitum,
             @Size(max = 8000) String notes,
             @Valid List<SubstitutionRequest> substitutions
     ) {
         public MealItemKind kindOrFood() {
             return kind == null ? MealItemKind.FOOD : kind;
+        }
+
+        public boolean isAdLibitum() {
+            return adLibitum != null && adLibitum;
         }
     }
 
@@ -177,6 +184,8 @@ public final class PrescriptionDtos {
             String serving,
             BigDecimal quantity,
             BigDecimal grams,
+            /** "À vontade": sem quantidade e fora do somatório. */
+            boolean adLibitum,
             Integer order,
             String notes,
             List<SubstitutionResponse> substitutions
@@ -192,7 +201,15 @@ public final class PrescriptionDtos {
             boolean hasPhoto,
             String photoName,
             List<ItemResponse> items,
-            TotalResponse total
+            TotalResponse total,
+            /** Peso do que entra na conta, em gramas. */
+            BigDecimal weightGrams,
+            /** kcal por grama, e a faixa em que cai. Nulos sem peso ou sem energia. */
+            BigDecimal energyDensity,
+            EnergyDensityBand energyDensityBand,
+            String energyDensityDescription,
+            /** Quanto do dia esta refeição representa, em %. Nulo fora da conta ou num dia sem energia. */
+            BigDecimal shareOfDayPct
     ) {}
 
     /** The complete plan, as the nutritionist sees it. */

@@ -216,3 +216,84 @@ test("o PDF sai com o que está na tela, sem clicar em salvar", async ({ page })
     "o PDF saiu da versão do servidor, que precisa refletir a tela",
   ).toBe("Desjejum renomeado");
 });
+
+/**
+ * "À vontade" em qualquer alimento.
+ *
+ * "Preciso de 'à vontade' em TODOS OS ALIMENTOS." Só existia no plano
+ * qualitativo. Agora qualquer linha do plano por alimentos pode ser à vontade:
+ * a porção some, o item continua no cardápio e sai do somatório do dia — a
+ * regra que o cliente fechou.
+ */
+test("um alimento à vontade fica no cardápio e fora do somatório", async () => {
+  const alface = await acharAlimento(conta, "Alface");
+  // O cozido, e não o cru: a densidade calórica do teste depende do alimento.
+  const arroz = await acharAlimento(conta, "Arroz, integral, cozido");
+
+  const criado = await conta.api.post("/api/prescriptions", {
+    data: {
+      title: "Almoço com salada à vontade",
+      patientId: paciente.id,
+      method: "FOODS",
+      meals: [
+        {
+          name: "Almoço",
+          items: [
+            { foodId: arroz, quantity: 100 },
+            { foodId: alface, adLibitum: true },
+          ],
+        },
+      ],
+    },
+  });
+  expect(criado.status(), await criado.text()).toBe(201);
+  const plano = await criado.json();
+
+  const itens = plano.meals[0].items;
+  expect(itens).toHaveLength(2);
+  expect(itens[1].adLibitum).toBe(true);
+  expect(itens[1].serving).toBe("à vontade");
+  expect(itens[1].grams ?? null).toBeNull();
+
+  // Só o arroz soma: o à vontade é prescrição, não quantidade.
+  expect(plano.meals[0].total.itemsInCalculation).toBe(1);
+  expect(plano.meals[0].total.itemsOutsideCalculation).toBe(1);
+
+  // Densidade calórica e fatia do dia saem da mesma conta: 100 g de arroz
+  // integral cozido, pouco mais de 1 kcal/g, e a única refeição é o dia inteiro.
+  expect(Number(plano.meals[0].weightGrams)).toBe(100);
+  expect(Number(plano.meals[0].energyDensity)).toBeGreaterThan(0.8);
+  expect(Number(plano.meals[0].energyDensity)).toBeLessThan(2);
+  expect(plano.meals[0].energyDensityBand).toBe("LOW");
+  expect(Number(plano.meals[0].shareOfDayPct)).toBe(100);
+
+  // E o paciente lê "à vontade" no link, que só abre depois de publicado.
+  const publicado = await conta.api.post(`/api/prescriptions/${plano.id}/publish`, {});
+  expect(publicado.status(), await publicado.text()).toBe(200);
+  const publico = await conta.api.get(`/api/public/plans/${plano.publicIdentifier}`);
+  expect(publico.status(), await publico.text()).toBe(200);
+  const folha = await publico.json();
+  const linha = folha.meals[0].items.find((i: { description: string }) =>
+    i.description.startsWith("Alface"),
+  );
+  expect(linha.serving).toBe("à vontade");
+  expect(linha.weightGrams ?? null).toBeNull();
+});
+
+test("o botão \"à vontade\" tira a quantidade da linha do alimento", async ({ page }) => {
+  await abrirPlanoNovo(page);
+
+  const refeicao = page.locator(".meal").first();
+  await refeicao.getByRole("button", { name: "+ Adicionar item" }).click();
+  await escolherAlimento(page, refeicao.getByLabel("Alimento").first(), "Alface");
+
+  await expect(refeicao.getByLabel("Quantidade")).toHaveCount(1);
+  await refeicao.getByRole("button", { name: "à vontade", exact: true }).click();
+
+  await expect(refeicao.getByLabel("Quantidade")).toHaveCount(0);
+  await expect(refeicao.getByText("à vontade", { exact: true })).toBeVisible();
+
+  // E volta, sem perder o alimento.
+  await refeicao.getByRole("button", { name: "definir quantidade", exact: true }).click();
+  await expect(refeicao.getByLabel("Quantidade")).toHaveCount(1);
+});

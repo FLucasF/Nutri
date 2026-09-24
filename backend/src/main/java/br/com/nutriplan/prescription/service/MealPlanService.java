@@ -11,6 +11,8 @@ import br.com.nutriplan.patient.repository.PatientRepository;
 import br.com.nutriplan.prescription.domain.AdequacyBand;
 import br.com.nutriplan.prescription.domain.ItemSubstitution;
 import br.com.nutriplan.prescription.domain.MealItem;
+import java.math.RoundingMode;
+import br.com.nutriplan.prescription.domain.EnergyDensityBand;
 import br.com.nutriplan.prescription.domain.MealItemKind;
 import br.com.nutriplan.prescription.domain.PrescriptionMethod;
 import br.com.nutriplan.prescription.domain.MealPlan;
@@ -65,9 +67,12 @@ public class MealPlanService {
         return page.map(plan -> {
             var foods = loadPlanFoods(plan, accountId);
             var total = calculator.totalMeals(plan.getMeals(), foods);
+            // Um modelo não tem paciente, e um mapa imutável recusa chave nula:
+            // a lista de modelos caía com 500 assim que existia um modelo.
+            String patientName = plan.getPatientId() == null ? null : names.get(plan.getPatientId());
             return new PrescriptionDtos.PlanSummary(
                     plan.getId(), plan.getTitle(), plan.getPatientId(),
-                    names.get(plan.getPatientId()), plan.getMethod(), plan.getStatus(),
+                    patientName, plan.getMethod(), plan.getStatus(),
                     plan.getValidityStart(), plan.getValidityEnd(), plan.isTemplate(),
                     plan.getMeals().size(), plan.itemsTotal(),
                     total.composition().getEnergyKcal(), plan.getUpdatedAt());
@@ -218,6 +223,7 @@ public class MealPlanService {
                 novoItem.setDescriptionMeasure(item.getDescriptionMeasure());
                 novoItem.setQuantity(item.getQuantity());
                 novoItem.setGrams(item.getGrams());
+                novoItem.setAdLibitum(item.isAdLibitum());
                 novoItem.setOrder(item.getOrder());
                 novoItem.setNotes(item.getNotes());
 
@@ -392,10 +398,14 @@ public class MealPlanService {
         var item = new MealItem(description);
         item.setFoodId(request.foodId());
         item.setNotes(RichTextDocument.ofTextOrDocument(request.notes(), mapper).json());
+        item.setAdLibitum(request.isAdLibitum());
 
         // A qualitative plan does not quantify: "salada a vontade" has no number,
         // and inventing one would be creating clinical data nobody prescribed.
-        if (method.isQuantified()) {
+        // The same goes for a single item prescribed "à vontade" in a quantified
+        // plan: the portion stays empty on purpose, and the line stays out of
+        // the day's sum.
+        if (method.isQuantified() && !item.isAdLibitum()) {
             var serving = resolveServing(request.foodId(), request.measureId(),
                     request.quantity(), measures);
             item.setMeasureId(serving.measureId());
@@ -536,20 +546,39 @@ public class MealPlanService {
 
     PrescriptionDtos.PlanResponse buildAnswer(MealPlan plan, Long accountId) {
         var foods = loadPlanFoods(plan, accountId);
+        var dayTotal = calculator.totalMeals(plan.getMeals(), foods);
+        BigDecimal dayEnergy = dayTotal.composition().getEnergyKcal();
 
         List<PrescriptionDtos.MealResponse> meals = plan.getMeals().stream()
                 .map(meal -> {
                     var total = calculator.total(meal.getItems(), foods);
+                    // Densidade calórica e fatia do dia: as duas leituras que o
+                    // cliente tem ao lado de cada refeição no WebDiet.
+                    BigDecimal weight = meal.getItems().stream()
+                            .filter(MealItem::entersCalculation)
+                            .map(MealItem::getGrams)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal energy = total.composition().getEnergyKcal();
+                    BigDecimal density = weight.signum() > 0 && energy != null
+                            ? energy.divide(weight, 2, RoundingMode.HALF_UP)
+                            : null;
+                    EnergyDensityBand band = EnergyDensityBand.of(density);
+                    BigDecimal share = meal.isInCalculation() && energy != null
+                            && dayEnergy != null && dayEnergy.signum() > 0
+                            ? energy.multiply(BigDecimal.valueOf(100))
+                                    .divide(dayEnergy, 1, RoundingMode.HALF_UP)
+                            : null;
                     return new PrescriptionDtos.MealResponse(
                             meal.getId(), meal.getName(), meal.getTime(),
                             meal.getOrder(), meal.getNotes(),
                             meal.isInCalculation(), meal.hasPhoto(), meal.getPhotoName(),
                             itemsAnswer(meal),
-                            totalBuild(total, null));
+                            totalBuild(total, null),
+                            weight.signum() > 0 ? weight.setScale(0, RoundingMode.HALF_UP) : null,
+                            density, band, band == null ? null : band.getDescription(),
+                            share);
                 })
                 .toList();
-
-        var dayTotal = calculator.totalMeals(plan.getMeals(), foods);
 
         String patientName = plan.getPatientId() == null ? null
                 : patientRepository.findById(plan.getPatientId())
@@ -574,7 +603,8 @@ public class MealPlanService {
         return new PrescriptionDtos.ItemResponse(
                 item.getId(), item.getKind(), item.getFoodId(), item.getMeasureId(),
                 item.getDescription(), item.servingFormatted(),
-                item.getQuantity(), item.getGrams(), item.getOrder(), item.getNotes(),
+                item.getQuantity(), item.getGrams(), item.isAdLibitum(),
+                item.getOrder(), item.getNotes(),
                 item.getSubstitutions().stream()
                         .map(e -> new PrescriptionDtos.SubstitutionResponse(
                                 e.getId(), e.getFoodId(), e.getDescription(),

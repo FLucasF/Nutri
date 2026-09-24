@@ -89,6 +89,16 @@ public class MealItem extends BaseEntity {
     @Column(precision = 10, scale = 3)
     private BigDecimal grams;
 
+    /**
+     * "À vontade": prescrito sem quantidade, fora do somatório.
+     *
+     * Vale em qualquer alimento do plano por alimentos — é o pedido do cliente
+     * para folhas, salada, chá. O item continua no cardápio com a palavra "à
+     * vontade" no lugar da porção; só não entra na conta do dia.
+     */
+    @Column(name = "ad_libitum", nullable = false)
+    private boolean adLibitum = false;
+
     @Column(name = "sort_order", nullable = false)
     private Integer order;
 
@@ -116,7 +126,7 @@ public class MealItem extends BaseEntity {
      * quantity.
      */
     public boolean entersCalculation() {
-        return kind == MealItemKind.FOOD
+        return kind == MealItemKind.FOOD && !adLibitum
                 && foodId != null && grams != null && grams.signum() > 0;
     }
 
@@ -126,8 +136,11 @@ public class MealItem extends BaseEntity {
 
     /** Ready-made portion text, the way the patient reads it. */
     public String servingFormatted() {
+        if (adLibitum) {
+            return "à vontade";
+        }
         if (quantity == null) {
-            return descriptionMeasure != null ? descriptionMeasure : "a vontade";
+            return descriptionMeasure != null ? descriptionMeasure : "à vontade";
         }
         String number = quantity.stripTrailingZeros().toPlainString();
         if (descriptionMeasure != null && !descriptionMeasure.isBlank()) {

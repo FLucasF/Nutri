@@ -142,6 +142,14 @@
 .plan-grid .span-12 {
   grid-column: span 12;
 }
+/* What the import from the energy calculation brought, and what it warned. */
+.energy-notice {
+  margin-top: 8px;
+}
+.energy-notice p + p {
+  margin-top: 6px;
+}
+
 .plan-import {
   align-self: flex-start;
   margin-top: 2px;
@@ -327,6 +335,40 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Caloric density and the share of the day, quieter than the kcal. */
+.macro-density {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.density-band {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.density-band.band-high {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.density-band.band-very_low,
+.density-band.band-low {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.macro-share::before {
+  content: "·";
+  margin-right: 6px;
+}
+@media (max-width: 1366px) {
+  .macro-density {
+    display: none;
+  }
+}
 .meal-acoes {
   display: inline-flex;
   align-items: center;
@@ -436,6 +478,13 @@
   grid-column: qty-start / grams-end;
   grid-row: 1;
   font-size: 13px;
+}
+.item-row.a-vontade .item-free {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.item-adlib[aria-pressed="true"] {
+  color: var(--ink-2);
 }
 .item-acoes {
   grid-area: acoes;
@@ -721,6 +770,15 @@
   padding-top: 10px;
   border-top: 1px solid var(--border);
   font-size: 12px;
+}
+/* The patient's last weight and the healthy range, beside the goal. */
+.totals-weight {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--ink-2);
 }
 .totals-delta {
   font-weight: 500;

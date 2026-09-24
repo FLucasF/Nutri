@@ -39,6 +39,7 @@ import { RichTextEditor } from "../components/RichText/LazyEditor";
 import { RichTextView } from "../components/RichText/RichTextView";
 import { emptyDoc, isEmptyDoc, parseRichDoc } from "../components/RichText/document";
 import { ErrorApi, api } from "../api/client";
+import { formatBr } from "../api/dates";
 import { explainError, whereLook } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
 import { MACROS_PRINCIPAIS, NUTRIENTS, formatNutrient, labelDe } from "../api/nutrients";
@@ -47,6 +48,7 @@ import { NotesField, NotesView } from "../components/RichText/NotesField";
 import type {
   AdequacyBand,
   Composition,
+  EnergyPlan,
   FavoriteMeal,
   FoodDetail,
   FoodSummary,
@@ -61,6 +63,8 @@ import type {
   PlanResponse,
   PlanSummary,
   Total,
+  Patient,
+  MealResponse,
 } from "../api/types";
 
 /**
@@ -95,6 +99,13 @@ interface ItemEdit {
   substitutions: SubstitutionEdit[];
   /** FOOD ou SEPARATOR. O separador é uma barra entre alimentos. */
   kind: MealItemKind;
+  /**
+   * "À vontade": sem quantidade e fora do somatório.
+   *
+   * "Preciso de 'à vontade' em TODOS OS ALIMENTOS." Vale em qualquer linha do
+   * plano por alimentos; a porção some e a linha sai da conta do dia.
+   */
+  adLibitum: boolean;
 }
 
 interface MealEdit {
@@ -141,6 +152,13 @@ export default function PlanEditor() {
 
   const [plan, setPlan] = useState<PlanResponse | null>(null);
   const [patients, setPatients] = useState<PatientSummary[]>([]);
+  /**
+   * A ficha do paciente escolhido, pelo peso e pela faixa de peso saudável.
+   *
+   * "A faixa de peso deve aparecer [...] à direita da área de prescrição":
+   * o trilho de totais mostra o último peso medido e a faixa ao lado da meta.
+   */
+  const [patientProfile, setPatientProfile] = useState<Patient | null>(null);
 
   const [title, setTitle] = useState("");
   const [patientId, setPatientId] = useState(parameters.get("patientId") ?? "");
@@ -161,6 +179,17 @@ export default function PlanEditor() {
   const [targetFat, setTargetFat] = useState("");
   const [targetWeight, setTargetWeight] = useState("");
   const [energyPlanId, setEnergyPlanId] = useState<number | undefined>();
+  /**
+   * O que a importação do cálculo energético trouxe, e o que ela avisou.
+   *
+   * Fica embaixo do campo, e não no aviso que some sozinho: um prescrito
+   * zerado pela programação de peso precisa continuar à vista enquanto o
+   * profissional decide o que fazer com ele.
+   */
+  const [energyNotice, setEnergyNotice] = useState<{
+    summary: string;
+    warnings: string[];
+  } | null>(null);
   const [validityStart, setValidityStart] = useState("");
   const [validityEnd, setValidityEnd] = useState("");
   const [handouts, setHandouts] = useState("");
@@ -230,6 +259,21 @@ export default function PlanEditor() {
       .then((p) => setPatients(p.content))
       .catch(() => setPatients([]));
   }, []);
+
+  useEffect(() => {
+    if (!patientId || template) {
+      setPatientProfile(null);
+      return;
+    }
+    let alive = true;
+    api.patients
+      .find(Number(patientId))
+      .then((p) => alive && setPatientProfile(p))
+      .catch(() => alive && setPatientProfile(null));
+    return () => {
+      alive = false;
+    };
+  }, [patientId, template]);
 
   useEffect(() => {
     api.mealFavorites
@@ -332,6 +376,7 @@ export default function PlanEditor() {
           measureId: i.measureId,
           description: i.description,
           quantity: i.quantity !== undefined && i.quantity !== null ? String(i.quantity) : "",
+          adLibitum: i.adLibitum ?? false,
           notes: i.notes ?? "",
           measures: [],
           substitutions: i.substitutions.map((e) => ({
@@ -424,6 +469,7 @@ export default function PlanEditor() {
       setTargetEnergy(String(Math.round(full.prescribedKcal)));
       if (full.targetWeightKg) setTargetWeight(String(full.targetWeightKg));
       setEnergyPlanId(full.id);
+      setEnergyNotice({ summary: describeEnergy(full), warnings: full.warnings });
       touch();
       planWarnings.confirm(`Meta de ${Math.round(full.prescribedKcal)} kcal importada.`);
     } catch (e) {
@@ -588,6 +634,7 @@ export default function PlanEditor() {
             description: i.description,
             quantity:
               i.quantity !== undefined && i.quantity !== null ? String(i.quantity) : "",
+            adLibitum: i.adLibitum ?? false,
             notes: i.notes ?? "",
             measures: [],
             substitutions: i.substitutions.map((e) => ({
@@ -621,7 +668,8 @@ export default function PlanEditor() {
           foodId: i.foodId,
           measureId: i.measureId,
           description: i.description.trim() || undefined,
-          quantity: i.quantity ? Number(i.quantity.replace(",", ".")) : undefined,
+          quantity: i.adLibitum ? undefined : i.quantity ? Number(i.quantity.replace(",", ".")) : undefined,
+          adLibitum: i.adLibitum || undefined,
           notes: i.notes.trim() || undefined,
           substitutions:
             method !== "QUALITATIVE"
@@ -681,6 +729,7 @@ export default function PlanEditor() {
             description: i.description,
             quantity:
               i.quantity !== undefined && i.quantity !== null ? String(i.quantity) : "",
+            adLibitum: i.adLibitum ?? false,
             notes: i.notes ?? "",
             measures: [],
             substitutions: i.substitutions.map((e) => ({
@@ -956,6 +1005,7 @@ export default function PlanEditor() {
       description: "",
       quantity: "",
       notes: "",
+      adLibitum: false,
       measures: [],
       substitutions: [],
     };
@@ -1028,6 +1078,13 @@ export default function PlanEditor() {
     return map;
   }, [plan]);
 
+  /** As leituras da refeição salva: densidade calórica e fatia do dia. */
+  const readoutsByMeal = useMemo(() => {
+    const map = new Map<number, MealResponse>();
+    plan?.meals.forEach((r, index) => map.set(index, r));
+    return map;
+  }, [plan]);
+
   // Below 900px the rail lives in a bottom sheet and the page header is the
   // only bar on screen; both hooks stay above the early return.
   const compact = useIsCompact();
@@ -1047,7 +1104,12 @@ export default function PlanEditor() {
   */
   const rail = (
     <>
-      <PanelTotals total={totalSaved} dirty={dirty} target={targetEnergy} />
+      <PanelTotals
+        total={totalSaved}
+        dirty={dirty}
+        target={targetEnergy}
+        patient={template ? null : patientProfile}
+      />
       <PanelDistribution
         comparison={totalSaved?.comparison ?? []}
         weightKg={plan?.targetWeightKg}
@@ -1322,6 +1384,17 @@ export default function PlanEditor() {
                     Importar do cálculo energético
                   </button>
                 )}
+                {energyNotice && (
+                  <div
+                    className={`warning ${energyNotice.warnings.length > 0 ? "attention" : ""} energy-notice`}
+                    role="status"
+                  >
+                    <p>{energyNotice.summary}</p>
+                    {energyNotice.warnings.map((warning) => (
+                      <p key={warning}>{warning}</p>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="field span-3">
@@ -1508,6 +1581,7 @@ export default function PlanEditor() {
               meal={meal}
               method={method}
               total={totalsByMeal.get(index)}
+              readout={readoutsByMeal.get(index)}
               onlyRead={!podeEdit}
               onChange={(change) => changeMeal(meal.key, change)}
               onRemove={() => removeMeal(meal.key)}
@@ -1659,6 +1733,7 @@ function BlockMeal({
   meal,
   method,
   total,
+  readout,
   onlyRead,
   onChange,
   onRemove,
@@ -1678,6 +1753,8 @@ function BlockMeal({
   meal: MealEdit;
   method: PrescriptionMethod;
   total?: Total;
+  /** A refeição como o servidor a devolveu: traz densidade calórica e fatia do dia. */
+  readout?: MealResponse;
   onlyRead: boolean;
   onChange: (change: Partial<MealEdit>) => void;
   onRemove: () => void;
@@ -1740,7 +1817,7 @@ function BlockMeal({
           aria-label="Nome da refeição"
           maxLength={250}
         />
-        <MacroTags composition={total?.composition} />
+        <MacroTags composition={total?.composition} readout={readout} />
         {!onlyRead && (
           <div className="meal-acoes">
             <label className="switch meal-calc" title="Desligue para prescrever uma opção substituta">
@@ -2030,9 +2107,17 @@ function MealPhotoButton({
  * "é bom para esses labels colocar uma sigla abreviando sobre o que é (PTN,
  * LIP, CHO, Kcal)".
  */
-function MacroTags({ composition }: { composition?: Composition }) {
+function MacroTags({
+  composition,
+  readout,
+}: {
+  composition?: Composition;
+  readout?: MealResponse;
+}) {
   if (!composition) return null;
   const grams = (value?: number) => (value === undefined ? "\u2014" : Math.round(value));
+  const density = readout?.energyDensity;
+  const share = readout?.shareOfDayPct;
   return (
     <div className="macro-tags">
       <span className="readout macro-readout" title="Proteínas · Lipídeos · Carboidratos">
@@ -2042,6 +2127,36 @@ function MacroTags({ composition }: { composition?: Composition }) {
       <span className="readout strong macro-kcal" title="Energia">
         {composition.energyKcal === undefined ? "\u2014" : Math.round(composition.energyKcal)} kcal
       </span>
+      {/*
+        Densidade calórica e fatia do dia, como o cliente lê ao lado de cada
+        refeição no WebDiet. Só depois de salvo: as duas saem da mesma conta
+        que os totais.
+      */}
+      {(density !== undefined || share !== undefined) && (
+        <span
+          className="readout macro-density"
+          title={
+            density !== undefined
+              ? `Densidade calórica ${density.toLocaleString("pt-BR")} kcal/g (${(readout?.energyDensityDescription ?? "").toLowerCase()}) · ${readout?.weightGrams ?? "—"} g na conta`
+              : undefined
+          }
+        >
+          {density !== undefined && (
+            <>
+              {density.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}{" "}
+              kcal/g
+              {readout?.energyDensityDescription && (
+                <span className={`density-band band-${(readout.energyDensityBand ?? "").toLowerCase()}`}>
+                  {readout.energyDensityDescription.toLowerCase()}
+                </span>
+              )}
+            </>
+          )}
+          {share !== undefined && (
+            <span className="macro-share">{Math.round(share)}% do dia</span>
+          )}
+        </span>
+      )}
     </div>
   );
 }
@@ -2082,9 +2197,10 @@ function RowItem({
         ? quantity
         : undefined;
   const showSubstitutions = admitsSubstitutions && !!item.foodId;
+  const quantified = quantifies && !item.adLibitum;
 
   return (
-    <div className="item-row">
+    <div className={`item-row${item.adLibitum ? " a-vontade" : ""}`}>
       <span className="item-handle" aria-hidden="true">
         <GripVertical />
       </span>
@@ -2114,7 +2230,7 @@ function RowItem({
         )}
       </div>
 
-      {quantifies ? (
+      {quantified ? (
         <>
           <input
             className="item-qty"
@@ -2159,7 +2275,9 @@ function RowItem({
           </span>
         </>
       ) : (
-        <span className="discreto item-free">à vontade / sem quantificar</span>
+        <span className="discreto item-free">
+          {item.adLibitum ? "à vontade" : "à vontade / sem quantificar"}
+        </span>
       )}
 
       {!onlyRead ? (
@@ -2206,6 +2324,25 @@ function RowItem({
             onClick={() => onChange({ foodId: undefined, measureId: undefined, measures: [] })}
           >
             trocar alimento
+          </button>
+        )}
+        {/*
+          "À vontade" em qualquer alimento: a porção some e a linha sai do
+          somatório. O botão diz o que vai acontecer ao clicar, e não o estado.
+        */}
+        {!onlyRead && quantifies && (item.foodId || item.description.trim()) && (
+          <button
+            type="button"
+            className="button link pequeno item-adlib"
+            aria-pressed={item.adLibitum}
+            onClick={() => onChange({ adLibitum: !item.adLibitum })}
+            title={
+              item.adLibitum
+                ? "Voltar a prescrever com quantidade"
+                : "À vontade: sem quantidade e fora do somatório do dia"
+            }
+          >
+            {item.adLibitum ? "definir quantidade" : "à vontade"}
           </button>
         )}
         <ItemNotes item={item} onlyRead={onlyRead} onChange={onChange} />
@@ -2575,7 +2712,17 @@ function SavingState({
   return null;
 }
 
-function PanelTotals({ total, dirty, target }: { total?: Total; dirty: boolean; target: string }) {
+function PanelTotals({
+  total,
+  dirty,
+  target,
+  patient,
+}: {
+  total?: Total;
+  dirty: boolean;
+  target: string;
+  patient?: Patient | null;
+}) {
   if (!total) {
     return (
       <div className="card totals-card">
@@ -2673,6 +2820,21 @@ function PanelTotals({ total, dirty, target }: { total?: Total; dirty: boolean; 
           </span>
         </p>
       )}
+      {patient?.healthyWeight && (
+        <p className="totals-weight readout">
+          <span>
+            {patient.lastWeightKg !== undefined && patient.lastWeightKg !== null
+              ? `peso ${patient.lastWeightKg.toLocaleString("pt-BR")} kg`
+              : "peso não medido"}
+          </span>
+          <span
+            title={`Faixa de peso saudável: IMC de ${patient.healthyWeight.bmiMinimum.toLocaleString("pt-BR")} a ${patient.healthyWeight.bmiMaximum.toLocaleString("pt-BR")} pela última altura medida`}
+          >
+            faixa {patient.healthyWeight.minimumKg.toLocaleString("pt-BR")} a{" "}
+            {patient.healthyWeight.maximumKg.toLocaleString("pt-BR")} kg
+          </span>
+        </p>
+      )}
 
       {total.adequacyEnergyPct !== undefined && targetNumber ? (
         <p className="discreto totals-adequacy">
@@ -2698,7 +2860,9 @@ function PanelTotals({ total, dirty, target }: { total?: Total; dirty: boolean; 
 
       {total.itemsOutsideCalculation > 0 && (
         <p className="minusculo totals-outside">
-          {total.itemsOutsideCalculation} item(ns) without quantity não entraram no cálculo.
+          {total.itemsOutsideCalculation === 1
+            ? "1 item sem quantidade ou à vontade não entrou no cálculo."
+            : `${total.itemsOutsideCalculation} itens sem quantidade ou à vontade não entraram no cálculo.`}
         </p>
       )}
     </div>
@@ -2970,6 +3134,24 @@ function PanelPublication({
 }
 
 /** Texto do formulário para número, aceitando vírgula. Vazio vira undefined. */
+/**
+ * A conta que produziu a meta, em uma frase: "2.295 kcal de média × 1,00 de
+ * injúria − 2.567 kcal da programação de peso = 0 kcal". É o que faltava
+ * quando o número chegava sozinho e ninguém sabia de onde tinha vindo.
+ */
+function describeEnergy(plan: EnergyPlan): string {
+  const n = (value: number) => Math.round(value).toLocaleString("pt-BR");
+  const parts = [`${n(plan.averageKcal)} kcal de ${plan.equations.length > 1 ? "média" : plan.equations[0]?.description ?? "gasto"}`];
+  if (plan.injuryFactor !== 1) parts.push(`× ${plan.injuryFactor.toLocaleString("pt-BR")} de injúria`);
+  if (plan.metKcal) parts.push(`+ ${n(plan.metKcal)} kcal por MET`);
+  if (plan.adjustmentKcal) {
+    parts.push(
+      `${plan.adjustmentKcal < 0 ? "−" : "+"} ${n(Math.abs(plan.adjustmentKcal))} kcal da programação de peso`,
+    );
+  }
+  return `Importado de "${plan.name}" (${formatBr(plan.date)}): ${parts.join(" ")} = ${n(plan.prescribedKcal)} kcal.`;
+}
+
 function numberOrUndefined(text: string): number | undefined {
   const clean = text.trim().replace(",", ".");
   if (!clean) return undefined;
