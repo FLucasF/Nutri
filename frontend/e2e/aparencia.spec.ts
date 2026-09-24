@@ -395,6 +395,12 @@ test.describe("contraste (1440)", () => {
   test.use({ viewport: LARGURAS.desktop });
 
   async function semFalhasDeContraste(page: Page, rotulo: string) {
+    // A entrada das refeições no link do paciente é animada, e o axe lê a cor
+    // no meio da transição como um cinza que não existe na página parada.
+    // O que se confere aqui é a cor final: espera-se a animação terminar.
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))),
+    );
     const resultado = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
     const violacoes = resultado.violations.flatMap((v) =>
       v.nodes.map((n) => ({ alvo: n.target.join(" "), resumo: n.failureSummary })),

@@ -91,6 +91,14 @@
 .foods-list .readout {
   line-height: 1.2;
 }
+/* On the phone the row is narrow: the macro readout wraps instead of spilling. */
+@media (max-width: 600px) {
+  .foods-list .readout,
+  .results-search .readout {
+    white-space: normal;
+    line-height: 1.4;
+  }
+}
 
 .foods-empty .empty-hint {
   max-width: 46ch;

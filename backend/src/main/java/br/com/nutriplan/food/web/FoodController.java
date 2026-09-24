@@ -83,7 +83,9 @@ public class FoodController {
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('NUTRICIONISTA','ADMIN')")
+    // O nome do papel ficou em português depois da tradução dos enums: a
+    // importação de tabelas respondia 403 para todo mundo.
+    @PreAuthorize("hasAnyRole('NUTRITIONIST','ADMIN')")
     @Operation(summary = "Importa uma tabela de alimentos em CSV",
             description = "As colunas de nutriente sao reconhecidas por nome (\"energiaKcal\", "
                     + "\"energia_kcal\" ou \"Energia (kcal)\"). Os alimentos importados ficam "

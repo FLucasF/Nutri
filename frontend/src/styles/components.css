@@ -574,6 +574,10 @@ th.num {
    fades. Set data-scroll-end="true" from the page when scrolled to the end
    and the fade goes away. */
 .table-scroll {
+  /* Its own containing block: the screen-reader-only spans inside the table
+     are positioned absolutely, and without this they escaped the scroller and
+     widened the page (72px past the tablet width, on the exams table). */
+  position: relative;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
