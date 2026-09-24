@@ -69,6 +69,11 @@ function estadosInternos(): Estado[] {
 
     { nome: "anamnese: lista", rota: () => `${ficha()}/anamneses` },
     { nome: "anamnese: nova", rota: () => `${ficha()}/anamneses`, preparar: clicar("Nova anamnese") },
+    { nome: "anamnese: nova por modelo", rota: () => `${ficha()}/anamneses`, preparar: async (page) => {
+      await clicar("Nova anamnese")(page);
+      await page.getByLabel("Modelo de anamnese").selectOption({ label: "Hábitos de sono" });
+      await page.getByText("Descreva uma noite típica").first().waitFor();
+    } },
     { nome: "anamnese: editando", rota: () => `${ficha()}/anamneses`, preparar: clicar("Editar", true) },
     { nome: "anamnese: campos de destaque", rota: () => `${ficha()}/anamneses`, preparar: clicar("Campos de destaque") },
     { nome: "anamnese: confirmar exclusão", rota: () => `${ficha()}/anamneses`, preparar: clicar("Excluir", true) },
@@ -142,6 +147,8 @@ function estadosInternos(): Estado[] {
 
     { nome: "questionários: lista", rota: () => "/questionnaires" },
     { nome: "questionários: perguntas abertas", rota: () => "/questionnaires", preparar: clicar("Ver perguntas") },
+    { nome: "questionários: novo questionário", rota: () => "/questionnaires", preparar: clicar("Novo questionário") },
+    { nome: "questionários: editando", rota: () => "/questionnaires", preparar: clicar("Editar", true) },
 
     { nome: "equipe: lista", rota: () => "/team" },
     { nome: "equipe: cadastrar secretária", rota: () => "/team", preparar: clicar("Cadastrar secretária") },

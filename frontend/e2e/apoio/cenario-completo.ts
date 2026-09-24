@@ -298,7 +298,7 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
         scorable: true,
         cutoffRange: "0-2=Bom|3-4=Regular|5-99=Ruim",
         questions: [
-          { statement: "Quantas horas você dorme por noite?", type: "NUMBER", required: true },
+          { statement: "Quantas horas você dorme por noite?", type: "NUMBER", required: true, highlight: true },
           {
             statement: "Acorda cansado?",
             type: "CHOICE_SINGLE",
@@ -311,6 +311,10 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
             required: false,
             ajuda: "Barulho, luz, preocupação…",
           },
+          { statement: "Sobre a semana", type: "SECTION", ajuda: "Pense nos últimos sete dias." },
+          { statement: "Descreva uma noite típica", type: "PARAGRAPH" },
+          { statement: "Última noite mal dormida", type: "DATE" },
+          { statement: "O que ajuda a dormir?", type: "MULTIPLE", options: "Chá|Leitura|Escuro", highlight: true },
         ],
       },
     }),
@@ -336,15 +340,50 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
   await ok(
     await anonima.post(`/api/public/questionnaires/${envio2.publicIdentifier}`, {
       data: {
-        answers: formulario.questions.map((q: { id: number; type: string }) => ({
-          questionId: q.id,
-          value: q.type === "NUMBER" ? "6" : q.type === "CHOICE_SINGLE" ? "Às vezes" : "Luz da rua.",
-        })),
+        answers: formulario.questions
+          .filter((q: { type: string }) => q.type !== "SECTION")
+          .map((q: { id: number; type: string }) => ({
+            questionId: q.id,
+            value:
+              q.type === "NUMBER"
+                ? "6"
+                : q.type === "CHOICE_SINGLE"
+                  ? "Às vezes"
+                  : q.type === "DATE"
+                    ? "2026-09-20"
+                    : q.type === "MULTIPLE"
+                      ? "Chá; Escuro"
+                      : q.type === "PARAGRAPH"
+                        ? "Deito tarde e acordo cedo; durmo em duas etapas."
+                        : "Luz da rua.",
+          })),
       },
     }),
     "resposta pública",
   );
   await anonima.dispose();
+
+  // A anamnese pelo modelo, preenchida na consulta, e a pré-consulta importada.
+  const pergunta = (statement: string) =>
+    (questionario.questions as { id: number; statement: string }[]).find((q) => q.statement === statement)!.id;
+  await ok(
+    await api.post("/api/anamneses", {
+      data: {
+        patientId: paciente.id,
+        name: "Retorno de junho",
+        date: "2026-06-14",
+        questionnaireId: questionario.id,
+        answers: [
+          { questionId: pergunta("Quantas horas você dorme por noite?"), value: "7" },
+          { questionId: pergunta("Acorda cansado?"), value: "Nunca" },
+          { questionId: pergunta("Descreva uma noite típica"), value: "Dorme às 23h e acorda às 6h." },
+          { questionId: pergunta("O que ajuda a dormir?"), value: "Leitura; Escuro" },
+        ],
+      },
+    }),
+    "anamnese pelo modelo",
+  );
+  await ok(await api.post(`/api/anamneses/from-sending/${envio2.id}`, {}), "anamnese da pré-consulta");
 
   // ------------------------------------------------------------------ agenda
   const deHoje = await ok(

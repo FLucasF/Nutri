@@ -353,7 +353,7 @@ test.describe("questionário", () => {
     await formulario.goto(`/form/${pendente.publicIdentifier}`);
     await expect(formulario.getByRole("heading", { name: "Sono da semana" })).toBeVisible();
     await formulario.getByLabel(/Quantas horas/).fill("6");
-    await formulario.getByLabel(/Acorda cansado/).selectOption("Às vezes");
+    await formulario.getByRole("radio", { name: "Às vezes" }).check();
     await formulario.getByLabel(/O que atrapalha/).fill("Luz da rua.");
     await formulario.getByRole("button", { name: "Enviar respostas" }).click();
     await expect(formulario.getByRole("heading", { name: "Respostas enviadas" })).toBeVisible();
@@ -363,5 +363,81 @@ test.describe("questionário", () => {
     await expect(page.getByText("respondido em").first()).toBeVisible();
     await page.locator("details.qz-answers summary").first().click();
     await expect(page.getByText("Luz da rua.")).toBeVisible();
+  });
+});
+
+/* ============================================= anamnese por questionário */
+
+test.describe("anamnese por questionário", () => {
+  test("monta o modelo no construtor, preenche a anamnese por ele e o destaque vai à listagem", async ({
+    page,
+  }) => {
+    await page.goto("/questionnaires");
+    await page.getByRole("button", { name: "Novo questionário" }).click();
+    await page.getByLabel("Nome do questionário").fill("Anamnese pela tela");
+    await page.getByLabel("Pergunta 1", { exact: true }).fill("Queixa principal");
+    await page.getByLabel("Destacar na listagem de anamneses").first().check();
+    await page.getByRole("button", { name: "Adicionar seção" }).click();
+    await page.getByLabel("Título da seção 2").fill("Sintomas digestivos");
+    await page.getByRole("button", { name: "Adicionar pergunta" }).click();
+    await page.getByLabel("Pergunta 3", { exact: true }).fill("O que sente?");
+    await page.getByLabel("Tipo da pergunta 3").selectOption("MULTIPLE");
+    await page.getByLabel("Alternativas da pergunta 3").fill("Azia\nRefluxo\nConstipação");
+    await page.getByRole("button", { name: "Adicionar pergunta" }).click();
+    await page.getByLabel("Pergunta 4", { exact: true }).fill("Rotina alimentar");
+    await page.getByLabel("Tipo da pergunta 4").selectOption("PARAGRAPH");
+    await page.getByRole("button", { name: "Salvar questionário" }).click();
+    await expect(page.locator(".handout", { hasText: "Anamnese pela tela" })).toContainText("3 perguntas");
+
+    await page.goto(`/patients/${paciente.id}/anamneses`);
+    await page.getByRole("button", { name: "Nova anamnese" }).click();
+    await page.getByLabel("Modelo de anamnese").selectOption({ label: "Anamnese pela tela" });
+    await page.getByLabel(/^Queixa principal/).fill("Cansaço no fim da tarde");
+    await page.getByLabel("Azia").check();
+    await page.getByLabel("Refluxo").check();
+    await page.getByLabel(/^Rotina alimentar/).fill("Pula o café da manhã.");
+    await page.getByRole("button", { name: "Salvar", exact: true }).click();
+
+    const cartao = page.locator(".card-anamnese", { hasText: "Anamnese pela tela" }).first();
+    await expect(cartao).toContainText("Queixa principal");
+    await expect(cartao).toContainText("Cansaço no fim da tarde");
+
+    // Reabrir traz as respostas, com as caixas marcadas.
+    await cartao.getByRole("button", { name: "Editar" }).click();
+    await expect(page.getByLabel(/^Queixa principal/)).toHaveValue("Cansaço no fim da tarde");
+    await expect(page.getByLabel("Azia")).toBeChecked();
+    await expect(page.getByLabel("Constipação")).not.toBeChecked();
+  });
+
+  test("a pré-consulta enviada da anamnese volta respondida e vira anamnese", async ({ page, browser }) => {
+    await page.goto(`/patients/${paciente.id}/anamneses`);
+    await page.getByLabel("Questionário para o paciente").selectOption(String(questionarioId));
+    await page.getByRole("button", { name: "Gerar link" }).click();
+    await expect(page.getByText("aguardando resposta").first()).toBeVisible();
+
+    const envios = await (await conta.api.get(`/api/patients/${paciente.id}/questionnaires`)).json();
+    const pendente = envios.find((e: { pending: boolean }) => e.pending);
+    expect(pendente).toBeTruthy();
+
+    const contexto = await browser.newContext();
+    const formulario = await contexto.newPage();
+    await formulario.goto(`/form/${pendente.publicIdentifier}`);
+    await formulario.getByLabel(/Quantas horas/).fill("5");
+    await formulario.getByRole("radio", { name: "Sempre" }).check();
+    await formulario.getByLabel(/O que atrapalha/).fill("Barulho.");
+    await formulario.getByRole("button", { name: "Enviar respostas" }).click();
+    await expect(formulario.getByRole("heading", { name: "Respostas enviadas" })).toBeVisible();
+    await contexto.close();
+
+    await page.reload();
+    await page.getByRole("button", { name: "Importar para anamnese" }).first().click();
+    await expect(page.getByRole("heading", { name: "Editar anamnese" })).toBeVisible();
+    await expect(page.getByLabel(/Quantas horas/)).toHaveValue("5");
+    await expect(page.getByRole("radio", { name: "Sempre" })).toBeChecked();
+    await page.getByRole("button", { name: "Salvar", exact: true }).click();
+
+    const importada = page.locator(".card-anamnese", { hasText: "(pré-consulta)" }).first();
+    await expect(importada).toContainText("respondida pelo paciente");
+    await expect(page.getByRole("button", { name: "Abrir anamnese" }).first()).toBeVisible();
   });
 });
