@@ -401,6 +401,36 @@ export interface PublicPlan {
     fatG?: number;
     meals: number;
   };
+  /** O passe do link, quando o plano pede a data de nascimento: vai no endereço das figuras. */
+  accessToken?: string;
+}
+
+// ------------------------------------------------------- adequação (DRI)
+
+export type AdequacyStatus = "BELOW" | "ADEQUATE" | "ABOVE" | "WITHIN_LIMIT" | "ABOVE_LIMIT" | "NO_DATA";
+
+export interface AdequacyRow {
+  nutrient: string;
+  label: string;
+  unit: string;
+  /** O que o dia entrega; ausente quando nenhum alimento informou. */
+  intake?: number;
+  reference: number;
+  kind: "RDA" | "AI" | "LIMIT";
+  kindDescription: string;
+  percent?: number;
+  status: AdequacyStatus;
+  /** Só parte dos alimentos informou: o total subestima. */
+  incomplete: boolean;
+}
+
+export interface AdequacyResponse {
+  available: boolean;
+  unavailableBecause?: string;
+  /** "Mulher, 31 a 50 anos". */
+  reference?: string;
+  ageYears?: number;
+  rows: AdequacyRow[];
 }
 
 // ============================================================ anthropometry
@@ -612,6 +642,10 @@ export interface ProgressPoint {
   protocol?: CompositionProtocol;
   changesPreviousFront: Change[];
   changesFrontFirst: Change[];
+  /** Para os gráficos da consulta. */
+  massLeanKg?: number;
+  massFatKg?: number;
+  waistCm?: number;
 }
 
 export interface Progress {
@@ -1253,7 +1287,11 @@ export type EnergyEquationName =
   | "MIFFLIN_ST_JEOR"
   | "FAO_WHO_2004"
   | "EER_IOM_2005"
-  | "EER_2023";
+  | "EER_2023"
+  | "KATCH_MCARDLE"
+  | "CUNNINGHAM"
+  | "TINSLEY_WEIGHT"
+  | "TINSLEY_LEAN";
 
 export interface EquationOption {
   equation: EnergyEquationName;
@@ -1262,6 +1300,8 @@ export interface EquationOption {
   total: boolean;
   /** Menor idade para a qual a equação foi publicada. */
   ageMinimum: number;
+  /** Parte da massa magra, e não do peso. */
+  requiresLeanMass: boolean;
 }
 
 export interface ActivityOption {
@@ -1298,6 +1338,8 @@ export interface EnergyPlan {
   assessmentId?: number;
   weightKg: number;
   heightCm: number;
+  /** Massa livre de gordura usada pelas equações que partem dela. */
+  leanMassKg?: number;
   ageYears: number;
   sex: Sex;
   activityLevel: ActivityLevel;
@@ -1332,6 +1374,7 @@ export interface EnergyPlanRequest {
   assessmentId?: number;
   weightKg?: number;
   heightCm?: number;
+  leanMassKg?: number;
   activityLevel: ActivityLevel;
   injuryFactor?: number;
   metKcal?: number;

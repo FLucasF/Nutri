@@ -66,6 +66,7 @@ import type {
   PackageRequest,
   StatisticsResponse,
   AppointmentPaymentRequest,
+  AdequacyResponse,
 } from "./types";
 
 const BASE = "/api";
@@ -110,6 +111,12 @@ type Options = {
   body?: unknown;
   /** Public request: it sends no credential and does not redirect on expiry. */
   withoutAuthentication?: boolean;
+  /**
+   * Public page that the owner may also open: it sends the credential when
+   * there is one, and a 401 does not end the session.
+   */
+  optionalAuthentication?: boolean;
+  headers?: Record<string, string>;
   formDate?: FormData;
 };
 
@@ -145,7 +152,7 @@ async function download(path: string): Promise<{ url: string; name: string }> {
 }
 
 async function request<T>(path: string, options: Options = {}): Promise<T> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...(options.headers ?? {}) };
   const token = readToken();
 
   if (!options.withoutAuthentication && token) {
@@ -169,7 +176,7 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
   const data = text ? JSON.parse(text) : null;
 
   if (!answer.ok) {
-    if (answer.status === 401 && !options.withoutAuthentication) {
+    if (answer.status === 401 && !options.withoutAuthentication && !options.optionalAuthentication) {
       onExpireSession?.();
     }
     throw new ErrorApi(
@@ -179,6 +186,25 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
     );
   }
   return data as T;
+}
+
+/**
+ * Every page of a paginated list, for a picker that has to offer all of it.
+ *
+ * A select of patients that stopped at the first page left the 201st patient
+ * out of the schedule without a word. Screens that list walk page by page
+ * (components/Pagination.tsx); pickers read to the end, 200 at a time.
+ */
+export async function allPages<T>(
+  fetch: (page: number, size: number) => Promise<Page<T>>,
+  size = 200,
+): Promise<T[]> {
+  const first = await fetch(0, size);
+  const items = [...first.content];
+  for (let page = 1; page < first.totalPages; page++) {
+    items.push(...(await fetch(page, size)).content);
+  }
+  return items;
 }
 
 function query(params: Record<string, string | number | boolean | undefined>) {
@@ -370,6 +396,9 @@ export const api = {
       request<Page<PlanSummary>>(`/prescriptions${query(params)}`),
 
     detail: (id: number) => request<PlanResponse>(`/prescriptions/${id}`),
+
+    /** Micronutrientes do dia contra as DRI do paciente. */
+    adequacy: (id: number) => request<AdequacyResponse>(`/prescriptions/${id}/adequacy`),
 
     create: (data: PlanRequest) =>
       request<PlanResponse>("/prescriptions", { method: "POST", body: data }),
@@ -779,6 +808,10 @@ export const api = {
     /** O relatório de evolução, com os gráficos. Precisa de duas avaliações. */
     report: (patientId: number) =>
       download(`/patients/${patientId}/anthropometry-report`),
+
+    /** O relatório de uma avaliação: a versão do profissional ou a do paciente. */
+    assessmentReport: (id: number, audience: "PROFESSIONAL" | "PATIENT") =>
+      download(`/assessments/${id}/report?audience=${audience}`),
   },
 
   // ------------------------------------------------------------------- schedule
@@ -924,6 +957,24 @@ export const api = {
   },
 
   /** A plan opened by the patient: with no credential. */
-  publicPlan: (identifier: string) =>
-    request<PublicPlan>(`/public/plans/${identifier}`, { withoutAuthentication: true }),
+  publicPlan: (identifier: string, access?: string) =>
+    request<PublicPlan>(`/public/plans/${identifier}`, {
+      optionalAuthentication: true,
+      headers: access ? { "X-Plan-Access": access } : undefined,
+    }),
+
+  /** Se o link abre direto ou pede a data de nascimento. */
+  publicPlanGate: (identifier: string, access?: string) =>
+    request<{ requiresBirthDate: boolean; allowed: boolean }>(`/public/plans/${identifier}/gate`, {
+      optionalAuthentication: true,
+      headers: access ? { "X-Plan-Access": access } : undefined,
+    }),
+
+  /** Confirma a data de nascimento do paciente e devolve o passe do link. */
+  publicPlanAccess: (identifier: string, birthDate: string) =>
+    request<{ accessToken: string }>(`/public/plans/${identifier}/access`, {
+      method: "POST",
+      body: { birthDate },
+      withoutAuthentication: true,
+    }),
 };
