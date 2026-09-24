@@ -165,6 +165,63 @@
 }
 
 /* Date beside the note while they fit. */
+/* The order as it will print: groups by panel, switches per exam. */
+.labtest-order-preview {
+  margin: 16px 0 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.labtest-order-preview-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+}
+.labtest-order-preview-head > h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.labtest-order-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px 20px;
+}
+.labtest-order-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.labtest-order-items {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.labtest-order-items > li.inativo {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+/* The label keeps its own colour; the strike has to reach the name itself. */
+.labtest-order-items > li.inativo .labtest-check > span {
+  text-decoration: line-through;
+  color: var(--ink-3);
+}
+.labtest-order-actions {
+  display: inline-flex;
+  gap: 6px;
+  align-self: flex-start;
+  flex-wrap: wrap;
+}
+.labtest-order-off {
+  color: var(--ink-3);
+}
+
 .labtest-order-meta {
   display: grid;
   grid-template-columns: 170px minmax(0, 1fr);

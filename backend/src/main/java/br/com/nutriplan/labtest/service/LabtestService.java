@@ -53,6 +53,8 @@ public class LabtestService {
     private final LabtestOrderRepository orderRepository;
     private final PatientService patientService;
     private final CurrentContext contextCurrent;
+    private final br.com.nutriplan.auth.repository.UserRepository userRepository;
+    private final LabtestOrderPdfGenerator orderPdfGenerator;
 
     // ------------------------------------------------------------- parameters
 
@@ -287,13 +289,70 @@ public class LabtestService {
         patientService.accountRequire(patientId);
         var order = new LabtestOrder(contextCurrent.accountId(), patientId, req.date());
         order.setNotes(req.notes());
-
-        for (Long parameterId : req.parameterIds().stream().distinct().toList()) {
-            order.getParameters().add(
-                    new OrderedParameter(order, requireParameter(parameterId)));
-        }
+        fill(order, itemsOf(req));
         orderRepository.save(order);
         return LabtestDtos.OrderResponse.from(order);
+    }
+
+    /**
+     * Troca os exames de um pedido já entregue: religa, desliga, acrescenta.
+     * É o "inativo" do cliente — tirar do PDF sem apagar do pedido.
+     */
+    @Transactional
+    public LabtestDtos.OrderResponse updateRequest(Long patientId, Long orderId,
+                                                         LabtestDtos.OrderUpdateRequest req) {
+        LabtestOrder order = requireOrder(patientId, orderId);
+        order.setNotes(req.notes());
+        order.getParameters().clear();
+        fill(order, req.items());
+        orderRepository.save(order);
+        return LabtestDtos.OrderResponse.from(order);
+    }
+
+    /** O pedido em PDF: os exames ligados, agrupados pelo painel de que vieram. */
+    @Transactional(readOnly = true)
+    public byte[] requestPdf(Long patientId, Long orderId) {
+        var patient = patientService.accountRequire(patientId);
+        LabtestOrder order = requireOrder(patientId, orderId);
+        var user = userRepository.findById(contextCurrent.userId()).orElse(null);
+        return orderPdfGenerator.generate(patient, order,
+                user == null ? null : user.getName(),
+                user == null ? null : user.getCrn(),
+                user == null || user.getAccount() == null ? null : user.getAccount().getName());
+    }
+
+    private List<LabtestDtos.OrderItemRequest> itemsOf(LabtestDtos.OrderRequest req) {
+        if (req.items() != null && !req.items().isEmpty()) {
+            return req.items();
+        }
+        if (req.parameterIds() == null || req.parameterIds().isEmpty()) {
+            throw new BusinessRuleException("Escolha ao menos um exame");
+        }
+        return req.parameterIds().stream()
+                .map(id -> new LabtestDtos.OrderItemRequest(id, null, true))
+                .toList();
+    }
+
+    /** Um parâmetro entra uma vez só; o primeiro pedido dele vence. */
+    private void fill(LabtestOrder order, List<LabtestDtos.OrderItemRequest> items) {
+        var seen = new java.util.HashSet<Long>();
+        for (var item : items) {
+            if (!seen.add(item.parameterId())) {
+                continue;
+            }
+            String panel = StringUtils.hasText(item.panelName()) ? item.panelName().trim() : null;
+            order.getParameters().add(new OrderedParameter(order,
+                    requireParameter(item.parameterId()), panel, item.isActive()));
+        }
+        if (order.getParameters().isEmpty()) {
+            throw new BusinessRuleException("Escolha ao menos um exame");
+        }
+    }
+
+    private LabtestOrder requireOrder(Long patientId, Long orderId) {
+        return orderRepository.findByIdAndAccountId(orderId, contextCurrent.accountId())
+                .filter(order -> order.getPatientId().equals(patientId))
+                .orElseThrow(() -> new NotFoundException("Pedido de exames", orderId));
     }
 
     // ----------------------------------------------------------------- report

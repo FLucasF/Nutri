@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.http.ContentDisposition;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -146,10 +147,36 @@ public class LabtestController {
 
     @PostMapping("/patients/{patientId}/requests-from-labtest")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Registra o pedido de exames entregue ao paciente")
+    @Operation(summary = "Registra o pedido de exames entregue ao paciente",
+            description = "Cada exame diz de que painel veio e se está ligado. Desligado, "
+                    + "fica no pedido e sai do PDF.")
     public LabtestDtos.OrderResponse request(
             @PathVariable Long patientId,
             @Valid @RequestBody LabtestDtos.OrderRequest req) {
         return labtestService.request(patientId, req);
+    }
+
+    @PutMapping("/patients/{patientId}/requests-from-labtest/{orderId}")
+    @Operation(summary = "Religa, desliga ou troca os exames de um pedido")
+    public LabtestDtos.OrderResponse updateRequest(
+            @PathVariable Long patientId,
+            @PathVariable Long orderId,
+            @Valid @RequestBody LabtestDtos.OrderUpdateRequest req) {
+        return labtestService.updateRequest(patientId, orderId, req);
+    }
+
+    @GetMapping(value = "/patients/{patientId}/requests-from-labtest/{orderId}/pdf",
+            produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "O pedido de exames em PDF, agrupado por painel",
+            description = "Só os exames ligados saem na folha, cada grupo sob o nome do "
+                    + "painel de que veio.")
+    public ResponseEntity<byte[]> requestPdf(@PathVariable Long patientId,
+                                             @PathVariable Long orderId) {
+        byte[] content = labtestService.requestPdf(patientId, orderId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                        .filename("pedido-de-exames-" + orderId + ".pdf").build().toString())
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(content);
     }
 }

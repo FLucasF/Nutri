@@ -405,13 +405,7 @@ export default function Labtests() {
           </div>
           <ul className="labtest-orders">
             {requests.map((s) => (
-              <li className="labtest-order" key={s.id}>
-                <span className="mono labtest-order-date">{formatBr(s.date)}</span>
-                <div className="labtest-order-body">
-                  <span className="discreto">{s.labtests.join(", ")}</span>
-                  {s.notes && <div className="minusculo">{s.notes}</div>}
-                </div>
-              </li>
+              <OrderRow key={s.id} order={s} patientId={patientId} onChanged={load} />
             ))}
           </ul>
         </section>
@@ -690,6 +684,16 @@ function FormOrder({
   onSave: () => Promise<void>;
 }) {
   const [chosen, setChosen] = useState<number[]>([]);
+  /**
+   * De que painel cada exame veio, e quais estão desligados.
+   *
+   * "Eu tenho que ter a liberdade de retirar quantos eu quiser, e os que forem
+   * ficando lá é o que irão para o PDF, separados pelos agrupamentos deles. E
+   * não é para excluir diretamente [...] mas que ele fique inativo." O
+   * desligado continua no pedido; só não sai na folha.
+   */
+  const [panelOf, setPanelOf] = useState<Record<number, string>>({});
+  const [inactive, setInactive] = useState<number[]>([]);
   const [panels, setPanels] = useState<LabtestPanel[]>([]);
   const [savingPanel, setSavingPanel] = useState(false);
   /** Filtra a lista de exames do pedido, sem mexer no que está marcado. */
@@ -721,6 +725,20 @@ function FormOrder({
       });
       return next;
     });
+    setPanelOf((current) => {
+      const next = { ...current };
+      panel.parameters.forEach((p) => {
+        if (!(p.id in next)) next[p.id] = panel.name;
+      });
+      return next;
+    });
+  }
+
+  /** Desliga ou religa um exame do pedido, sem tirá-lo dele. */
+  function switchItem(id: number) {
+    setInactive((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+    );
   }
 
   /** Guarda o que está marcado como um painel do consultório. */
@@ -746,6 +764,13 @@ function FormOrder({
     setChosen((current) =>
       current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
     );
+    setPanelOf((current) => {
+      if (!(id in current)) return current;
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    setInactive((current) => current.filter((x) => x !== id));
   }
 
   async function send(event: FormEvent) {
@@ -759,7 +784,11 @@ function FormOrder({
     try {
       await api.labtests.request(patientId, {
         date,
-        parameterIds: chosen,
+        items: chosen.map((id) => ({
+          parameterId: id,
+          panelName: panelOf[id],
+          active: !inactive.includes(id),
+        })),
         notes: notes.trim() || undefined,
       });
       await onSave();
@@ -868,6 +897,30 @@ function FormOrder({
         {byGroup.size === 0 && <div className="empty">Nenhum exame com “{filter}”.</div>}
       </div>
 
+      {chosen.length > 0 && (
+        <section className="labtest-order-preview" aria-labelledby="labtest-preview-title">
+          <div className="labtest-order-preview-head">
+            <h3 id="labtest-preview-title">O pedido</h3>
+            <span className="minusculo">
+              Desmarque para deixar um exame fora do PDF sem tirá-lo do pedido.
+            </span>
+          </div>
+          <OrderGroups
+            items={chosen.map((id) => {
+              const parameter = parameters.find((p) => p.id === id);
+              return {
+                parameterId: id,
+                name: parameter?.name ?? `Exame ${id}`,
+                group: parameter?.group,
+                panelName: panelOf[id],
+                active: !inactive.includes(id),
+              };
+            })}
+            onSwitch={switchItem}
+          />
+        </section>
+      )}
+
       <div className="labtest-order-meta">
         <div className="field">
           <label htmlFor="sol-data">Data</label>
@@ -896,9 +949,189 @@ function FormOrder({
           Cancelar
         </button>
         <button className="button" type="submit" disabled={saving}>
-          {saving ? "Salvando…" : `Solicitar ${count(chosen.length, "exame", "exames")}`}
+          {saving
+            ? "Salvando…"
+            : `Solicitar ${count(chosen.length - inactive.length, "exame", "exames")}`}
         </button>
       </div>
     </form>
+  );
+}
+
+// ------------------------------------------------------------- the order
+
+/** What the preview and the delivered order show: one exam of the order. */
+interface OrderLine {
+  parameterId: number;
+  name: string;
+  group?: string;
+  panelName?: string;
+  active: boolean;
+}
+
+/**
+ * The exams grouped by the panel they came from — the same grouping the PDF
+ * prints. An exam ticked by hand sits under its own group; "Outros" when
+ * there is none.
+ */
+function OrderGroups({
+  items,
+  onSwitch,
+  readOnly = false,
+}: {
+  items: OrderLine[];
+  onSwitch?: (parameterId: number) => void;
+  readOnly?: boolean;
+}) {
+  const groups = new Map<string, OrderLine[]>();
+  items.forEach((item) => {
+    const key = item.panelName ?? item.group ?? "Outros";
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  });
+  return (
+    <div className="labtest-order-groups">
+      {[...groups.entries()].map(([group, list]) => (
+        <fieldset className="labtest-order-group" key={group}>
+          <legend className="labtest-group-name">{group}</legend>
+          <ul className="labtest-order-items">
+            {list.map((item) => (
+              <li key={item.parameterId} className={item.active ? "" : "inativo"}>
+                {readOnly ? (
+                  <span>{item.name}</span>
+                ) : (
+                  <label className="labtest-check">
+                    <input
+                      type="checkbox"
+                      checked={item.active}
+                      onChange={() => onSwitch?.(item.parameterId)}
+                      aria-label={`${item.name} no PDF`}
+                    />
+                    <span>{item.name}</span>
+                  </label>
+                )}
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A delivered order: its groups, the PDF, and the switches — an exam turned
+ * off stays in the order and leaves the sheet, and can be turned back on
+ * without redoing the order.
+ */
+function OrderRow({
+  order,
+  patientId,
+  onChanged,
+}: {
+  order: LabtestOrder;
+  patientId: number;
+  onChanged: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [items, setItems] = useState<OrderLine[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const off = order.items.filter((i) => !i.active).length;
+
+  function startEditing() {
+    setItems(order.items.map((i) => ({ ...i })));
+    setEditing(true);
+  }
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      await api.labtests.updateRequest(patientId, order.id, {
+        items: items.map((i) => ({
+          parameterId: i.parameterId,
+          panelName: i.panelName,
+          active: i.active,
+        })),
+        notes: order.notes,
+      });
+      setEditing(false);
+      await onChanged();
+    } catch (e) {
+      setError(explainError(e, "salvar o pedido"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function openPdf() {
+    try {
+      const { url } = await api.labtests.requestPdf(patientId, order.id);
+      window.open(url, "_blank", "noopener");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setError(explainError(e, "gerar o PDF do pedido"));
+    }
+  }
+
+  return (
+    <li className="labtest-order">
+      <span className="mono labtest-order-date">{formatBr(order.date)}</span>
+      <div className="labtest-order-body">
+        {editing ? (
+          <OrderGroups
+            items={items}
+            onSwitch={(id) =>
+              setItems((current) =>
+                current.map((i) => (i.parameterId === id ? { ...i, active: !i.active } : i)),
+              )
+            }
+          />
+        ) : (
+          <>
+            <span className="discreto">{order.labtests.join(", ") || "nenhum exame ligado"}</span>
+            {off > 0 && (
+              <span className="minusculo labtest-order-off">
+                {" "}
+                · {count(off, "desligado", "desligados")}
+              </span>
+            )}
+            {order.notes && <div className="minusculo">{order.notes}</div>}
+          </>
+        )}
+        {error && (
+          <div className="warning error mt-2" role="alert">
+            {error}
+          </div>
+        )}
+      </div>
+      <div className="labtest-order-actions">
+        {editing ? (
+          <>
+            <button type="button" className="button pequeno" onClick={() => void save()} disabled={saving}>
+              {saving ? "Salvando…" : "Salvar"}
+            </button>
+            <button
+              type="button"
+              className="button secundario pequeno"
+              onClick={() => setEditing(false)}
+              disabled={saving}
+            >
+              Cancelar
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" className="button secundario pequeno" onClick={() => void openPdf()}>
+              <FileText aria-hidden="true" />
+              PDF
+            </button>
+            <button type="button" className="button secundario pequeno" onClick={startEditing}>
+              Editar
+            </button>
+          </>
+        )}
+      </div>
+    </li>
   );
 }

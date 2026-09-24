@@ -5,6 +5,8 @@ import br.com.nutriplan.labtest.domain.Labtest;
 import br.com.nutriplan.labtest.domain.ReferenceRange;
 import br.com.nutriplan.labtest.domain.LabtestParameter;
 import br.com.nutriplan.labtest.domain.LabtestOrder;
+import jakarta.validation.Valid;
+import br.com.nutriplan.labtest.domain.OrderedParameter;
 import br.com.nutriplan.patient.domain.Sex;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -95,11 +97,34 @@ public final class LabtestDtos {
             BigDecimal maximum
     ) {}
 
+    /** Um exame dentro do pedido: de que painel veio, e se está ligado. */
+    public record OrderItemRequest(
+            @NotNull Long parameterId,
+            @Size(max = 120) String panelName,
+            /** Nulo vale como ligado. */
+            Boolean active
+    ) {
+        public boolean isActive() {
+            return active == null || active;
+        }
+    }
+
+    /**
+     * O pedido. Aceita a lista simples de ids (tudo ligado, sem painel) ou os
+     * itens com painel e interruptor; ao menos uma das duas.
+     */
     public record OrderRequest(
             @NotNull
             @PastOrPresent(message = "A data da solicitação não pode ser futura")
             LocalDate date,
-            @NotEmpty(message = "Escolha ao menos um exame") List<Long> parameterIds,
+            List<Long> parameterIds,
+            @Valid List<OrderItemRequest> items,
+            @Size(max = 1000) String notes
+    ) {}
+
+    /** Religar, desligar ou trocar os exames de um pedido já entregue. */
+    public record OrderUpdateRequest(
+            @Valid @NotEmpty(message = "Escolha ao menos um exame") List<OrderItemRequest> items,
             @Size(max = 1000) String notes
     ) {}
 
@@ -191,16 +216,39 @@ public final class LabtestDtos {
             boolean unitsMixed
     ) {}
 
+    public record OrderedParameterResponse(
+            Long id,
+            Long parameterId,
+            String name,
+            String unit,
+            String group,
+            String panelName,
+            boolean active
+    ) {
+        public static OrderedParameterResponse from(OrderedParameter item) {
+            var parameter = item.getParameter();
+            return new OrderedParameterResponse(item.getId(), parameter.getId(),
+                    parameter.getName(), parameter.getUnitStandard(), parameter.getGroup(),
+                    item.getPanelName(), item.isActive());
+        }
+    }
+
     public record OrderResponse(
             Long id,
             LocalDate date,
             String notes,
-            List<String> labtests
+            /** Só os ligados, pelo nome: é o que vai para o PDF. */
+            List<String> labtests,
+            List<OrderedParameterResponse> items
     ) {
         public static OrderResponse from(LabtestOrder s) {
             return new OrderResponse(s.getId(), s.getDate(), s.getNotes(),
                     s.getParameters().stream()
+                            .filter(OrderedParameter::isActive)
                             .map(p -> p.getParameter().getName())
+                            .toList(),
+                    s.getParameters().stream()
+                            .map(OrderedParameterResponse::from)
                             .toList());
         }
     }
