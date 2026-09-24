@@ -53,6 +53,9 @@ public class AnthropometricAssessmentService {
     private final ZScoreCalculator scoreZ;
     private final CurrentContext contextCurrent;
     private final AnthropometryReportGenerator reportGenerator;
+    private final AssessmentReportGenerator assessmentReportGenerator;
+    private final br.com.nutriplan.auth.repository.UserRepository userRepository;
+    private final br.com.nutriplan.auth.repository.AccountRepository accountRepository;
     private final ObjectMapper mapper;
 
     // ------------------------------------------------------------------ reading
@@ -284,6 +287,57 @@ public class AnthropometricAssessmentService {
 
     public record Report(String patientName, byte[] content) {}
 
+    /**
+     * O relatório de uma avaliação, para o profissional ou para o paciente.
+     *
+     * Sai de qualquer avaliação, e não só com duas: é a folha da consulta.
+     * A anterior entra para a comparação e a primeira para "desde o começo";
+     * o gráfico do peso usa as avaliações até esta, e não as de depois — o
+     * relatório de março não pode contar o que aconteceu em junho.
+     */
+    @Transactional(readOnly = true)
+    public Report assessmentReport(Long id, AssessmentReportGenerator.Audience audience) {
+        AnthropometricAssessment assessment = accountRequire(id);
+        Long accountId = assessment.getAccountId();
+        Patient patient = requirePatient(assessment.getPatientId(), accountId);
+        List<AnthropometricAssessment> series =
+                assessmentRepository.findByAccountIdAndPatientIdOrderByDateAscIdAsc(accountId, patient.getId());
+
+        int index = 0;
+        for (int i = 0; i < series.size(); i++) {
+            if (series.get(i).getId().equals(assessment.getId())) {
+                index = i;
+                break;
+            }
+        }
+        AnthropometricAssessment previous = index > 0 ? series.get(index - 1) : null;
+        AnthropometricAssessment first = index > 1 ? series.get(0) : null;
+
+        List<PdfLineChart.Point> weights = new ArrayList<>();
+        for (int i = 0; i <= index && i < series.size(); i++) {
+            AnthropometricAssessment point = series.get(i);
+            if (point.getWeightKg() != null) {
+                weights.add(new PdfLineChart.Point(point.getDate(), point.getWeightKg().doubleValue()));
+            }
+        }
+
+        var professional = userRepository
+                .findFirstByAccountIdAndRoleAndActiveTrue(accountId, br.com.nutriplan.auth.domain.Role.NUTRITIONIST)
+                .orElse(null);
+        String practice = accountRepository.findById(accountId)
+                .map(br.com.nutriplan.auth.domain.Account::getName).orElse(null);
+
+        var input = new AssessmentReportGenerator.Input(
+                buildAnswer(assessment, patient),
+                previous == null ? null : buildAnswer(previous, patient),
+                first == null ? null : buildAnswer(first, patient),
+                weights,
+                practice,
+                professional == null ? null : professional.getName(),
+                professional == null ? null : professional.getCrn());
+        return new Report(patient.getName(), assessmentReportGenerator.generate(input, audience));
+    }
+
     @Transactional(readOnly = true)
     public AnthropometryDtos.ProgressResponse progress(Long patientId) {
         Long accountId = contextCurrent.accountId();
@@ -306,7 +360,10 @@ public class AnthropometricAssessmentService {
                     current.getPercentageFat(),
                     current.getProtocolComposition(),
                     previous == null ? List.of() : compareCom(current, previous),
-                    i == 0 ? List.of() : compareCom(current, first)));
+                    i == 0 ? List.of() : compareCom(current, first),
+                    current.getMassLeanKg(),
+                    current.getMassFatKg(),
+                    current.circumference(CircumferenceSite.WAIST, Side.SINGLE)));
         }
 
         return new AnthropometryDtos.ProgressResponse(

@@ -75,17 +75,102 @@ class AnthropometryReportTest {
         return json.readTree(body).get("id").asLong();
     }
 
-    private void assess(String date, double weight, double waist) throws Exception {
-        mvc.perform(post("/api/patients/" + patient + "/assessments")
+    private long assess(String date, double weight, double waist) throws Exception {
+        String body = mvc.perform(post("/api/patients/" + patient + "/assessments")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"date":"%s","weightKg":%s,"heightCm":164,
-                                 "skinfolds":{"TRICEPS":26,"SUBSCAPULAR":22},
+                                 "skinfolds":{"TRICEPS":26,"SUBSCAPULAR":22,"SUPRAILIAC":20,"ABDOMINAL":28},
+                                 "protocolComposition":"FAULKNER",
                                  "circumferences":[
-                                   {"site":"WAIST","side":"SINGLE","valueCm":%s}]}"""
+                                   {"site":"WAIST","side":"SINGLE","valueCm":%s},
+                                   {"site":"HIP","side":"SINGLE","valueCm":108}]}"""
                                 .formatted(date, weight, waist)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return json.readTree(body).get("id").asLong();
+    }
+
+    /** O texto de todas as páginas, para conferir o que cada versão diz e o que cala. */
+    private static String text(byte[] pdf) throws Exception {
+        var reader = new com.lowagie.text.pdf.PdfReader(pdf);
+        var extractor = new com.lowagie.text.pdf.parser.PdfTextExtractor(reader);
+        var out = new StringBuilder();
+        for (int page = 1; page <= reader.getNumberOfPages(); page++) {
+            out.append(extractor.getTextFromPage(page)).append('\n');
+        }
+        reader.close();
+        return out.toString();
+    }
+
+    private byte[] assessmentReport(long id, String audience) throws Exception {
+        return mvc.perform(get("/api/assessments/" + id + "/report?audience=" + audience)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+    }
+
+    @Test
+    @DisplayName("o relatório de uma avaliação sai com uma avaliação só, nas duas versões")
+    void singleAssessmentReport() throws Exception {
+        long id = assess("2026-03-10", 88.4, 94);
+
+        String professional = text(assessmentReport(id, "PROFESSIONAL"));
+        assertThat(professional).contains("Marina Duarte");
+        assertThat(professional).contains("SOMA DAS DOBRAS");
+        assertThat(professional).contains("Dobras cutâneas");
+        assertThat(professional).contains("Obesidade grau I");
+        assertThat(professional).contains("Faixa de peso saudável".toUpperCase());
+
+        String forPatient = text(assessmentReport(id, "PATIENT"));
+        assertThat(forPatient).contains("O que os números dizem");
+        assertThat(forPatient).contains("faixa de peso saudável vai de");
+        // O papel do paciente não ensina antropometria.
+        assertThat(forPatient).doesNotContain("SOMA DAS DOBRAS").doesNotContain("Dobras cutâneas")
+                .doesNotContain("Faulkner");
+    }
+
+    @Test
+    @DisplayName("a versão do paciente diz o que mudou desde a anterior e desde a primeira, e não olha para depois")
+    void patientReportComparesWithThePast() throws Exception {
+        assess("2026-03-10", 88.4, 94);
+        long middle = assess("2026-06-14", 85.1, 90);
+        long last = assess("2026-09-15", 82.6, 86);
+
+        String forPatient = text(assessmentReport(last, "PATIENT"));
+        assertThat(forPatient).contains("Desde a primeira avaliação (10/03/2026)");
+        assertThat(forPatient).contains("5,8 kg a menos");
+        assertThat(forPatient).contains("desde 14/06");
+
+        String professional = text(assessmentReport(middle, "PROFESSIONAL"));
+        assertThat(professional).contains("Comparação com 10/03/2026");
+        // O relatório de junho não conta o que aconteceu em setembro.
+        assertThat(professional).doesNotContain("82,6");
+    }
+
+    @Test
+    @DisplayName("a evolução traz massa magra, massa gorda e cintura para os gráficos")
+    void progressCarriesChartSeries() throws Exception {
+        assess("2026-03-10", 88.4, 94);
+        assess("2026-09-15", 80.3, 84.5);
+        String body = mvc.perform(get("/api/patients/" + patient + "/progress")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        var last = json.readTree(body).get("points").get(1);
+        assertThat(last.get("waistCm").decimalValue()).isEqualByComparingTo("84.5");
+        assertThat(last.get("massLeanKg").isNull()).isFalse();
+        assertThat(last.get("massFatKg").isNull()).isFalse();
+    }
+
+    @Test
+    @DisplayName("o relatório de uma avaliação não existe para outro consultório")
+    void assessmentReportDoesNotCrossAccounts() throws Exception {
+        long id = assess("2026-03-10", 88.4, 94);
+        mvc.perform(get("/api/assessments/" + id + "/report")
+                        .header("Authorization", "Bearer " + other))
+                .andExpect(status().isNotFound());
     }
 
     // ----------------------------------------------------------------- testes

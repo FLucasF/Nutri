@@ -16,13 +16,11 @@ import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
-import com.lowagie.text.Image;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
-import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
 import br.com.nutriplan.anthropometry.domain.AnthropometricAssessment;
@@ -52,7 +50,6 @@ public class AnthropometryReportGenerator {
     private static final Color ROW = new Color(0xc4, 0xca, 0xc1);
     private static final Color HEADER = new Color(0xf1, 0xf3, 0xef);
     private static final Color BEETROOT = new Color(0x8c, 0x2f, 0x51);
-    private static final Color GRID = new Color(0xdf, 0xe3, 0xdd);
 
     private static final Font TITLE = font(20, Font.BOLD, PITCH);
     private static final Font SUBTITLE = font(10, Font.NORMAL, MEAN_INK);
@@ -150,128 +147,28 @@ public class AnthropometryReportGenerator {
     // ------------------------------------------------------------- gráficos
 
     /**
-     * Uma grandeza desenhada no tempo.
-     *
-     * Devolve nulo quando há menos de dois pontos: um ponto solto não é uma
-     * evolução, e um gráfico de um ponto só sugere uma linha que não existe.
+     * Uma grandeza desenhada no tempo, pelo mesmo traço do relatório de uma
+     * avaliação. O peso ganha a faixa saudável da última altura por trás.
      */
     private Element chart(PdfWriter writer, Track track,
                           List<AnthropometricAssessment> series, float width) throws Exception {
-
-        var points = new ArrayList<AnthropometricAssessment>();
+        var points = new ArrayList<PdfLineChart.Point>();
         for (AnthropometricAssessment assessment : series) {
-            if (track.reading().apply(assessment) != null) {
-                points.add(assessment);
+            BigDecimal value = track.reading().apply(assessment);
+            if (value != null) {
+                points.add(new PdfLineChart.Point(assessment.getDate(), value.doubleValue()));
             }
         }
-        if (points.size() < 2) {
-            return null;
-        }
-
-        float height = 128f;
-        PdfTemplate canvas = writer.getDirectContent().createTemplate(width, height);
-
-        float left = 42f;
-        float right = width - 8f;
-        float bottom = 26f;
-        float top = height - 20f;
-
-        double lowest = Double.MAX_VALUE;
-        double highest = -Double.MAX_VALUE;
-        for (AnthropometricAssessment point : points) {
-            double value = track.reading().apply(point).doubleValue();
-            lowest = Math.min(lowest, value);
-            highest = Math.max(highest, value);
-        }
-        // Uma faixa mínima evita que uma variação de 200 g ocupe o gráfico
-        // inteiro e pareça um despencar.
-        double margin = Math.max((highest - lowest) * 0.2, Math.abs(highest) * 0.02 + 0.5);
-        double floor = lowest - margin;
-        double ceiling = highest + margin;
-
-        canvas.beginText();
-        canvas.setFontAndSize(SECTION.getBaseFont(), 10f);
-        canvas.setColorFill(PITCH);
-        canvas.setTextMatrix(0, height - 12f);
-        canvas.showText(track.title() + " (" + track.unit() + ")");
-        canvas.endText();
-
-        // Três linhas de grade, com o valor à esquerda.
-        canvas.setLineWidth(0.5f);
-        for (int i = 0; i <= 2; i++) {
-            double value = floor + (ceiling - floor) * i / 2.0;
-            float y = bottom + (float) ((top - bottom) * i / 2.0);
-            canvas.setColorStroke(GRID);
-            canvas.moveTo(left, y);
-            canvas.lineTo(right, y);
-            canvas.stroke();
-
-            canvas.beginText();
-            canvas.setFontAndSize(SMALL.getBaseFont(), 7f);
-            canvas.setColorFill(MEAN_INK);
-            canvas.setTextMatrix(2f, y - 2f);
-            canvas.showText(number(value));
-            canvas.endText();
-        }
-
-        float step = points.size() == 1 ? 0 : (right - left) / (points.size() - 1);
-
-        canvas.setLineWidth(1.4f);
-        canvas.setColorStroke(BEETROOT);
-        for (int i = 0; i < points.size(); i++) {
-            double value = track.reading().apply(points.get(i)).doubleValue();
-            float x = left + step * i;
-            float y = bottom + (float) ((value - floor) / (ceiling - floor) * (top - bottom));
-            if (i == 0) {
-                canvas.moveTo(x, y);
-            } else {
-                canvas.lineTo(x, y);
+        PdfLineChart.Band band = null;
+        if ("kg".equals(track.unit()) && !series.isEmpty()) {
+            var range = br.com.nutriplan.anthropometry.domain.HealthyWeightRange.of(
+                    series.get(series.size() - 1).getHeightCm());
+            if (range != null) {
+                band = new PdfLineChart.Band(range.minimumKg().doubleValue(),
+                        range.maximumKg().doubleValue(), "faixa de peso saudável");
             }
         }
-        canvas.stroke();
-
-        // Os pontos e os rótulos, num segundo passe: desenhá-los junto com a
-        // linha interromperia o traço a cada marca.
-        for (int i = 0; i < points.size(); i++) {
-            AnthropometricAssessment point = points.get(i);
-            double value = track.reading().apply(point).doubleValue();
-            float x = left + step * i;
-            float y = bottom + (float) ((value - floor) / (ceiling - floor) * (top - bottom));
-
-            canvas.setColorFill(BEETROOT);
-            canvas.circle(x, y, 2.4f);
-            canvas.fill();
-
-            canvas.beginText();
-            canvas.setFontAndSize(SMALL.getBaseFont(), 7f);
-            canvas.setColorFill(PITCH);
-            canvas.setTextMatrix(inside(x - 8f, 22f, width), y + 6f);
-            canvas.showText(number(value));
-            canvas.endText();
-
-            canvas.beginText();
-            canvas.setFontAndSize(SMALL.getBaseFont(), 6.5f);
-            canvas.setColorFill(MEAN_INK);
-            canvas.setTextMatrix(inside(x - 12f, 32f, width), 10f);
-            canvas.showText(point.getDate().format(SHORT));
-            canvas.endText();
-        }
-
-        Image image = Image.getInstance(canvas);
-        image.setSpacingBefore(4f);
-        image.setSpacingAfter(10f);
-        return image;
-    }
-
-    /**
-     * Mantem um rotulo dentro do desenho.
-     *
-     * O ultimo ponto fica encostado na margem direita, e o rotulo centrado
-     * nele saia pela borda — a data da ultima avaliacao aparecia como
-     * "15/09/2". Aqui ele e puxado para dentro em vez de ser cortado.
-     */
-    private static float inside(float x, float labelWidth, float canvasWidth) {
-        return Math.max(0f, Math.min(x, canvasWidth - labelWidth));
+        return PdfLineChart.draw(writer, track.title() + " (" + track.unit() + ")", points, width, band);
     }
 
     // --------------------------------------------------------------- tabelas

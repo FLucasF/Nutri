@@ -96,7 +96,8 @@ public class AttendanceCertificatePdfGenerator {
                 line.append(professionalName);
             }
             if (StringUtils.hasText(crn)) {
-                line.append(line.length() > 0 ? " · CRN " : "CRN ").append(crn);
+                line.append(line.length() > 0 ? " · " : "")
+                        .append(br.com.nutriplan.shared.util.CrnText.of(crn));
             }
             if (line.length() == 0) {
                 line.append("Nutricionista responsável");

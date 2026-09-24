@@ -63,6 +63,26 @@ public class AnthropometryController {
                 .body(report.content());
     }
 
+    @GetMapping(value = "/assessments/{id}/report", produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Gera o relatório de uma avaliação",
+            description = "Sai de qualquer avaliação. A versão do profissional traz todas as "
+                    + "medidas, o protocolo e a comparação com a anterior; a do paciente fala "
+                    + "com ele: peso, IMC e o que ele quer dizer, faixa de peso saudável, "
+                    + "gordura, o que mudou e o gráfico do peso.")
+    public ResponseEntity<byte[]> assessmentReport(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "PROFESSIONAL")
+            br.com.nutriplan.anthropometry.service.AssessmentReportGenerator.Audience audience) {
+        var report = assessmentService.assessmentReport(id, audience);
+        String prefix = audience == br.com.nutriplan.anthropometry.service.AssessmentReportGenerator.Audience.PATIENT
+                ? "avaliacao-paciente-" : "avaliacao-";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                        .filename(prefix + id + ".pdf").build().toString())
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(report.content());
+    }
+
     @GetMapping("/patients/{patientId}/assessments")
     @Operation(summary = "Lista as avaliações antropométricas do paciente, em ordem cronológica")
     public List<AnthropometryDtos.AssessmentResponse> list(@PathVariable Long patientId) {

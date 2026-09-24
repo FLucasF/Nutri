@@ -313,7 +313,11 @@ public final class AnthropometryDtos {
             BigDecimal percentageFat,
             CompositionProtocol protocol,
             List<Change> changesPreviousFront,
-            List<Change> changesFrontFirst
+            List<Change> changesFrontFirst,
+            /** Para os gráficos da consulta: massa magra e gorda estimadas, e a cintura. */
+            BigDecimal massLeanKg,
+            BigDecimal massFatKg,
+            BigDecimal waistCm
     ) {}
 
     public record ProgressResponse(
