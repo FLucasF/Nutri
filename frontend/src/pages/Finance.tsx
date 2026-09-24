@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Plus, Printer, Wallet, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Plus, Wallet, X } from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
+import { ReceiptPanel } from "../components/ReceiptPanel";
 import { useIsNarrow } from "../hooks/useMediaQuery";
 import { formatBr, todayIso, firstMonthIsoDay, lastMonthIsoDay } from "../api/dates";
 import type {
@@ -11,10 +13,11 @@ import type {
   Transaction,
   PatientSummary,
   Receipt,
+  ServicePackage,
   TransactionStatus,
   TransactionType,
 } from "../api/types";
-import { count } from "../text";
+import { count, currency } from "../text";
 
 const CATEGORIES_INCOME = ["Consulta", "Retorno", "Avaliação", "Pacote", "Outros"];
 const CATEGORIES_EXPENSE = ["Aluguel", "Material", "Software", "Impostos", "Marketing", "Outros"];
@@ -27,6 +30,10 @@ const STATUS_OPTIONS: { value: TransactionStatus | ""; label: string }[] = [
 ];
 
 export default function Finance() {
+  const [params] = useSearchParams();
+  // Coming from the patient's chart: the form opens with them chosen.
+  const patientFromLink = params.get("patientId") ?? "";
+
   const [from, setFrom] = useState(firstMonthIsoDay());
   const [to, setTo] = useState(lastMonthIsoDay());
 
@@ -34,10 +41,11 @@ export default function Finance() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [overdue, setOverdue] = useState<Transaction[]>([]);
   const [patients, setPatients] = useState<PatientSummary[]>([]);
+  const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [filterStatus, setFilterStatus] = useState<TransactionStatus | "">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(Boolean(patientFromLink));
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const narrow = useIsNarrow();
 
@@ -73,6 +81,7 @@ export default function Finance() {
     api.patients.list({ active: true, size: 200 })
       .then((p) => setPatients(p.content))
       .catch(() => setPatients([]));
+    api.packages.list().then(setPackages).catch(() => setPackages([]));
   }, []);
 
   async function action(run: () => Promise<unknown>) {
@@ -122,11 +131,13 @@ export default function Finance() {
           </div>
         )}
 
-        {receipt && <PanelReceipt receipt={receipt} onClose={() => setReceipt(null)} />}
+        {receipt && <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} />}
 
         {creating && (
           <FormTransaction
             patients={patients}
+            packages={packages}
+            patientSuggested={patientFromLink}
             onSave={async () => {
               setCreating(false);
               await load();
@@ -198,12 +209,15 @@ export default function Finance() {
               <li className="finance-item" key={l.id}>
                 <div className="finance-item-main">
                   <div className="list-row-body">
-                    <span className="list-row-title">{l.category}</span>
+                    <span className="list-row-title">
+                      {l.category}
+                      <InstallmentBadge transaction={l} />
+                    </span>
                     <span className="list-row-meta">
                       {formatBr(l.accrual)}
                       {l.patientName ? ` · ${l.patientName}` : ""}
                     </span>
-                    {l.description && <span className="list-row-meta">{l.description}</span>}
+                    <Details transaction={l} className="list-row-meta" />
                   </div>
                   <div className="finance-item-trail">
                     <Amount transaction={l} className="readout strong" />
@@ -234,7 +248,8 @@ export default function Finance() {
                     <td className="finance-date">{formatBr(l.accrual)}</td>
                     <td>
                       <strong>{l.category}</strong>
-                      {l.description && <span className="finance-desc">{l.description}</span>}
+                      <InstallmentBadge transaction={l} />
+                      <Details transaction={l} className="finance-desc" />
                     </td>
                     <td className="discreto">{l.patientName ?? "—"}</td>
                     <td className="num">
@@ -261,7 +276,7 @@ export default function Finance() {
 /* ------------------------------------------------------------------ pieces */
 
 /** "+ R$ 120,00" for income, "− R$ 120,00" for an expense; the class carries the colour. */
-function Amount({ transaction, className }: { transaction: Transaction; className?: string }) {
+export function Amount({ transaction, className }: { transaction: Transaction; className?: string }) {
   const income = transaction.type === "INCOME";
   const classes = ["finance-amount", income ? "entrada" : "saida", className].filter(Boolean).join(" ");
   return (
@@ -271,7 +286,7 @@ function Amount({ transaction, className }: { transaction: Transaction; classNam
   );
 }
 
-function StatusTag({ transaction: l }: { transaction: Transaction }) {
+export function StatusTag({ transaction: l }: { transaction: Transaction }) {
   return (
     <span className={`tag ${l.status === "PAID" ? "verde" : l.overdue ? "vermelha" : "ambar"}`}>
       {l.overdue ? "overdue" : l.statusDescription.toLowerCase()}
@@ -279,7 +294,28 @@ function StatusTag({ transaction: l }: { transaction: Transaction }) {
   );
 }
 
-function RowActions({
+/** "Parcela 2/6", when the transaction is one. */
+export function InstallmentBadge({ transaction: l }: { transaction: Transaction }) {
+  if (!l.installmentIndex || !l.installmentCount) return null;
+  return (
+    <span className="tag azul finance-installment">
+      parcela {l.installmentIndex}/{l.installmentCount}
+    </span>
+  );
+}
+
+/** Description, package and document number: what tells one charge from another. */
+function Details({ transaction: l, className }: { transaction: Transaction; className: string }) {
+  const parts = [
+    l.description,
+    l.packageName ? `pacote ${l.packageName}` : null,
+    l.documentNumber ? `doc. ${l.documentNumber}` : null,
+  ].filter(Boolean);
+  if (parts.length === 0) return null;
+  return <span className={className}>{parts.join(" · ")}</span>;
+}
+
+export function RowActions({
   transaction: l,
   onAction,
   onReceipt,
@@ -379,52 +415,15 @@ function Value({ label, value, signed }: { label: string; value: number; signed?
   );
 }
 
-function PanelReceipt({ receipt, onClose }: { receipt: Receipt; onClose: () => void }) {
-  return (
-    <div className="card finance-receipt">
-      <div className="card-head">
-        <div>
-          <h2 className="card-title">Recibo</h2>
-          <p className="card-sub">Emitido em {formatBr(receipt.emitidoAt)}</p>
-        </div>
-        <button type="button" className="button ghost pequeno" onClick={onClose}>
-          <X aria-hidden="true" />
-          Fechar
-        </button>
-      </div>
-
-      <p className="finance-receipt-text">
-        Recebi de <strong>{receipt.payerName ?? "—"}</strong> a importância de{" "}
-        <strong>{currency(receipt.value)}</strong> ({receipt.valueByWords}), related a{" "}
-        <strong>{receipt.related}</strong>.
-      </p>
-      <p className="finance-receipt-issuer">
-        {receipt.practiceName} · {receipt.profissionalName}
-        {receipt.profissionalCrn ? (
-          <>
-            {" · "}
-            <span className="readout">{receipt.profissionalCrn}</span>
-          </>
-        ) : null}
-        <br />
-        Pagamento em {formatBr(receipt.datePayment)} · Emitido em {formatBr(receipt.emitidoAt)}
-      </p>
-
-      <div className="finance-receipt-foot">
-        <button type="button" className="button secundario" onClick={() => window.print()}>
-          <Printer aria-hidden="true" />
-          Imprimir
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function FormTransaction({
   patients,
+  packages,
+  patientSuggested,
   onSave,
 }: {
   patients: PatientSummary[];
+  packages: ServicePackage[];
+  patientSuggested: string;
   onSave: () => Promise<void>;
 }) {
   const today = todayIso();
@@ -434,9 +433,12 @@ function FormTransaction({
   const [accrual, setAccrual] = useState(today);
   const [due, setDue] = useState(today);
   const [category, setCategory] = useState("Consulta");
-  const [patientId, setPatientId] = useState("");
+  const [patientId, setPatientId] = useState(patientSuggested);
+  const [packageId, setPackageId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [description, setDescription] = useState("");
+  const [documentNumber, setDocumentNumber] = useState("");
+  const [installments, setInstallments] = useState("1");
   const [alreadyPaid, setAlreadyPaid] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -444,11 +446,27 @@ function FormTransaction({
   const feedback = useFeedback();
 
   const categories = type === "INCOME" ? CATEGORIES_INCOME : CATEGORIES_EXPENSE;
+  const parcels = Math.max(1, Number(installments) || 1);
+  const total = Number(value.replace(",", "."));
 
   function changeType(novo: TransactionType) {
     setType(novo);
     setCategory(novo === "INCOME" ? CATEGORIES_INCOME[0]! : CATEGORIES_EXPENSE[0]!);
-    if (novo === "EXPENSE") setPatientId("");
+    if (novo === "EXPENSE") {
+      setPatientId("");
+      setPackageId("");
+    }
+  }
+
+  /** Choosing a package fills in what the package already says: value and category. */
+  function choosePackage(id: string) {
+    setPackageId(id);
+    const pack = packages.find((p) => String(p.id) === id);
+    if (pack) {
+      setValue(String(pack.amount).replace(".", ","));
+      setCategory("Pacote");
+      if (!description.trim()) setDescription(pack.name);
+    }
   }
 
   async function send(event: FormEvent) {
@@ -459,20 +477,28 @@ function FormTransaction({
       const created = await api.finance.create({
         type,
         // The amount is always positive: what defines income or expense is the type.
-        value: Number(value.replace(",", ".")),
+        value: total,
         accrual,
         due: due || undefined,
         category,
         paymentMethod: paymentMethod.trim() || undefined,
         description: description.trim() || undefined,
         patientId: patientId ? Number(patientId) : undefined,
+        packageId: packageId ? Number(packageId) : undefined,
+        documentNumber: documentNumber.trim() || undefined,
+        installments: parcels > 1 ? parcels : undefined,
       });
       if (alreadyPaid) {
         await api.finance.pay(created.id, today);
       }
-      feedback.confirm(
-        `${type === "INCOME" ? "Receita" : "Despesa"} de R$ ${value} registrada${alreadyPaid ? " e marcada como paga" : ""}.`,
-      );
+      const what = type === "INCOME" ? "Receita" : "Despesa";
+      const how =
+        parcels > 1
+          ? ` em ${count(parcels, "parcela", "parcelas")}${alreadyPaid ? ", a primeira já paga" : ""}`
+          : alreadyPaid
+            ? " e marcada como paga"
+            : "";
+      feedback.confirm(`${what} de ${currency(total)} registrada${how}.`);
       await onSave();
     } catch (e) {
       if (!fields.apply(e)) {
@@ -533,6 +559,26 @@ function FormTransaction({
           </select>
           <FieldError field="category" errors={fields.errors} />
         </div>
+        <div className="field">
+          <label htmlFor="fl-parcelas">Parcelas</label>
+          <input
+            id="fl-parcelas"
+            name="installments"
+            type="number"
+            min={1}
+            max={48}
+            value={installments}
+            onChange={(e) => setInstallments(e.target.value)}
+            {...fields.props("installments")}
+          />
+          <FieldError field="installments" errors={fields.errors} />
+          {parcels > 1 && total > 0 && (
+            <span className="field-hint">
+              {parcels}× de {currency(Math.floor((total / parcels) * 100) / 100)}, uma por mês a partir
+              da competência.
+            </span>
+          )}
+        </div>
         <div className="field largo">
           <label htmlFor="fl-forma">Forma de pagamento</label>
           <input
@@ -544,6 +590,19 @@ function FormTransaction({
             {...fields.props("paymentMethod")}
           />
           <FieldError field="paymentMethod" errors={fields.errors} />
+        </div>
+        <div className="field">
+          <label htmlFor="fl-doc">Nº do documento</label>
+          <input
+            id="fl-doc"
+            name="documentNumber"
+            value={documentNumber}
+            onChange={(e) => setDocumentNumber(e.target.value)}
+            placeholder="recibo ou nota, se houver"
+            maxLength={60}
+            {...fields.props("documentNumber")}
+          />
+          <FieldError field="documentNumber" errors={fields.errors} />
         </div>
         <div className="field">
           <label htmlFor="fl-comp">Competência</label>
@@ -571,17 +630,32 @@ function FormTransaction({
           <FieldError field="due" errors={fields.errors} />
         </div>
         {type === "INCOME" && (
-          <div className="field largo">
-            <label htmlFor="fl-paciente">Paciente</label>
-            <select id="fl-paciente" value={patientId} onChange={(e) => setPatientId(e.target.value)}>
-              <option value="">Nenhum</option>
-              {patients.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <>
+            <div className="field">
+              <label htmlFor="fl-paciente">Paciente</label>
+              <select id="fl-paciente" value={patientId} onChange={(e) => setPatientId(e.target.value)}>
+                <option value="">Nenhum</option>
+                {patients.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {packages.length > 0 && (
+              <div className="field largo">
+                <label htmlFor="fl-pacote">Pacote</label>
+                <select id="fl-pacote" value={packageId} onChange={(e) => choosePackage(e.target.value)}>
+                  <option value="">Nenhum</option>
+                  {packages.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} · {currency(p.amount)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -600,7 +674,7 @@ function FormTransaction({
       <div className="finance-form-foot">
         <label className="finance-check">
           <input type="checkbox" checked={alreadyPaid} onChange={(e) => setAlreadyPaid(e.target.checked)} />
-          <span>Já foi pago hoje</span>
+          <span>{parcels > 1 ? "A primeira parcela já foi paga hoje" : "Já foi pago hoje"}</span>
         </label>
         <button className="button" type="submit" disabled={sending}>
           {sending ? "Salvando…" : "Registrar"}
@@ -608,10 +682,4 @@ function FormTransaction({
       </div>
     </form>
   );
-}
-
-// -------------------------------------------------------------------- helpers
-
-function currency(value: number) {
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }

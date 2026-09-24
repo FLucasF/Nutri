@@ -21,12 +21,14 @@ import { formatBr } from "../api/dates";
 import { Avatar } from "../components/Avatar";
 import { PatientAttachments } from "../components/PatientAttachments";
 import { PatientAppointment } from "../components/PatientAppointment";
+import { PatientVisits } from "../components/PatientVisits";
 import { WeightChart } from "../components/WeightChart";
 import { PatientNotes, PatientTags } from "../components/PatientProfile";
 import { NotesField, NotesView } from "../components/RichText/NotesField";
 import { useIsNarrow } from "../hooks/useMediaQuery";
 import { count } from "../text";
 import type {
+  Partner,
   Patient,
   PlanSummary,
   Questionnaire,
@@ -184,6 +186,7 @@ export default function PatientDetail() {
               <Datum label="CPF" value={patient.cpf} />
               <Datum label="Apelido" value={patient.nickname} />
               <Datum label="Profissão" value={patient.occupation} />
+              <Datum label="Indicado por" value={patient.partnerName} />
               <Datum
                 label="Faixa de peso saudável"
                 value={
@@ -212,6 +215,8 @@ export default function PatientDetail() {
             </div>
           </div>
         )}
+
+        <PatientVisits patientId={patient.id} />
 
         <WeightChart patientId={patient.id} />
 
@@ -500,11 +505,17 @@ function FormEdit({
     occupation: patient.occupation ?? "",
     goal: patient.goal ?? "",
     notes: patient.notes ?? "",
+    partnerId: patient.partnerId ? String(patient.partnerId) : "",
   });
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const fields = useFieldErrors();
   const feedback = useFeedback();
+
+  useEffect(() => {
+    api.partners.list().then(setPartners).catch(() => setPartners([]));
+  }, []);
 
   function change(field: keyof typeof data, value: string) {
     setData((current) => ({ ...current, [field]: value }));
@@ -532,6 +543,7 @@ function FormEdit({
         occupation: data.occupation || undefined,
         goal: data.goal || undefined,
         notes: data.notes || undefined,
+        partnerId: data.partnerId ? Number(data.partnerId) : undefined,
       });
       feedback.confirm("Ficha atualizada.");
     } catch (e) {
@@ -617,6 +629,22 @@ function FormEdit({
             <label htmlFor="ed-obj">Objetivo</label>
             <input id="ed-obj" value={data.goal} onChange={(e) => change("goal", e.target.value)} name="goal" {...fields.props("goal")} />
             <FieldError field="goal" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="ed-parceiro">Indicado por</label>
+            <select
+              id="ed-parceiro"
+              value={data.partnerId}
+              onChange={(e) => change("partnerId", e.target.value)}
+            >
+              <option value="">Ninguém / não sei</option>
+              {partners.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <span className="field-hint">Cadastre os parceiros em Consultório → Parceiros.</span>
           </div>
         </div>
         <NotesField
