@@ -3,6 +3,7 @@ package br.com.nutriplan.patient.dto;
 import java.time.Instant;
 import java.util.List;
 
+import br.com.nutriplan.patient.domain.NoteTemplate;
 import br.com.nutriplan.patient.domain.PatientNote;
 import br.com.nutriplan.patient.domain.PatientTag;
 import jakarta.validation.constraints.NotBlank;
@@ -32,6 +33,20 @@ public final class ProfileDtos {
         public static NoteResponse from(PatientNote note) {
             return new NoteResponse(note.getId(), note.getBody(),
                     note.getCreatedAt(), note.getCreatedBy());
+        }
+    }
+
+    /** Um modelo de anotação: nome curto e o documento do editor. */
+    public record NoteTemplateRequest(
+            @NotBlank @Size(max = 120) String name,
+            @NotBlank @Size(max = 8000) String body
+    ) {}
+
+    public record NoteTemplateResponse(Long id, String name, String body, Instant updatedAt) {
+        public static NoteTemplateResponse from(NoteTemplate template) {
+            return new NoteTemplateResponse(template.getId(), template.getName(),
+                    template.getBody(),
+                    template.getUpdatedAt() != null ? template.getUpdatedAt() : template.getCreatedAt());
         }
     }
 }

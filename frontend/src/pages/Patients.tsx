@@ -5,7 +5,7 @@ import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
-import type { PatientSummary, ResultImport } from "../api/types";
+import type { PatientSummary, PatientTag, ResultImport } from "../api/types";
 import { count, plural } from "../text";
 import { Avatar } from "../components/Avatar";
 import { useIsNarrow } from "../hooks/useMediaQuery";
@@ -363,10 +363,40 @@ function FormNovoPatient({
   const [dateBirth, setDateBirth] = useState("");
   const [sex, setSex] = useState("");
   const [goal, setGoal] = useState("");
+  /**
+   * CPF, apelido e TAGs entram já no cadastro.
+   *
+   * Existiam só na ficha, e o cliente cadastrava, abria a ficha e completava.
+   * "Acrescentar todas as informações possíveis do WebDiet no NutriPlan: CPF,
+   * apelido, TAG" — o WebDiet pede tudo de uma vez, e é assim que ele espera.
+   */
+  const [cpf, setCpf] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [tags, setTags] = useState<PatientTag[]>([]);
+  const [chosenTags, setChosenTags] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const fields = useFieldErrors();
   const feedback = useFeedback();
+
+  useEffect(() => {
+    api.patients
+      .tags()
+      .then(setTags)
+      .catch(() => setTags([]));
+  }, []);
+
+  async function createTag() {
+    const tagName = window.prompt("Nome da nova TAG:");
+    if (!tagName?.trim()) return;
+    try {
+      const tag = await api.patients.createTag(tagName.trim());
+      setTags(await api.patients.tags());
+      setChosenTags((current) => [...current, tag.id]);
+    } catch (e) {
+      setError(explainError(e, "criar a TAG"));
+    }
+  }
 
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -380,8 +410,19 @@ function FormNovoPatient({
         phone: phone.trim() || undefined,
         dateBirth: dateBirth || undefined,
         sex: (sex || undefined) as never,
+        cpf: cpf.trim() || undefined,
+        nickname: nickname.trim() || undefined,
         goal: goal.trim() || undefined,
       });
+      // As TAGs são um vínculo à parte do cadastro; o paciente já existe
+      // quando elas são marcadas, e falhar aqui não desfaz o cadastro.
+      if (chosenTags.length > 0) {
+        try {
+          await api.patients.setTags(created.id, chosenTags);
+        } catch (e) {
+          feedback.warn(e, "marcar as TAGs do paciente");
+        }
+      }
       feedback.confirm(`${created.name} entrou na sua lista de pacientes.`);
       onCreate(created.id);
     } catch (e) {
@@ -466,6 +507,60 @@ function FormNovoPatient({
           <div className="field">
             <label htmlFor="np-obj">Objetivo</label>
             <input id="np-obj" value={goal} onChange={(e) => setGoal(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="np-cpf">CPF</label>
+            <input
+              id="np-cpf"
+              name="cpf"
+              inputMode="numeric"
+              value={cpf}
+              onChange={(e) => setCpf(e.target.value)}
+              placeholder="000.000.000-00"
+              {...fields.props("cpf")}
+            />
+            <FieldError field="cpf" errors={fields.errors} />
+          </div>
+          <div className="field">
+            <label htmlFor="np-apelido">Apelido</label>
+            <input
+              id="np-apelido"
+              name="nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="Como o paciente gosta de ser chamado"
+              {...fields.props("nickname")}
+            />
+            <FieldError field="nickname" errors={fields.errors} />
+          </div>
+        </div>
+
+        <div className="bloco-tags np-tags">
+          <div className="bloco-tags-row">
+            <span className="eyebrow">TAGs</span>
+            {chosenTags.length === 0 && <span className="minusculo">nenhuma por enquanto</span>}
+          </div>
+          <div className="escolha-tags">
+            {tags.map((tag) => {
+              const on = chosenTags.includes(tag.id);
+              return (
+                <button
+                  type="button"
+                  key={tag.id}
+                  className={`tag-escolha${on ? " ativa" : ""}`}
+                  aria-pressed={on}
+                  onClick={() =>
+                    setChosenTags(on ? chosenTags.filter((x) => x !== tag.id) : [...chosenTags, tag.id])
+                  }
+                >
+                  {tag.name}
+                  {tag.own && <span className="sinal-sua" title="TAG do seu consultório" />}
+                </button>
+              );
+            })}
+            <button type="button" className="tag-escolha nova" onClick={() => void createTag()}>
+              + nova TAG
+            </button>
           </div>
         </div>
 

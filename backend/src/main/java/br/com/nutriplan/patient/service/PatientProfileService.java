@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import br.com.nutriplan.shared.richtext.RichTextDocument;
 import br.com.nutriplan.auth.service.CurrentContext;
 import br.com.nutriplan.patient.domain.PatientNote;
+import br.com.nutriplan.patient.repository.NoteTemplateRepository;
+import br.com.nutriplan.patient.domain.NoteTemplate;
 import br.com.nutriplan.patient.domain.PatientTag;
 import br.com.nutriplan.patient.domain.PatientTagLink;
 import br.com.nutriplan.patient.dto.ProfileDtos;
@@ -37,6 +39,7 @@ public class PatientProfileService {
     private final PatientTagRepository tagRepository;
     private final PatientTagLinkRepository linkRepository;
     private final PatientNoteRepository noteRepository;
+    private final NoteTemplateRepository templateRepository;
     private final PatientService patientService;
     private final CurrentContext currentContext;
     private final ObjectMapper mapper;
@@ -139,6 +142,48 @@ public class PatientProfileService {
         var note = noteRepository.save(
                 new PatientNote(accountId, patientId, document.json()));
         return ProfileDtos.NoteResponse.from(note);
+    }
+
+    // ------------------------------------------------------ os modelos
+
+    @Transactional(readOnly = true)
+    public List<ProfileDtos.NoteTemplateResponse> noteTemplates() {
+        return templateRepository.findByAccountIdOrderByNameAsc(currentContext.accountId()).stream()
+                .map(ProfileDtos.NoteTemplateResponse::from)
+                .toList();
+    }
+
+    /**
+     * Guarda um texto-base para começar anotações. Mesmo nome sobrescreve:
+     * "primeira consulta" é um modelo só, e refazê-lo é corrigi-lo.
+     */
+    @Transactional
+    public ProfileDtos.NoteTemplateResponse saveNoteTemplate(ProfileDtos.NoteTemplateRequest request) {
+        Long accountId = currentContext.accountId();
+        // O nome fica como foi escrito: "Primeira consulta" é um título, não
+        // uma TAG. Só a comparação ignora maiúsculas.
+        String name = request.name() == null ? "" : request.name().trim();
+        if (name.isEmpty()) {
+            throw new BusinessRuleException("Dê um nome ao modelo.");
+        }
+        var document = RichTextDocument.ofTextOrDocument(request.body(), mapper);
+        if (!StringUtils.hasText(RichTextDocument.plainText(document.json(), mapper))) {
+            throw new BusinessRuleException("Escreva o texto do modelo antes de salvá-lo.");
+        }
+        NoteTemplate template = templateRepository.findByAccountIdOrderByNameAsc(accountId).stream()
+                .filter(t -> t.getName().equalsIgnoreCase(name))
+                .findFirst()
+                .orElseGet(() -> new NoteTemplate(accountId, name, document.json()));
+        template.setName(name);
+        template.setBody(document.json());
+        return ProfileDtos.NoteTemplateResponse.from(templateRepository.save(template));
+    }
+
+    @Transactional
+    public void removeNoteTemplate(Long id) {
+        NoteTemplate template = templateRepository.findByIdAndAccountId(id, currentContext.accountId())
+                .orElseThrow(() -> new NotFoundException("Modelo de anotação", id));
+        templateRepository.delete(template);
     }
 
     @Transactional

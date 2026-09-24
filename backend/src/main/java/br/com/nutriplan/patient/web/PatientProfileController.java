@@ -81,4 +81,29 @@ public class PatientProfileController {
     public void removeNote(@PathVariable Long patientId, @PathVariable Long noteId) {
         patientProfileService.removeNote(patientId, noteId);
     }
+
+    // ------------------------------------------------------------ modelos
+
+    @GetMapping("/note-templates")
+    @Operation(summary = "Os modelos de anotação do consultório, em ordem alfabética")
+    public List<ProfileDtos.NoteTemplateResponse> noteTemplates() {
+        return patientProfileService.noteTemplates();
+    }
+
+    @PostMapping("/note-templates")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Guarda um modelo de anotação",
+            description = "Um texto-base com a formatação do editor, para começar a anotação "
+                    + "de qualquer paciente. O mesmo nome sobrescreve o modelo.")
+    public ProfileDtos.NoteTemplateResponse saveNoteTemplate(
+            @Valid @RequestBody ProfileDtos.NoteTemplateRequest request) {
+        return patientProfileService.saveNoteTemplate(request);
+    }
+
+    @DeleteMapping("/note-templates/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remove um modelo de anotação")
+    public void removeNoteTemplate(@PathVariable Long id) {
+        patientProfileService.removeNoteTemplate(id);
+    }
 }

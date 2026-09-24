@@ -4,7 +4,7 @@ import { MessageSquareText } from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
 import { NotesField, NotesView } from "./RichText/NotesField";
-import type { PatientNote, PatientTag } from "../api/types";
+import type { NoteTemplate, PatientNote, PatientTag } from "../api/types";
 
 /**
  * As TAGs do paciente.
@@ -142,6 +142,15 @@ export function PatientNotes({ patientId }: { patientId: number }) {
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Os modelos de anotação do consultório.
+   *
+   * "Eu tenho que ter a possibilidade de salvar modelos, e adicionar ele no
+   * bloco de anotações para um paciente hipotético, e com a MESMA FORMATAÇÃO."
+   * O modelo é o mesmo documento do editor: usar é copiar, sem conversão.
+   */
+  const [templates, setTemplates] = useState<NoteTemplate[]>([]);
+  const [templateId, setTemplateId] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -151,9 +160,50 @@ export function PatientNotes({ patientId }: { patientId: number }) {
     }
   }, [patientId]);
 
+  const loadTemplates = useCallback(async () => {
+    try {
+      setTemplates(await api.patients.noteTemplates());
+    } catch {
+      setTemplates([]);
+    }
+  }, []);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadTemplates();
+  }, [load, loadTemplates]);
+
+  function useTemplate(id: string) {
+    setTemplateId(id);
+    const template = templates.find((t) => String(t.id) === id);
+    if (template) setDraft(template.body);
+  }
+
+  async function saveAsTemplate() {
+    if (!draft.trim()) return;
+    const current = templates.find((t) => String(t.id) === templateId);
+    const name = window.prompt("Nome do modelo:", current?.name ?? "Primeira consulta");
+    if (!name?.trim()) return;
+    try {
+      const saved = await api.patients.saveNoteTemplate(name.trim(), draft);
+      await loadTemplates();
+      setTemplateId(String(saved.id));
+    } catch (e) {
+      setError(explainError(e, "salvar o modelo"));
+    }
+  }
+
+  async function removeTemplate() {
+    const current = templates.find((t) => String(t.id) === templateId);
+    if (!current || !confirm(`Remover o modelo "${current.name}"?`)) return;
+    try {
+      await api.patients.removeNoteTemplate(current.id);
+      setTemplateId("");
+      await loadTemplates();
+    } catch (e) {
+      setError(explainError(e, "remover o modelo"));
+    }
+  }
 
   async function add() {
     if (!draft.trim()) return;
@@ -161,6 +211,7 @@ export function PatientNotes({ patientId }: { patientId: number }) {
     try {
       await api.patients.addNote(patientId, draft.trim());
       setDraft("");
+      setTemplateId("");
       await load();
     } catch (e) {
       setError(explainError(e, "salvar a anotação"));
@@ -185,8 +236,39 @@ export function PatientNotes({ patientId }: { patientId: number }) {
           </div>
         )}
 
+        <div className="notes-templates">
+          <label htmlFor="note-template">Modelo</label>
+          <select
+            id="note-template"
+            value={templateId}
+            onChange={(e) => useTemplate(e.target.value)}
+          >
+            <option value="">Começar em branco</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="button link pequeno"
+            onClick={() => void saveAsTemplate()}
+            disabled={!draft.trim()}
+            title="Guarda o texto abaixo, com a formatação, para começar anotações de outros pacientes"
+          >
+            Salvar como modelo
+          </button>
+          {templateId && (
+            <button type="button" className="button link pequeno" onClick={() => void removeTemplate()}>
+              remover modelo
+            </button>
+          )}
+        </div>
+
         <div className="notes-composer">
           <NotesField
+            key={templateId || "blank"}
             label="Nova anotação"
             value={draft}
             onChange={setDraft}

@@ -137,3 +137,11 @@
     flex: 1 1 100%;
   }
 }
+
+/* The TAG chooser inside the new-patient form (styles come from patient-profile.css). */
+.np-tags {
+  padding-top: 4px;
+}
+.np-tags .escolha-tags {
+  margin-top: 6px;
+}

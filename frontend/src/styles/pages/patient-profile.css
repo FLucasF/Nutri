@@ -254,6 +254,22 @@
 
 /* The editor grows; "Anotar" sits on its bottom edge. On the phone, once the
    editor is open, the button goes under it. */
+/* The template row above the composer: pick one, or save what is written. */
+.notes-templates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.notes-templates > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.notes-templates > select {
+  flex: 0 1 260px;
+  min-width: 160px;
+}
 .notes-composer {
   display: flex;
   align-items: flex-end;
