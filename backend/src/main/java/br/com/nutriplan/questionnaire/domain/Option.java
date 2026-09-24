@@ -18,6 +18,8 @@ public record Option(String label, Integer points) {
 
     private static final String OPTIONS_SEPARATOR = "\\|";
     private static final char POINTS_SEPARATOR = '=';
+    /** How the chosen alternatives of a multiple-choice answer are joined. */
+    public static final String CHOICES_SEPARATOR = "; ";
 
     public static List<Option> analyze(String text) {
         List<Option> options = new ArrayList<>();
@@ -52,5 +54,23 @@ public record Option(String label, Integer points) {
             }
         }
         return null;
+    }
+
+    /**
+     * The sum of the points of several chosen alternatives ("A; B"), for a
+     * multiple-choice answer. Null when none of them scores.
+     */
+    public static Integer pointsOfAll(String text, String choices) {
+        if (choices == null || choices.isBlank()) {
+            return null;
+        }
+        Integer sum = null;
+        for (String choice : choices.split(";")) {
+            Integer points = pointsDe(text, choice);
+            if (points != null) {
+                sum = (sum == null ? 0 : sum) + points;
+            }
+        }
+        return sum;
     }
 }

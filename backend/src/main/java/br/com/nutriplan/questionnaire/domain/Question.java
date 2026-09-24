@@ -50,6 +50,13 @@ public class Question extends BaseEntity {
     @Column(length = 500)
     private String ajuda;
 
+    /**
+     * Whether the answer shows in the anamnesis listing without opening the
+     * record — the same job the practice's declared fields do.
+     */
+    @Column(nullable = false)
+    private boolean highlight = false;
+
     public Question(Questionnaire questionnaire, String statement, QuestionType type, int order) {
         this.questionnaire = questionnaire;
         this.statement = statement;

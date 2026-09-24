@@ -33,4 +33,7 @@ public interface AnamnesisRepository extends JpaRepository<Anamnesis, Long> {
            where a.id = :id and a.accountId = :accountId
            """)
     Optional<Anamnesis> find(@Param("id") Long id, @Param("accountId") Long accountId);
+
+    /** Whether a pre-consultation sending has already become an anamnesis. */
+    boolean existsByAccountIdAndSendingId(Long accountId, Long sendingId);
 }

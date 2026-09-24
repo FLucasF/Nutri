@@ -90,6 +90,15 @@ public class AnamnesisController {
         return anamnesisService.duplicate(id);
     }
 
+    @PostMapping("/anamneses/from-sending/{sendingId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Cria a anamnese a partir do que o paciente respondeu antes da consulta",
+            description = "Uma vez só por envio: o envio é o registro do que o paciente disse, "
+                    + "e a anamnese feita dele é o registro que o profissional passa a editar.")
+    public AnamnesisDtos.AnamnesisResponse fromSending(@PathVariable Long sendingId) {
+        return anamnesisService.fromSending(sendingId);
+    }
+
     @DeleteMapping("/anamneses/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Exclui a anamnese")

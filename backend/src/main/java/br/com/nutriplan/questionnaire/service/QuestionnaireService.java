@@ -94,6 +94,7 @@ public class QuestionnaireService {
             nova.setRequired(p.isRequired());
             nova.setOptions(p.getOptions());
             nova.setAjuda(p.getAjuda());
+            nova.setHighlight(p.isHighlight());
             copies.getQuestions().add(nova);
         }
         questionnaireRepository.save(copies);
@@ -140,9 +141,12 @@ public class QuestionnaireService {
                                 .formatted(request.statement()));
             }
             var question = new Question(questionnaire, request.statement(), request.type(), order++);
-            question.setRequired(request.required());
-            question.setOptions(request.options());
+            // A section is a heading: it is never required, never highlighted.
+            boolean answerable = request.type().answerable();
+            question.setRequired(answerable && request.required());
+            question.setOptions(request.type().hasOptions() ? request.options() : null);
             question.setAjuda(request.ajuda());
+            question.setHighlight(answerable && request.highlight());
             questionnaire.getQuestions().add(question);
         }
     }
@@ -232,6 +236,9 @@ public class QuestionnaireService {
         Integer score = sending.getQuestionnaire().isScorable() ? 0 : null;
 
         for (Question question : sending.getQuestionnaire().getQuestions()) {
+            if (!question.getType().answerable()) {
+                continue;
+            }
             String value = byQuestion.get(question.getId());
             if (!StringUtils.hasText(value)) {
                 if (question.isRequired()) {
@@ -240,8 +247,10 @@ public class QuestionnaireService {
                 continue;
             }
             var item = new AnswerItem(sending, question, trim(value, 2000));
-            if (question.getType() == QuestionType.CHOICE_SINGLE) {
-                Integer points = Option.pointsDe(question.getOptions(), value);
+            if (question.getType().hasOptions()) {
+                Integer points = question.getType() == QuestionType.CHOICE_SINGLE
+                        ? Option.pointsDe(question.getOptions(), value)
+                        : Option.pointsOfAll(question.getOptions(), value);
                 item.setPoints(points);
                 if (score != null && points != null) {
                     score += points;

@@ -19,6 +19,7 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 
 import br.com.nutriplan.anamnesis.dto.AnamnesisDtos;
+import br.com.nutriplan.questionnaire.domain.QuestionType;
 import br.com.nutriplan.shared.error.BusinessRuleException;
 import br.com.nutriplan.shared.richtext.RichTextPdf;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,8 @@ public class AnamnesisPdfGenerator {
     private static final Font SUBTITLE = source(10, Font.NORMAL, MEAN_INK);
     private static final Font LABEL = source(8, Font.BOLD, MEAN_INK);
     private static final Font VALUE = source(11, Font.NORMAL, PITCH);
+    private static final Font SECTION = source(9.5f, Font.BOLD, MEAN_INK);
+    private static final Font QUESTION = source(9, Font.NORMAL, MEAN_INK);
 
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/uuuu");
 
@@ -81,6 +84,10 @@ public class AnamnesisPdfGenerator {
                 document.add(highlights(anamnesis));
             }
 
+            if (!anamnesis.answers().isEmpty()) {
+                addAnswers(document, anamnesis);
+            }
+
             for (Element element : RichTextPdf.render(anamnesis.body(), mapper)) {
                 document.add(element);
             }
@@ -90,6 +97,44 @@ public class AnamnesisPdfGenerator {
             throw new BusinessRuleException("Não foi possível gerar o PDF da anamnese.");
         }
         return out.toByteArray();
+    }
+
+    /**
+     * The questionnaire, question by question.
+     *
+     * A section is a heading; every other answer is its statement in small
+     * type over the value, so the eye lands on what was said and not on what
+     * was asked. Questions left blank do not exist on paper.
+     */
+    private void addAnswers(Document document, AnamnesisDtos.AnamnesisResponse anamnesis)
+            throws com.lowagie.text.DocumentException {
+        if (anamnesis.questionnaireName() != null) {
+            var head = new Paragraph(anamnesis.questionnaireName().toUpperCase(), SECTION);
+            head.setSpacingAfter(6f);
+            document.add(head);
+        }
+        for (AnamnesisDtos.AnswerResponse answer : anamnesis.answers()) {
+            if (answer.type() == QuestionType.SECTION) {
+                var section = new Paragraph(answer.statement(), SECTION);
+                section.setSpacingBefore(10f);
+                section.setSpacingAfter(4f);
+                document.add(section);
+                continue;
+            }
+            if (answer.value() == null || answer.value().isBlank()) {
+                continue;
+            }
+            var question = new Paragraph(answer.statement(), QUESTION);
+            question.setSpacingBefore(6f);
+            question.setSpacingAfter(1f);
+            document.add(question);
+            var value = new Paragraph(answer.value(), VALUE);
+            value.setSpacingAfter(2f);
+            document.add(value);
+        }
+        var gap = new Paragraph(" ", VALUE);
+        gap.setSpacingAfter(8f);
+        document.add(gap);
     }
 
     /**

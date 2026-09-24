@@ -28,7 +28,9 @@ public final class QuestionnaireDtos {
             boolean required,
             /** "Nunca=0|Às vezes=1|Sempre=2". The score is optional. */
             @Size(max = 2000) String options,
-            @Size(max = 500) String ajuda
+            @Size(max = 500) String ajuda,
+            /** Shown in the anamnesis listing without opening the record. */
+            boolean highlight
     ) {}
 
     public record QuestionnaireRequest(
@@ -72,12 +74,14 @@ public final class QuestionnaireDtos {
             boolean required,
             Integer order,
             String ajuda,
-            List<OptionResponse> options
+            List<OptionResponse> options,
+            boolean highlight
     ) {
         public static QuestionResponse from(Question p) {
             return new QuestionResponse(p.getId(), p.getStatement(), p.getType(),
                     p.getType().getDescription(), p.isRequired(), p.getOrder(), p.getAjuda(),
-                    p.optionsAnalisadas().stream().map(OptionResponse::from).toList());
+                    p.optionsAnalisadas().stream().map(OptionResponse::from).toList(),
+                    p.isHighlight());
         }
     }
 
