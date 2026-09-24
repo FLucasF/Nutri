@@ -1757,3 +1757,42 @@ a.minusculo {
     min-height: 44px;
   }
 }
+
+/* ================================================================= pagination
+   Under a list the server pages: which ones are shown, of how many, and the
+   way forward and back. Absent when everything fits one page. */
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 12px;
+  padding: 10px 4px;
+}
+.pagination-status {
+  font-size: 13px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.pagination-page {
+  color: var(--ink-3);
+}
+.pagination-buttons {
+  display: flex;
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pagination-status {
+    text-align: center;
+  }
+  .pagination-buttons > .button {
+    flex: 1 1 0;
+    min-height: var(--h-lg);
+  }
+}

@@ -8,6 +8,7 @@ import { useFeedback } from "../components/Feedback";
 import type { FoodSummary, DataSource, ResultImport } from "../api/types";
 import { count } from "../text";
 import { Own, Reference } from "../components/Own";
+import { Pagination } from "../components/Pagination";
 import { useIsNarrow, useIsPhone } from "../hooks/useMediaQuery";
 
 const SOURCES: { value: DataSource | ""; label: string }[] = [
@@ -28,6 +29,8 @@ export default function Foods() {
 
   const [foods, setFoods] = useState<FoodSummary[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [groups, setGroups] = useState<string[]>([]);
   const [term, setTerm] = useState("");
   const [group, setGroup] = useState("");
@@ -71,19 +74,26 @@ export default function Foods() {
       }
 
       setByCode(false);
-      const page = await api.foods.find({
+      const result = await api.foods.find({
         term: term.trim() || undefined,
         group: group || undefined,
         source: source || undefined,
+        page,
         size: PAGE_SIZE,
       });
-      setFoods(page.content);
-      setTotal(page.totalElements);
+      setFoods(result.content);
+      setTotal(result.totalElements);
+      setTotalPages(result.totalPages);
     } catch (e) {
       setError(explainError(e, "buscar alimentos"));
     } finally {
       setLoading(false);
     }
+  }, [term, group, source, page]);
+
+  // A new search or filter starts from the first page.
+  useEffect(() => {
+    setPage(0);
   }, [term, group, source]);
 
   useEffect(() => {
@@ -217,12 +227,6 @@ export default function Foods() {
         </div>
       ) : (
         <>
-          {total > foods.length && (
-            <p className="foods-count">
-              Mostrando os {foods.length} primeiros de {total.toLocaleString("pt-BR")} — refine a
-              busca para chegar aos demais.
-            </p>
-          )}
           {narrow ? (
             <div className="list-rows foods-list">
               {foods.map((a) => (
@@ -286,6 +290,16 @@ export default function Foods() {
                 </tbody>
               </table>
             </TableScroll>
+          )}
+          {!byCode && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalElements={total}
+              size={PAGE_SIZE}
+              noun={["alimento", "alimentos"]}
+              onChange={setPage}
+            />
           )}
         </>
       )}

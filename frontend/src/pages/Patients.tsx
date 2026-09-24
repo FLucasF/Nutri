@@ -8,6 +8,7 @@ import { useFeedback } from "../components/Feedback";
 import type { Partner, PatientSummary, PatientTag, ResultImport } from "../api/types";
 import { count, plural } from "../text";
 import { Avatar } from "../components/Avatar";
+import { Pagination } from "../components/Pagination";
 import { useIsNarrow } from "../hooks/useMediaQuery";
 
 export default function Patients() {
@@ -16,6 +17,8 @@ export default function Patients() {
 
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [page, setPage] = useState(0);
   const [term, setTerm] = useState("");
   const [activeOnly, setActiveOnly] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -26,18 +29,25 @@ export default function Patients() {
     setLoading(true);
     setError(null);
     try {
-      const page = await api.patients.list({
+      const result = await api.patients.list({
         term: term.trim() || undefined,
         active: activeOnly ? true : undefined,
-        size: 50,
+        page,
+        size: PAGE_SIZE,
       });
-      setPatients(page.content);
-      setTotal(page.totalElements);
+      setPatients(result.content);
+      setTotal(result.totalElements);
+      setTotalPages(result.totalPages);
     } catch (e) {
       setError(explainError(e, "abrir a lista de pacientes"));
     } finally {
       setLoading(false);
     }
+  }, [term, activeOnly, page]);
+
+  // A new search or filter starts from the first page.
+  useEffect(() => {
+    setPage(0);
   }, [term, activeOnly]);
 
   // Search with a delay so as not to fire one query per keystroke.
@@ -143,10 +153,23 @@ export default function Patients() {
         ) : (
           <PatientTable patients={patients} onOpen={(id) => navigate(`/patients/${id}`)} />
         )}
+
+        {!loading && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={total}
+            size={PAGE_SIZE}
+            noun={["paciente", "pacientes"]}
+            onChange={setPage}
+          />
+        )}
       </div>
     </div>
   );
 }
+
+const PAGE_SIZE = 50;
 
 type ListProps = { patients: PatientSummary[]; onOpen: (id: number) => void };
 

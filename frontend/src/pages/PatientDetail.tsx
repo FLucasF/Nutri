@@ -13,7 +13,7 @@ import {
   Send,
   X,
 } from "lucide-react";
-import { ErrorApi, api } from "../api/client";
+import { ErrorApi, allPages, api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
@@ -57,10 +57,10 @@ export default function PatientDetail() {
     try {
       const [data, plansList] = await Promise.all([
         api.patients.find(patientId),
-        api.prescriptions.list({ patientId, size: 50 }),
+        allPages((page, size) => api.prescriptions.list({ patientId, page, size })),
       ]);
       setPatient(data);
-      setPlans(plansList.content);
+      setPlans(plansList);
     } catch (e) {
       setError(explainError(e, "abrir o paciente"));
     } finally {

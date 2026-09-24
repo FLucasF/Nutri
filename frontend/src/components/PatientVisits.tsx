@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, Plus, Wallet } from "lucide-react";
-import { api } from "../api/client";
+import { allPages, api } from "../api/client";
 import { explainError } from "../api/errors";
 import { formatBr } from "../api/dates";
 import { useAuth } from "../auth/AuthContext";
@@ -45,10 +45,12 @@ export function PatientVisits({ patientId }: { patientId: number }) {
     try {
       const [visits, money] = await Promise.all([
         api.schedule.forPatient(patientId),
-        canCharge ? api.finance.list({ patientId, size: 50 }) : Promise.resolve(null),
+        canCharge
+          ? allPages((page, size) => api.finance.list({ patientId, page, size }))
+          : Promise.resolve([]),
       ]);
       setAppointments(visits);
-      setTransactions(money?.content ?? []);
+      setTransactions(money);
     } catch (e) {
       setError(explainError(e, "abrir as consultas do paciente"));
     } finally {

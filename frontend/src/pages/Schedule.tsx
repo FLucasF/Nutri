@@ -18,7 +18,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { api } from "../api/client";
+import { allPages, api } from "../api/client";
 import { explainError } from "../api/errors";
 import { useAuth } from "../auth/AuthContext";
 import { FieldError, useFieldErrors } from "../components/FieldError";
@@ -141,8 +141,8 @@ export default function Schedule() {
   }, [load]);
 
   useEffect(() => {
-    api.patients.list({ active: true, size: 200 })
-      .then((p) => setPatients(p.content))
+    allPages((page, size) => api.patients.list({ active: true, page, size }))
+      .then(setPatients)
       .catch(() => setPatients([]));
     api.schedule.types().then(setTypes).catch(() => setTypes([]));
     api.partners.list().then(setPartners).catch(() => setPartners([]));

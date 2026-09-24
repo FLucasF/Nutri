@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus, Wallet, X } from "lucide-react";
-import { api } from "../api/client";
+import { allPages, api } from "../api/client";
 import { explainError } from "../api/errors";
 import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
 import { ReceiptPanel } from "../components/ReceiptPanel";
+import { Pagination } from "../components/Pagination";
 import { useIsNarrow } from "../hooks/useMediaQuery";
 import { formatBr, todayIso, firstMonthIsoDay, lastMonthIsoDay } from "../api/dates";
 import type {
@@ -18,6 +19,8 @@ import type {
   TransactionType,
 } from "../api/types";
 import { count, currency } from "../text";
+
+const FINANCE_PAGE_SIZE = 50;
 
 const CATEGORIES_INCOME = ["Consulta", "Retorno", "Avaliação", "Pacote", "Outros"];
 const CATEGORIES_EXPENSE = ["Aluguel", "Material", "Software", "Impostos", "Marketing", "Outros"];
@@ -39,6 +42,9 @@ export default function Finance() {
 
   const [summary, setSummary] = useState<Summary | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalTransactions, setTotalTransactions] = useState(0);
   const [overdue, setOverdue] = useState<Transaction[]>([]);
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [packages, setPackages] = useState<ServicePackage[]>([]);
@@ -53,24 +59,32 @@ export default function Finance() {
     setLoading(true);
     setError(null);
     try {
-      const [result, page, overdue] = await Promise.all([
+      const [result, listed, overdue] = await Promise.all([
         api.finance.settle(from, to),
         api.finance.list({
           from,
           to,
           status: filterStatus || undefined,
-          size: 100,
+          page,
+          size: FINANCE_PAGE_SIZE,
         }),
         api.finance.overdue(),
       ]);
       setSummary(result);
-      setTransactions(page.content);
+      setTransactions(listed.content);
+      setTotalPages(listed.totalPages);
+      setTotalTransactions(listed.totalElements);
       setOverdue(overdue);
     } catch (e) {
       setError(explainError(e, "abrir o financeiro"));
     } finally {
       setLoading(false);
     }
+  }, [from, to, filterStatus, page]);
+
+  // Another period or status starts from the first page.
+  useEffect(() => {
+    setPage(0);
   }, [from, to, filterStatus]);
 
   useEffect(() => {
@@ -78,8 +92,8 @@ export default function Finance() {
   }, [load]);
 
   useEffect(() => {
-    api.patients.list({ active: true, size: 200 })
-      .then((p) => setPatients(p.content))
+    allPages((page, size) => api.patients.list({ active: true, page, size }))
+      .then(setPatients)
       .catch(() => setPatients([]));
     api.packages.list().then(setPackages).catch(() => setPackages([]));
   }, []);
@@ -267,6 +281,17 @@ export default function Finance() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {!loading && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalTransactions}
+            size={FINANCE_PAGE_SIZE}
+            noun={["lançamento", "lançamentos"]}
+            onChange={setPage}
+          />
         )}
       </div>
     </div>

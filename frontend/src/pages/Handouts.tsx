@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { BookOpen, ChevronDown, ChevronUp, Copy, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { api } from "../api/client";
+import { Pagination } from "../components/Pagination";
+
+const PAGE_SIZE = 20;
 import { explainError } from "../api/errors";
 import { useFeedback } from "../components/Feedback";
 import type { Handout } from "../api/types";
@@ -25,6 +28,9 @@ import {
 export default function Handouts() {
   const feedback = useFeedback();
   const [handouts, setHandouts] = useState<Handout[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [total, setTotal] = useState(0);
   const [term, setTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,13 +40,20 @@ export default function Handouts() {
     setLoading(true);
     setError(null);
     try {
-      const page = await api.handouts.list({ term: term.trim() || undefined, size: 50 });
-      setHandouts(page.content);
+      const result = await api.handouts.list({ term: term.trim() || undefined, page, size: PAGE_SIZE });
+      setHandouts(result.content);
+      setTotalPages(result.totalPages);
+      setTotal(result.totalElements);
     } catch (e) {
       setError(explainError(e, "abrir as orientações"));
     } finally {
       setLoading(false);
     }
+  }, [term, page]);
+
+  // A new search starts from the first page.
+  useEffect(() => {
+    setPage(0);
   }, [term]);
 
   useEffect(() => {
@@ -155,6 +168,17 @@ export default function Handouts() {
             <Card key={o.id} handout={o} onDuplicate={() => duplicate(o)} />
           ))}
         </div>
+      )}
+
+      {!loading && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={total}
+          size={PAGE_SIZE}
+          noun={["orientação", "orientações"]}
+          onChange={setPage}
+        />
       )}
     </>
   );

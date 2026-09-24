@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { ErrorApi, api } from "../api/client";
 import type { PlanSummary } from "../api/types";
 import { TagStatus } from "./PatientDetail";
+import { Pagination } from "../components/Pagination";
+
+const PAGE_SIZE = 30;
 
 type Tab = "plans" | "templates";
 
@@ -11,6 +14,9 @@ export default function Prescriptions() {
 
   const [tab, setTab] = useState<Tab>("plans");
   const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [total, setTotal] = useState(0);
   const [term, setTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,17 +25,25 @@ export default function Prescriptions() {
     setLoading(true);
     setError(null);
     try {
-      const page = await api.prescriptions.list({
+      const result = await api.prescriptions.list({
         template: tab === "templates",
         term: term.trim() || undefined,
-        size: 50,
+        page,
+        size: PAGE_SIZE,
       });
-      setPlans(page.content);
+      setPlans(result.content);
+      setTotalPages(result.totalPages);
+      setTotal(result.totalElements);
     } catch (e) {
       setError(e instanceof ErrorApi ? e.message : "Falha ao carregar as prescrições.");
     } finally {
       setLoading(false);
     }
+  }, [tab, term, page]);
+
+  // Another tab or a new search starts from the first page.
+  useEffect(() => {
+    setPage(0);
   }, [tab, term]);
 
   useEffect(() => {
@@ -126,6 +140,17 @@ export default function Prescriptions() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {!loading && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={total}
+          size={PAGE_SIZE}
+          noun={tab === "templates" ? ["modelo", "modelos"] : ["plano", "planos"]}
+          onChange={setPage}
+        />
       )}
     </>
   );
