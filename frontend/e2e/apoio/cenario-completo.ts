@@ -288,6 +288,12 @@ export async function montarCenarioCompleto(conta: Conta): Promise<CenarioComple
     }),
     "pedido de exames",
   );
+  await ok(
+    await api.post("/api/labtests/panels", {
+      data: { name: "Check-up da clínica", parameterIds: [glicose.id, colesterol.id] },
+    }),
+    "painel do consultório",
+  );
 
   // ---------------------------------------------------------- questionários
   const questionario = await ok(

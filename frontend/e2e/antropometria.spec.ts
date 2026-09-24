@@ -50,7 +50,7 @@ test("corrige o peso de uma avaliação já registrada, sem apagá-la", async ({
   // O formulário abre com o que foi medido, e não em branco: corrigir um campo
   // não pode exigir redigitar os outros quinze.
   await expect(page.getByLabel("Peso (kg)")).toHaveValue("82.6");
-  await expect(page.getByLabel("Cintura")).toHaveValue("87");
+  await expect(page.getByLabel("Cintura", { exact: true })).toHaveValue("87");
 
   await page.getByLabel("Peso (kg)").fill("81,2");
   await page.getByRole("button", { name: "Salvar correção" }).click();
@@ -162,4 +162,65 @@ test("qualquer avaliação do histórico abre para leitura, e a faixa de peso ap
 
   await page.getByRole("button", { name: "ver a última", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Última avaliação" })).toBeVisible();
+});
+
+test("os gráficos da evolução aparecem e se leem pelo teclado", async ({ page }) => {
+  await page.goto(`/patients/${paciente.id}/anthropometry`);
+  await expect(page.getByRole("heading", { name: "Gráficos da evolução" })).toBeVisible();
+  const peso = page.getByRole("img", { name: /^Peso: de 88,4 kg/ });
+  await expect(peso).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Cintura: de 94 cm/ })).toBeVisible();
+  // Focar lê a última avaliação; a seta volta para a anterior.
+  await peso.focus();
+  const leitura = page.locator(".chart-tooltip");
+  // O peso de julho pode ter sido corrigido pelo teste anterior; a data não muda.
+  await expect(leitura).toContainText("14/07/2026");
+  await page.keyboard.press("ArrowLeft");
+  await expect(leitura).toContainText("88,4 kg");
+  await expect(leitura).toContainText("10/03/2026");
+});
+
+test("o relatório da avaliação e a versão do paciente saem em PDF", async ({ page }) => {
+  await page.goto(`/patients/${paciente.id}/anthropometry`);
+  for (const [botao, publico] of [
+    ["Relatório da avaliação", "PROFESSIONAL"],
+    ["Versão para o paciente", "PATIENT"],
+  ] as const) {
+    const [resposta] = await Promise.all([
+      page.waitForResponse((r) => r.url().includes(`/report?audience=${publico}`)),
+      page.getByRole("button", { name: botao }).click(),
+    ]);
+    expect(resposta.status()).toBe(200);
+    expect(resposta.headers()["content-type"]).toContain("application/pdf");
+  }
+});
+
+test("com uma avaliação só, o relatório da avaliação já é oferecido", async ({ page }) => {
+  const sozinha = await criarPaciente(conta, { name: "Uma Avaliação Só", sex: "MALE" });
+  await criarAvaliacao(conta, sozinha.id, { date: "2026-08-01", weightKg: 77, heightCm: 178 });
+  await page.goto(`/patients/${sozinha.id}/anthropometry`);
+  await expect(page.getByRole("button", { name: "Versão para o paciente" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gráficos da evolução" })).toHaveCount(0);
+});
+
+test("o guia de onde medir acende o local do campo em que se está", async ({ page }) => {
+  await page.goto(`/patients/${paciente.id}/anthropometry`);
+  await page.getByRole("button", { name: "Nova avaliação" }).click();
+
+  await page.getByRole("button", { name: "Onde medir" }).first().click();
+  const guiaCircunferencias = page.getByRole("region", { name: "Onde medir as circunferências" });
+  await expect(guiaCircunferencias).toBeVisible();
+  await page.getByLabel("Cintura", { exact: true }).focus();
+  await expect(guiaCircunferencias.getByRole("heading", { name: "Cintura" })).toBeVisible();
+  await expect(guiaCircunferencias).toContainText("última costela");
+
+  await page.getByRole("button", { name: "Onde medir" }).last().click();
+  const guiaDobras = page.getByRole("region", { name: "Onde medir as dobras" });
+  await expect(guiaDobras).toBeVisible();
+  await page.getByLabel(/^Subescapular/).focus();
+  await expect(guiaDobras.getByRole("heading", { name: "Subescapular" })).toBeVisible();
+  await guiaDobras.getByRole("button", { name: "Coxa" }).click();
+  await expect(guiaDobras).toContainText("prega inguinal");
+  await guiaDobras.getByRole("button", { name: "Fechar guia" }).click();
+  await expect(guiaDobras).toHaveCount(0);
 });

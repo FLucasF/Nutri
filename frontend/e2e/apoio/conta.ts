@@ -50,6 +50,16 @@ export async function entrar(page: Page, conta: Conta) {
   }, conta.token);
 }
 
+/**
+ * Passa pela porta do link do plano, como o paciente: a data de nascimento.
+ * O padrão é a de criarPaciente.
+ */
+export async function abrirPlanoComData(page: Page, nascimento = "1990-05-20") {
+  await page.getByLabel("Data de nascimento").fill(nascimento);
+  await page.getByRole("button", { name: "Abrir o plano" }).click();
+  await expect(page.getByRole("button", { name: "Abrir o plano" })).toHaveCount(0);
+}
+
 /** Um paciente pronto, para o teste começar de onde importa. */
 export async function criarPaciente(
   conta: Conta,

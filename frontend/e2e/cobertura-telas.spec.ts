@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-import { criarConta, entrar, type Conta } from "./apoio/conta";
+import { abrirPlanoComData, criarConta, entrar, type Conta } from "./apoio/conta";
 import { LARGURAS, abrir, fixarTema } from "./apoio/aparencia";
 import { esperarTelaLimpa, prontaParaOlhar, vigiarConsole } from "./apoio/auditoria";
 import { montarCenarioCompleto, type CenarioCompleto } from "./apoio/cenario-completo";
@@ -86,6 +86,14 @@ function estadosInternos(): Estado[] {
 
     { nome: "antropometria: resumo", rota: () => `${ficha()}/anthropometry` },
     { nome: "antropometria: nova avaliação", rota: () => `${ficha()}/anthropometry`, preparar: clicar("Nova avaliação") },
+    { nome: "antropometria: guia de medidas", rota: () => `${ficha()}/anthropometry`, preparar: async (page) => {
+      await clicar("Nova avaliação")(page);
+      await page.getByRole("button", { name: "Onde medir" }).last().click();
+      await page.getByLabel(/^Subescapular/).focus();
+    } },
+    { nome: "antropometria: leitura do gráfico", rota: () => `${ficha()}/anthropometry`, preparar: async (page) => {
+      await page.getByRole("img", { name: /^Peso: de/ }).focus();
+    } },
     { nome: "antropometria: corrigindo", rota: () => `${ficha()}/anthropometry`, preparar: clicar("Editar", true) },
     { nome: "antropometria: avaliação antiga", rota: () => `${ficha()}/anthropometry`, preparar: async (page) => {
         await page.getByRole("button", { name: "Ver", exact: true }).last().click();
@@ -135,6 +143,7 @@ function estadosInternos(): Estado[] {
         await page.getByLabel("Buscar").fill("arroz integral");
         await page.waitForTimeout(700);
       } },
+    { nome: "alimentos: segunda página", rota: () => "/foods", preparar: clicar("Próxima") },
     { nome: "alimentos: novo alimento", rota: () => "/foods", preparar: clicar("Novo alimento") },
     { nome: "alimentos: importar tabela", rota: () => "/foods", preparar: clicar("Importar tabela") },
     { nome: "alimento: detalhe", rota: () => `/foods/${c.alimentoId}` },
@@ -145,6 +154,7 @@ function estadosInternos(): Estado[] {
     { nome: "orientações: nova", rota: () => "/handouts", preparar: clicar("Nova orientação") },
     { nome: "orientações: ler tudo", rota: () => "/handouts", preparar: clicar("Ler tudo") },
 
+    { nome: "favoritos: lista", rota: () => "/favorites" },
     { nome: "questionários: lista", rota: () => "/questionnaires" },
     { nome: "questionários: perguntas abertas", rota: () => "/questionnaires", preparar: clicar("Ver perguntas") },
     { nome: "questionários: novo questionário", rota: () => "/questionnaires", preparar: clicar("Novo questionário") },
@@ -159,6 +169,12 @@ function estadosInternos(): Estado[] {
     { nome: "editor: plano novo", rota: () => "/prescriptions/new" },
     { nome: "editor: plano publicado", rota: () => `/prescriptions/${c.planoPublicado.id}` },
     { nome: "editor: refeições salvas", rota: () => `/prescriptions/${c.planoPublicado.id}`, preparar: clicar(/Refeições salvas/) },
+    { nome: "editor: micronutrientes × DRI", rota: () => `/prescriptions/${c.planoPublicado.id}`, preparar: async (page, largura) => {
+      // Abaixo de 900px os totais ficam na gaveta.
+      if (largura <= 900) await page.locator("[aria-haspopup='dialog']").first().click();
+      await page.getByRole("button", { name: /Micronutrientes × DRI/ }).first().click();
+      await page.getByText("Cálcio").first().waitFor();
+    } },
     { nome: "editor: observação da refeição aberta", rota: () => `/prescriptions/${c.planoPublicado.id}`, preparar: clicar("Escrever observações") },
     { nome: "editor: totais na gaveta", rota: () => `/prescriptions/${c.planoPublicado.id}`, preparar: async (page, largura) => {
         if (largura <= 900) await page.locator("[aria-haspopup='dialog']").first().click();
@@ -173,7 +189,10 @@ function estadosPublicos(): Estado[] {
     { nome: "acesso: entrar", rota: () => "/access" },
     { nome: "acesso: criar conta", rota: () => "/access", preparar: clicar("Criar uma conta") },
     { nome: "acesso: esqueci a senha", rota: () => "/access", preparar: clicar("Esqueci minha senha") },
-    { nome: "plano do paciente", rota: () => `/plan/${c.planoPublicado.publicIdentifier}` },
+    { nome: "plano do paciente: pede a data de nascimento", rota: () => `/plan/${c.planoPublicado.publicIdentifier}` },
+    { nome: "plano do paciente", rota: () => `/plan/${c.planoPublicado.publicIdentifier}`, preparar: async (page) => {
+      await abrirPlanoComData(page);
+    } },
     { nome: "questionário do paciente", rota: () => `/form/${c.formularioEnviado}` },
     { nome: "questionário já respondido", rota: () => `/form/${c.formularioRespondido}` },
   ];
@@ -240,6 +259,7 @@ test.describe("contraste em todas as telas (1440)", () => {
       "/handouts",
       "/questionnaires",
       "/team",
+      "/favorites",
       "/prescriptions",
       `/prescriptions/${c.planoPublicado.id}`,
     ];
@@ -275,6 +295,11 @@ test.describe("contraste em todas as telas (1440)", () => {
       for (const rota of ["/access", `/plan/${c.planoPublicado.publicIdentifier}`, `/form/${c.formularioEnviado}`]) {
         await abrir(page, rota);
         await semFalhasDeContraste(page, `${rota} (${tema})`);
+        if (rota.startsWith("/plan/")) {
+          // A porta e, depois dela, o plano.
+          await abrirPlanoComData(page);
+          await semFalhasDeContraste(page, `${rota} aberto (${tema})`);
+        }
       }
     });
   }

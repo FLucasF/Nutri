@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { criarConta, criarPaciente, entrar, type Conta } from "./apoio/conta";
+import { abrirPlanoComData, criarConta, criarPaciente, entrar, type Conta } from "./apoio/conta";
 
 /**
  * A biblioteca e o cardápio pela tela: alimentos, receitas, orientações e o
@@ -234,6 +234,8 @@ test.describe("prescrições", () => {
     const contexto = await browser.newContext();
     const dele = await contexto.newPage();
     await dele.goto(`/plan/${plano.publicIdentifier}`);
+    // Quem abre é o paciente: passa pela data de nascimento.
+    await abrirPlanoComData(dele);
     await expect(dele.getByText("Plano montado pela tela")).toBeVisible();
     await expect(dele.getByText(/Banana/).first()).toBeVisible();
     await expect(dele.getByText("Pode ser leite vegetal.")).toBeVisible();
