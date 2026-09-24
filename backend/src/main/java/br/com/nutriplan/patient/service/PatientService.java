@@ -30,6 +30,7 @@ import java.util.List;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+    private final br.com.nutriplan.anthropometry.repository.AnthropometricAssessmentRepository assessmentRepository;
     private final CurrentContext contextCurrent;
     private final PatientsImporter importer;
     private final br.com.nutriplan.patient.repository.PatientTagLinkRepository tagLinkRepository;
@@ -61,7 +62,10 @@ public class PatientService {
 
     @Transactional(readOnly = true)
     public PatientResponse find(Long id) {
-        return PatientResponse.from(accountRequire(id));
+        Patient patient = accountRequire(id);
+        return PatientResponse.from(patient,
+                assessmentRepository.findFirstByAccountIdAndPatientIdOrderByDateDescIdDesc(
+                        patient.getAccountId(), patient.getId()).orElse(null));
     }
 
     /**

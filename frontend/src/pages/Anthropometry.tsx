@@ -10,6 +10,7 @@ import {
   Ruler,
   Trash2,
   X,
+  Eye,
 } from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
@@ -28,6 +29,7 @@ import type {
   CompositionProtocol,
   ProtocolInfo,
   Change,
+  HealthyWeight,
 } from "../api/types";
 import { count } from "../text";
 import { AREAS_HIDDEN } from "../features";
@@ -107,6 +109,17 @@ const RISKS: Record<string, string> = {
   HIGH: "Risco alto",
 };
 
+const FAT_BANDS: Record<string, string> = {
+  VERY_LOW: "Muito baixo",
+  EXCELLENT: "Excelente",
+  GOOD: "Bom",
+  ABOVE_AVERAGE: "Acima da média",
+  AVERAGE: "Média",
+  BELOW_AVERAGE: "Abaixo da média",
+  POOR: "Ruim",
+  VERY_POOR: "Muito ruim",
+};
+
 export default function Anthropometry() {
   const { id } = useParams();
   const patientId = Number(id);
@@ -119,6 +132,14 @@ export default function Anthropometry() {
   const [creating, setCreating] = useState(false);
   /** A avaliação que está sendo corrigida, quando há uma. */
   const [editing, setEditing] = useState<Assessment | null>(null);
+  /**
+   * A avaliação aberta para leitura. Nula lê a mais recente.
+   *
+   * "Não consigo revisitar a avaliação antropométrica já feita": o histórico
+   * só oferecia corrigir. Agora qualquer linha abre com os mesmos resultados
+   * da última, sem entrar no formulário.
+   */
+  const [viewingId, setViewingId] = useState<number | null>(null);
   const [generatingReport, setGeneratingReport] = useState(false);
 
   const load = useCallback(async () => {
@@ -175,6 +196,7 @@ export default function Anthropometry() {
   if (loading) return <p className="loading">Carregando…</p>;
 
   const moreRecent = assessments[assessments.length - 1];
+  const shown = assessments.find((a) => a.id === viewingId) ?? moreRecent;
 
   return (
     <>
@@ -258,7 +280,14 @@ export default function Anthropometry() {
         </section>
       )}
 
-      {moreRecent && <AssessmentSummary assessment={moreRecent} patientId={patientId} />}
+      {shown && (
+        <AssessmentSummary
+          assessment={shown}
+          patientId={patientId}
+          latest={shown.id === moreRecent?.id}
+          onBackToLatest={() => setViewingId(null)}
+        />
+      )}
 
       {progress && progress.points.length > 1 && <ProgressTable progress={progress} />}
 
@@ -316,6 +345,17 @@ export default function Anthropometry() {
                     </td>
                     <td className="acoes">
                       <div className="history-actions">
+                        <button
+                          className="button secundario pequeno"
+                          aria-pressed={a.id === shown?.id}
+                          onClick={() => {
+                            setViewingId(a.id);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                        >
+                          <Eye aria-hidden="true" />
+                          Ver
+                        </button>
                         <button
                           className="button secundario pequeno"
                           onClick={() => {
@@ -383,17 +423,37 @@ function TableScroll({ children }: { children: ReactNode }) {
 function AssessmentSummary({
   assessment,
   patientId,
+  latest,
+  onBackToLatest,
 }: {
   assessment: Assessment;
   patientId: number;
+  /** Se é a mais recente. Quando não é, o título diz a data e oferece voltar. */
+  latest: boolean;
+  onBackToLatest: () => void;
 }) {
+  const composition = assessment.composition;
+  const fractionation = assessment.fractionation;
+  const anyFraction =
+    fractionation &&
+    (fractionation.boneMassKg.value !== undefined ||
+      fractionation.residualMassKg.value !== undefined ||
+      fractionation.muscleMassKg.value !== undefined);
+
   return (
     <section className="card mb-3">
       <div className="card-head">
-        <h2 className="card-title">Última avaliação</h2>
+        <h2 className="card-title">
+          {latest ? "Última avaliação" : `Avaliação de ${formatBr(assessment.date)}`}
+        </h2>
         <span className="summary-date">
           <CalendarDays aria-hidden="true" />
           {formatBr(assessment.date)}
+          {!latest && (
+            <button type="button" className="button link pequeno" onClick={onBackToLatest}>
+              ver a última
+            </button>
+          )}
         </span>
       </div>
 
@@ -406,25 +466,93 @@ function AssessmentSummary({
           derived={assessment.classificationBmi}
           map={CLASSIFICATIONS}
         />
+        <RangeStat label="Faixa de peso saudável" range={assessment.healthyWeight} />
         <Stat label="Cintura/quadril" value={assessment.ratioWaistHip} />
         <DerivedStat
           label="Risco cardiometabólico"
           derived={assessment.riskCardiometabolico}
           map={RISKS}
         />
+        <DerivedNumber
+          label={
+            assessment.armMuscle.value?.sideDescription
+              ? `Circ. muscular do braço (${assessment.armMuscle.value.sideDescription.toLowerCase()})`
+              : "Circ. muscular do braço"
+          }
+          derived={{
+            value: assessment.armMuscle.value?.circumferenceCm,
+            unavailableBecause: assessment.armMuscle.unavailableBecause,
+          }}
+          unit="cm"
+        />
       </div>
 
-      {assessment.composition && (
+      {composition && (
         <section className="summary-group">
           <div className="summary-group-head">
             <h3>Composição corporal</h3>
-            <span className="tag">{assessment.composition.protocolDescription}</span>
+            <span className="tag">{composition.protocolDescription}</span>
           </div>
           <div className="stats">
-            <Stat label="Gordura corporal" value={assessment.composition.percentageFat} unit="%" />
-            <Stat label="Massa gorda" value={assessment.composition.massFatKg} unit="kg" />
-            <Stat label="Massa magra" value={assessment.composition.massLeanKg} unit="kg" />
+            <Stat label="Gordura corporal" value={composition.percentageFat} unit="%" />
+            <Stat label="Massa gorda" value={composition.massFatKg} unit="kg" />
+            <Stat label="Massa magra" value={composition.massLeanKg} unit="kg" />
+            <Stat label="Soma das dobras" value={composition.skinfoldSumMm} unit="mm" />
+            <div className="stat">
+              <span className="stat-label">Densidade corporal</span>
+              {composition.density === undefined || composition.density === null ? (
+                <span className="stat-empty">o protocolo não passa pela densidade</span>
+              ) : (
+                <span className="stat-value">
+                  {composition.density.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4,
+                  })}
+                  <span className="stat-unit">g/cm³</span>
+                </span>
+              )}
+            </div>
+            <DerivedStat
+              label="Classificação da gordura"
+              derived={composition.fatClassification}
+              map={FAT_BANDS}
+            />
+            <div className="stat">
+              <span className="stat-label">Faixa ideal</span>
+              {composition.fatIdealMin === undefined || composition.fatIdealMax === undefined ? (
+                <span className="stat-empty">sem referência para a idade</span>
+              ) : (
+                <span className="stat-value">
+                  {num(composition.fatIdealMin)} a {num(composition.fatIdealMax)}
+                  <span className="stat-unit">%</span>
+                </span>
+              )}
+            </div>
           </div>
+          <p className="summary-hint">
+            Classificação e faixa ideal pela referência de {composition.fatReference}, por sexo e
+            idade.
+          </p>
+        </section>
+      )}
+
+      {anyFraction && fractionation && (
+        <section className="summary-group">
+          <div className="summary-group-head">
+            <h3>Fracionamento</h3>
+            {fractionation.fatSource && (
+              <span className="tag">massa gorda por {fractionation.fatSource}</span>
+            )}
+          </div>
+          <div className="stats">
+            <DerivedNumber label="Peso ósseo" derived={fractionation.boneMassKg} unit="kg" />
+            <DerivedNumber label="Peso residual" derived={fractionation.residualMassKg} unit="kg" />
+            <DerivedNumber label="Massa muscular" derived={fractionation.muscleMassKg} unit="kg" />
+          </div>
+          <p className="summary-hint">
+            Osso por Von Döbeln modificado por Rocha; resíduo por Würch; músculo é o que sobra do
+            peso depois de gordura, osso e resíduo.
+          </p>
         </section>
       )}
 
@@ -606,6 +734,51 @@ function DerivedStat<T extends string>({
         <span className="stat-value texto">{map[derived.value]}</span>
       ) : (
         <span className="stat-empty">{derived.unavailableBecause ?? "não disponível"}</span>
+      )}
+    </div>
+  );
+}
+
+/** A derived number: the value with its unit, or the reason it is not there. */
+function DerivedNumber({
+  label,
+  derived,
+  unit,
+}: {
+  label: string;
+  derived: Derived<number>;
+  unit?: string;
+}) {
+  return (
+    <div className="stat">
+      <span className="stat-label">{label}</span>
+      {derived.value === undefined || derived.value === null ? (
+        <span className="stat-empty">{derived.unavailableBecause ?? "não disponível"}</span>
+      ) : (
+        <span className="stat-value">
+          {num(derived.value)}
+          {unit && <span className="stat-unit">{unit}</span>}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * A faixa de peso saudável, como o cliente pediu na antropometria: os dois
+ * limites do IMC de eutrofia aplicados à altura medida.
+ */
+function RangeStat({ label, range }: { label: string; range?: HealthyWeight }) {
+  return (
+    <div className="stat">
+      <span className="stat-label">{label}</span>
+      {!range ? (
+        <span className="stat-empty">para adulto com altura medida</span>
+      ) : (
+        <span className="stat-value">
+          {range.minimumKg.toLocaleString("pt-BR")} a {range.maximumKg.toLocaleString("pt-BR")}
+          <span className="stat-unit">kg</span>
+        </span>
       )}
     </div>
   );

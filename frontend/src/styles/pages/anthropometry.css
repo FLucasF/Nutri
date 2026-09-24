@@ -118,6 +118,11 @@
   height: 14px;
   color: var(--ink-3);
 }
+.summary-date > .button.link {
+  margin-left: 6px;
+  height: auto;
+  min-height: 0;
+}
 
 .summary-group {
   margin-top: 20px;

@@ -35,7 +35,7 @@ public enum CompositionProtocol {
             false, false) {
         @Override
         public double fatPercentage(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
-            return sum(skinfolds) * 0.153 + 5.783;
+            return sumOnly(skinfolds, skinfoldsRequired(sex)) * 0.153 + 5.783;
         }
     },
 
@@ -54,12 +54,11 @@ public enum CompositionProtocol {
         }
 
         @Override
-        public double fatPercentage(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
+        public Double density(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
             double sums = sumOnly(skinfolds, skinfoldsRequired(sex));
-            double density = sex == Sex.MALE
+            return sex == Sex.MALE
                     ? 1.10938 - 0.0008267 * sums + 0.0000016 * sums * sums - 0.0002574 * age
                     : 1.0994921 - 0.0009929 * sums + 0.0000023 * sums * sums - 0.0001392 * age;
-            return siri(density);
         }
     },
 
@@ -73,12 +72,11 @@ public enum CompositionProtocol {
                     Skinfold.ABDOMINAL, Skinfold.SUPRAILIAC, Skinfold.THIGH),
             true, true) {
         @Override
-        public double fatPercentage(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
+        public Double density(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
             double sums = sumOnly(skinfolds, skinfoldsRequired(sex));
-            double density = sex == Sex.MALE
+            return sex == Sex.MALE
                     ? 1.112 - 0.00043499 * sums + 0.00000055 * sums * sums - 0.00028826 * age
                     : 1.097 - 0.00046971 * sums + 0.00000056 * sums * sums - 0.00012828 * age;
-            return siri(density);
         }
     },
 
@@ -91,12 +89,63 @@ public enum CompositionProtocol {
             EnumSet.of(Skinfold.BICEPS, Skinfold.TRICEPS, Skinfold.SUBSCAPULAR, Skinfold.SUPRAILIAC),
             true, false) {
         @Override
-        public double fatPercentage(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
-            double log = Math.log10(sum(skinfolds));
-            double density = sex == Sex.MALE
+        public Double density(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
+            double log = Math.log10(sumOnly(skinfolds, skinfoldsRequired(sex)));
+            return sex == Sex.MALE
                     ? 1.1765 - 0.0744 * log
                     : 1.1567 - 0.0717 * log;
-            return siri(density);
+        }
+    },
+
+    /**
+     * Petroski (1995) — quatro dobras, desenvolvido com adultos brasileiros
+     * (homens de 18 a 66 anos, mulheres de 18 a 51). As dobras mudam com o
+     * sexo, e a idade entra na equação.
+     *
+     * O cliente pediu junto com Guedes: são os dois protocolos nacionais que o
+     * WebDiet oferece e que faltavam aqui.
+     */
+    PETROSKI(
+            "Petroski",
+            EnumSet.noneOf(Skinfold.class), // depends on the sex; see skinfoldsRequired
+            true, true) {
+        @Override
+        public Set<Skinfold> skinfoldsRequired(Sex sex) {
+            return sex == Sex.MALE
+                    ? EnumSet.of(Skinfold.SUBSCAPULAR, Skinfold.TRICEPS, Skinfold.SUPRAILIAC, Skinfold.CALF)
+                    : EnumSet.of(Skinfold.MEAN_AXILLARY, Skinfold.SUPRAILIAC, Skinfold.THIGH, Skinfold.CALF);
+        }
+
+        @Override
+        public Double density(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
+            double sums = sumOnly(skinfolds, skinfoldsRequired(sex));
+            return sex == Sex.MALE
+                    ? 1.10726863 - 0.00081201 * sums + 0.00000212 * sums * sums - 0.00041761 * age
+                    : 1.19547130 - 0.07513507 * Math.log10(sums) - 0.00041072 * age;
+        }
+    },
+
+    /**
+     * Guedes (1985) — três dobras, desenvolvido com adultos jovens brasileiros.
+     * As dobras mudam com o sexo; a idade não entra.
+     */
+    GUEDES(
+            "Guedes",
+            EnumSet.noneOf(Skinfold.class), // depends on the sex; see skinfoldsRequired
+            true, false) {
+        @Override
+        public Set<Skinfold> skinfoldsRequired(Sex sex) {
+            return sex == Sex.MALE
+                    ? EnumSet.of(Skinfold.TRICEPS, Skinfold.SUPRAILIAC, Skinfold.ABDOMINAL)
+                    : EnumSet.of(Skinfold.THIGH, Skinfold.SUPRAILIAC, Skinfold.SUBSCAPULAR);
+        }
+
+        @Override
+        public Double density(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
+            double log = Math.log10(sumOnly(skinfolds, skinfoldsRequired(sex)));
+            return sex == Sex.MALE
+                    ? 1.17136 - 0.06706 * log
+                    : 1.16650 - 0.07063 * log;
         }
     };
 
@@ -137,7 +186,30 @@ public enum CompositionProtocol {
                 .toList();
     }
 
-    public abstract double fatPercentage(Map<Skinfold, Double> skinfolds, Sex sex, Integer age);
+    /**
+     * The fat percentage. The density protocols pass through Siri; the ones
+     * that answer the percentage directly override this instead.
+     */
+    public double fatPercentage(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
+        Double density = density(skinfolds, sex, age);
+        if (density == null) {
+            throw new IllegalStateException(name() + " neither estimates density nor overrides fatPercentage");
+        }
+        return siri(density);
+    }
+
+    /**
+     * Body density in g/cm³, for the protocols that go through it. Null for
+     * the ones that answer the percentage directly (Faulkner).
+     */
+    public Double density(Map<Skinfold, Double> skinfolds, Sex sex, Integer age) {
+        return null;
+    }
+
+    /** The sum of the skinfolds this protocol reads, in millimetres. */
+    public double skinfoldSum(Map<Skinfold, Double> skinfolds, Sex sex) {
+        return sumOnly(skinfolds, skinfoldsRequired(sex));
+    }
 
     /**
      * Siri — converts body density into a percentage of fat.

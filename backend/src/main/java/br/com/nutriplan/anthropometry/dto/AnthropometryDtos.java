@@ -9,6 +9,8 @@ import br.com.nutriplan.anthropometry.domain.CompositionProtocol;
 import br.com.nutriplan.anthropometry.domain.CardiometabolicRisk;
 import br.com.nutriplan.anthropometry.domain.GainStatus;
 import br.com.nutriplan.anthropometry.domain.CircumferenceSite;
+import br.com.nutriplan.anthropometry.domain.FatClassification;
+import br.com.nutriplan.anthropometry.domain.HealthyWeightRange;
 import br.com.nutriplan.anthropometry.domain.Side;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
@@ -139,7 +141,46 @@ public final class AnthropometryDtos {
             String protocolDescription,
             BigDecimal percentageFat,
             BigDecimal massFatKg,
-            BigDecimal massLeanKg
+            BigDecimal massLeanKg,
+            /** Soma das dobras que o protocolo lê, em mm. */
+            BigDecimal skinfoldSumMm,
+            /** Densidade corporal (g/cm³). Nula no Faulkner, que não passa por ela. */
+            BigDecimal density,
+            /** A faixa de Pollock e Wilmore em que a gordura caiu, ou por que não classificou. */
+            Derived<FatClassification> fatClassification,
+            String fatClassificationDescription,
+            /** A faixa ideal para o sexo e a idade, em %. Nulos fora da cobertura da tabela. */
+            BigDecimal fatIdealMin,
+            BigDecimal fatIdealMax,
+            /** De onde vêm a classificação e a faixa ideal. */
+            String fatReference
+    ) {}
+
+    /**
+     * O fracionamento em quatro compartimentos, no modelo que o cliente lê no
+     * WebDiet: gordura, osso, resíduo e músculo.
+     *
+     * O osso vem de Von Döbeln modificado por Rocha (diâmetros de punho e
+     * fêmur); o resíduo, de Würch (24,1% do peso no homem, 20,9% na mulher);
+     * o músculo é o que sobra. Cada parcela diz por que não saiu quando falta
+     * a medida que ela exige.
+     */
+    public record FractionationResponse(
+            Derived<BigDecimal> boneMassKg,
+            Derived<BigDecimal> residualMassKg,
+            Derived<BigDecimal> muscleMassKg,
+            /** "dobras" ou "bioimpedância": de onde veio a massa gorda que o músculo desconta. */
+            String fatSource
+    ) {}
+
+    /**
+     * Circunferência muscular do braço: circunferência do braço relaxado menos
+     * π vezes a dobra tricipital. Diz o lado medido quando não é o único.
+     */
+    public record ArmMuscleResponse(
+            BigDecimal circumferenceCm,
+            Side side,
+            String sideDescription
     ) {}
 
     public record ExpenditureEnergyResponse(
@@ -229,10 +270,14 @@ public final class AnthropometryDtos {
 
             BigDecimal bmi,
             Derived<BmiClassification> classificationBmi,
+            /** Faixa de peso pela altura, para adulto. Nula para criança e sem altura. */
+            HealthyWeightRange healthyWeight,
             BigDecimal ratioWaistHip,
             Derived<CardiometabolicRisk> riskCardiometabolico,
+            Derived<ArmMuscleResponse> armMuscle,
 
             CompositionBodyResponse composition,
+            FractionationResponse fractionation,
             ExpenditureEnergyResponse expenditureEnergy,
 
             /** Present when the patient is 19 or younger. */

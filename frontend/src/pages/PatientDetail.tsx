@@ -184,6 +184,14 @@ export default function PatientDetail() {
               <Datum label="CPF" value={patient.cpf} />
               <Datum label="Apelido" value={patient.nickname} />
               <Datum label="Profissão" value={patient.occupation} />
+              <Datum
+                label="Faixa de peso saudável"
+                value={
+                  patient.healthyWeight
+                    ? `${patient.healthyWeight.minimumKg.toLocaleString("pt-BR")} a ${patient.healthyWeight.maximumKg.toLocaleString("pt-BR")} kg`
+                    : undefined
+                }
+              />
             </dl>
             {patient.notes && (
               <div className="patient-notes-view">

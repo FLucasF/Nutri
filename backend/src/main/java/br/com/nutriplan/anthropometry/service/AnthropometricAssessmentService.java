@@ -15,6 +15,9 @@ import br.com.nutriplan.anthropometry.domain.ChildClassification;
 import br.com.nutriplan.anthropometry.domain.GestationalGain;
 import br.com.nutriplan.anthropometry.domain.GrowthIndicator;
 import br.com.nutriplan.anthropometry.domain.GainStatus;
+import br.com.nutriplan.anthropometry.domain.FatClassification;
+import br.com.nutriplan.anthropometry.domain.FatReference;
+import br.com.nutriplan.anthropometry.domain.HealthyWeightRange;
 import br.com.nutriplan.anthropometry.repository.GrowthChartRepository;
 import br.com.nutriplan.patient.domain.Sex;
 import br.com.nutriplan.anthropometry.dto.AnthropometryDtos;
@@ -385,12 +388,11 @@ public class AnthropometricAssessmentService {
                 a.getBiaMuscleMassKg(), a.getBiaLeanMassKg(), a.getBiaBoneMassKg(),
                 a.getBiaVisceralFat(), a.getBiaBodyWaterPercentage(), a.getBiaMetabolicAge(),
                 bmi, classify(bmi, age),
+                HealthyWeightRange.forAdult(a.getHeightCm(), age),
                 rcq, classifyRisk(rcq, patient),
-                a.getProtocolComposition() == null ? null
-                        : new AnthropometryDtos.CompositionBodyResponse(
-                                a.getProtocolComposition(),
-                                a.getProtocolComposition().getDescription(),
-                                a.getPercentageFat(), a.getMassFatKg(), a.getMassLeanKg()),
+                armMuscle(a),
+                composition(a, patient, age),
+                fractionation(a, patient),
                 a.getEquationExpenditure() == null ? null
                         : new AnthropometryDtos.ExpenditureEnergyResponse(
                                 a.getEquationExpenditure(), a.getEquationExpenditure().getDescription(),
@@ -508,6 +510,130 @@ public class AnthropometricAssessmentService {
                 range, range.getDescription(), gain, min, max,
                 status, status == null ? null : status.getDescription(),
                 range.getTotalGainMin(), range.getTotalGainMax()));
+    }
+
+    /**
+     * A composição estimada, com o que o cliente lê ao lado dela no WebDiet:
+     * a soma das dobras, a densidade, a classificação e a faixa ideal.
+     *
+     * Soma e densidade são recalculadas das dobras gravadas — o protocolo e as
+     * dobras estão na avaliação, então a conta é a mesma de quando foi salva.
+     */
+    private AnthropometryDtos.CompositionBodyResponse composition(AnthropometricAssessment a,
+                                                                  Patient patient, Integer age) {
+        CompositionProtocol protocol = a.getProtocolComposition();
+        if (protocol == null) {
+            return null;
+        }
+        Map<Skinfold, Double> skinfolds = a.skinfoldsMeasures();
+        BigDecimal sum = null;
+        BigDecimal density = null;
+        if (protocol.skinfoldsMissing(skinfolds, patient.getSex()).isEmpty()
+                && (!protocol.requiresAge() || age != null)) {
+            sum = round(protocol.skinfoldSum(skinfolds, patient.getSex()));
+            Double d = protocol.density(skinfolds, patient.getSex(), age);
+            density = d == null ? null : BigDecimal.valueOf(d).setScale(4, RoundingMode.HALF_UP);
+        }
+
+        AnthropometryDtos.Derived<FatClassification> classification;
+        if (patient.getSex() == null) {
+            classification = AnthropometryDtos.Derived.missing(
+                    "A referência é por sexo, que não está informado no cadastro.");
+        } else if (!FatReference.covers(age)) {
+            classification = AnthropometryDtos.Derived.missing(
+                    "A referência de " + FatReference.SOURCE + " cobre a partir de 18 anos.");
+        } else {
+            classification = AnthropometryDtos.Derived.from(
+                    FatReference.classify(a.getPercentageFat(), patient.getSex(), age));
+        }
+        FatReference.IdealRange ideal = FatReference.ideal(patient.getSex(), age);
+
+        return new AnthropometryDtos.CompositionBodyResponse(
+                protocol, protocol.getDescription(),
+                a.getPercentageFat(), a.getMassFatKg(), a.getMassLeanKg(),
+                sum, density,
+                classification,
+                classification.value() == null ? null : classification.value().getDescription(),
+                ideal == null ? null : ideal.minimum(),
+                ideal == null ? null : ideal.maximum(),
+                FatReference.SOURCE);
+    }
+
+    /**
+     * Circunferência muscular do braço: CB − π × PCT/10, com a circunferência
+     * em cm e a dobra em mm. Usa o braço relaxado; se só um lado foi medido,
+     * diz qual.
+     */
+    private AnthropometryDtos.Derived<AnthropometryDtos.ArmMuscleResponse> armMuscle(
+            AnthropometricAssessment a) {
+        BigDecimal triceps = a.getSkinfoldTriceps();
+        if (triceps == null || triceps.signum() <= 0) {
+            return AnthropometryDtos.Derived.missing("Depende da dobra tricipital.");
+        }
+        for (Side side : new Side[] {Side.SINGLE, Side.RIGHT, Side.LEFT}) {
+            BigDecimal arm = a.circumference(CircumferenceSite.ARM_RELAXED, side);
+            if (arm != null && arm.signum() > 0) {
+                BigDecimal cmb = arm.subtract(BigDecimal.valueOf(Math.PI)
+                        .multiply(triceps).divide(BigDecimal.TEN, 4, RoundingMode.HALF_UP))
+                        .setScale(SCALE, RoundingMode.HALF_UP);
+                return AnthropometryDtos.Derived.from(new AnthropometryDtos.ArmMuscleResponse(
+                        cmb, side, side == Side.SINGLE ? null : side.getDescription()));
+            }
+        }
+        return AnthropometryDtos.Derived.missing("Depende da circunferência do braço relaxado.");
+    }
+
+    /** Fração de peso residual de Würch (1974): 24,1% no homem, 20,9% na mulher. */
+    private static final BigDecimal RESIDUAL_MALE = new BigDecimal("0.241");
+    private static final BigDecimal RESIDUAL_FEMALE = new BigDecimal("0.209");
+
+    /**
+     * Os quatro compartimentos. O osso é Von Döbeln modificado por Rocha:
+     * 3,02 × (altura² × punho × fêmur × 400)^0,712, tudo em metros.
+     */
+    private AnthropometryDtos.FractionationResponse fractionation(AnthropometricAssessment a,
+                                                                  Patient patient) {
+        AnthropometryDtos.Derived<BigDecimal> bone;
+        if (a.getHeightCm() == null || a.getDiameterWrist() == null || a.getDiameterFemur() == null
+                || a.getDiameterWrist().signum() <= 0 || a.getDiameterFemur().signum() <= 0) {
+            bone = AnthropometryDtos.Derived.missing(
+                    "Depende da altura e dos diâmetros do punho e do fêmur.");
+        } else {
+            double h = a.getHeightCm().doubleValue() / 100;
+            double wrist = a.getDiameterWrist().doubleValue() / 100;
+            double femur = a.getDiameterFemur().doubleValue() / 100;
+            bone = AnthropometryDtos.Derived.from(
+                    round(3.02 * Math.pow(h * h * wrist * femur * 400, 0.712)));
+        }
+
+        AnthropometryDtos.Derived<BigDecimal> residual;
+        if (a.getWeightKg() == null) {
+            residual = AnthropometryDtos.Derived.missing("Depende do peso.");
+        } else if (patient.getSex() == null) {
+            residual = AnthropometryDtos.Derived.missing(
+                    "A fração residual é por sexo, que não está informado no cadastro.");
+        } else {
+            residual = AnthropometryDtos.Derived.from(a.getWeightKg()
+                    .multiply(patient.getSex() == Sex.MALE ? RESIDUAL_MALE : RESIDUAL_FEMALE)
+                    .setScale(SCALE, RoundingMode.HALF_UP));
+        }
+
+        BigDecimal fat = a.getMassFatKg() != null ? a.getMassFatKg() : a.getBiaFatMassKg();
+        String fatSource = a.getMassFatKg() != null ? "dobras"
+                : a.getBiaFatMassKg() != null ? "bioimpedância" : null;
+        AnthropometryDtos.Derived<BigDecimal> muscle;
+        if (fat == null) {
+            muscle = AnthropometryDtos.Derived.missing(
+                    "Depende da massa gorda, estimada por dobras ou pela bioimpedância.");
+        } else if (bone.value() == null || residual.value() == null) {
+            muscle = AnthropometryDtos.Derived.missing(
+                    "É o que sobra do peso depois de gordura, osso e resíduo; falta uma dessas parcelas.");
+        } else {
+            muscle = AnthropometryDtos.Derived.from(a.getWeightKg()
+                    .subtract(fat).subtract(bone.value()).subtract(residual.value())
+                    .setScale(SCALE, RoundingMode.HALF_UP));
+        }
+        return new AnthropometryDtos.FractionationResponse(bone, residual, muscle, fatSource);
     }
 
     private AnthropometryDtos.Derived<BmiClassification> classify(BigDecimal bmi, Integer age) {

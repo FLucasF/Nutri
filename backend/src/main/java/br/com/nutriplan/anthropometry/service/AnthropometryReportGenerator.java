@@ -102,6 +102,20 @@ public class AnthropometryReportGenerator {
             subtitle.setSpacingAfter(18f);
             document.add(subtitle);
 
+            // A faixa de peso pela altura da última avaliação, onde o cliente
+            // pediu para vê-la: "nos relatórios".
+            var range = br.com.nutriplan.anthropometry.domain.HealthyWeightRange.of(last.getHeightCm());
+            if (range != null) {
+                var healthy = new Paragraph(
+                        "Faixa de peso saudável: " + number(range.minimumKg()) + " a "
+                                + number(range.maximumKg()) + " kg (IMC de "
+                                + number(range.bmiMinimum()) + " a " + number(range.bmiMaximum())
+                                + " kg/m², para " + number(last.getHeightCm()) + " cm).",
+                        font(9, Font.NORMAL, PITCH));
+                healthy.setSpacingAfter(14f);
+                document.add(healthy);
+            }
+
             float width = document.right() - document.left();
             for (Track track : TRACKS) {
                 Element chart = chart(writer, track, series, width);
