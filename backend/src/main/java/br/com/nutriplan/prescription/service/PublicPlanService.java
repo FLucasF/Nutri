@@ -57,9 +57,19 @@ public class PublicPlanService {
     private final PlanHandoutRepository planHandoutRepository;
     private final PlanImageRepository planImageRepository;
     private final NutritionalCalculator calculator;
+    private final PlanAccessService accessService;
 
     @Transactional(readOnly = true)
     public PrescriptionDtos.PublicPlanResponse byIdentifier(String identifier) {
+        return byIdentifier(identifier, null);
+    }
+
+    /**
+     * O plano pelo link, conferindo o passe quando o paciente tem data de
+     * nascimento a confirmar. O dono da conta, logado, passa sem ele.
+     */
+    @Transactional(readOnly = true)
+    public PrescriptionDtos.PublicPlanResponse byIdentifier(String identifier, String accessToken) {
         MealPlan plan = planRepository.findByPublicIdentifier(identifier)
                 .orElseThrow(() -> new NotFoundException(
                         "Plano não encontrado. Confira o link recebido."));
@@ -72,7 +82,32 @@ public class PublicPlanService {
                     "Plano não encontrado. Confira o link recebido.");
         }
 
-        return build(plan);
+        if (!accessService.requiresBirthDate(plan)) {
+            return build(plan, null);
+        }
+        if (accessService.ownerViewing(plan)) {
+            return build(plan, accessService.token(identifier));
+        }
+        if (!accessService.valid(identifier, accessToken)) {
+            throw new br.com.nutriplan.shared.error.AccessConfirmationRequiredException(
+                    "Para abrir o plano, confirme a data de nascimento do paciente.");
+        }
+        return build(plan, accessToken);
+    }
+
+    /** Se o link abre direto, pelo dono logado ou pelo passe, ou pede a data. */
+    @Transactional(readOnly = true)
+    public PrescriptionDtos.GateResponse gate(String identifier, String accessToken) {
+        MealPlan plan = planRepository.findByPublicIdentifier(identifier)
+                .filter(MealPlan::isVisibleByLink)
+                .orElseThrow(() -> new NotFoundException("Plano não encontrado. Confira o link recebido."));
+        boolean requires = accessService.requiresBirthDate(plan);
+        return new PrescriptionDtos.GateResponse(requires, accessService.allowed(plan, accessToken));
+    }
+
+    /** A data de nascimento confirmada vira o passe do link. */
+    public PrescriptionDtos.AccessResponse confirm(String identifier, LocalDate birthDate) {
+        return new PrescriptionDtos.AccessResponse(accessService.confirm(identifier, birthDate));
     }
 
     /**
@@ -85,6 +120,11 @@ public class PublicPlanService {
      */
     @Transactional(readOnly = true)
     public PrescriptionDtos.PublicPlanResponse build(MealPlan plan) {
+        return build(plan, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PrescriptionDtos.PublicPlanResponse build(MealPlan plan, String accessToken) {
         var foods = loadFoods(plan);
         var total = calculator.totalMeals(plan.getMeals(), foods);
         var composition = total.composition();
@@ -131,7 +171,8 @@ public class PublicPlanService {
                         composition.getProteinG(),
                         composition.getCarbohydrateG(),
                         composition.getFatG(),
-                        meals.size()));
+                        meals.size()),
+                accessToken);
     }
 
     /** Name, type and content of the figure, ready for the HTTP response. */
@@ -154,11 +195,15 @@ public class PublicPlanService {
      * plan exists.
      */
     @Transactional(readOnly = true)
-    public PublicImage handoutImage(String identifier, Long attachmentId) {
+    public PublicImage handoutImage(String identifier, Long attachmentId, String accessToken) {
         MealPlan plan = planRepository.findByPublicIdentifier(identifier)
                 .filter(MealPlan::isVisibleByLink)
                 .orElseThrow(() -> new NotFoundException(
                         "Plano não encontrado. Confira o link recebido."));
+        if (!accessService.allowed(plan, accessToken)) {
+            throw new br.com.nutriplan.shared.error.AccessConfirmationRequiredException(
+                    "Para abrir a figura, confirme a data de nascimento do paciente.");
+        }
 
         var attachment = planHandoutRepository.findById(attachmentId)
                 .filter(a -> a.getPlanId().equals(plan.getId()))

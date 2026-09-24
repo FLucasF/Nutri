@@ -65,6 +65,10 @@ public class EnergyPlan extends AccountEntity {
     @Column(name = "weight_kg", precision = 6, scale = 2, nullable = false)
     private BigDecimal weightKg;
 
+    /** Massa livre de gordura, copiada da avaliação ou do formulário. */
+    @Column(name = "lean_mass_kg", precision = 6, scale = 2)
+    private BigDecimal leanMassKg;
+
     @Column(name = "height_cm", precision = 6, scale = 2, nullable = false)
     private BigDecimal heightCm;
 

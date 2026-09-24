@@ -158,6 +158,49 @@ public enum EnergyEquation {
                         case VERY_ACTIVE -> 511.83 - 7.01 * age + 9.07 * h + 12.56 * w;
                     };
         }
+    },
+
+    /**
+     * Katch-McArdle: 370 + 21,6 × massa magra.
+     *
+     * Basal, e pela massa livre de gordura em vez do peso: é a que serve
+     * quando o peso engana — muito músculo ou muita gordura para a altura.
+     * Não usa sexo nem idade; eles já estão na composição.
+     */
+    KATCH_MCARDLE("Katch-McArdle (massa magra)", false, 18, true) {
+        @Override
+        double compute(Input in) {
+            return 370 + 21.6 * in.lean();
+        }
+    },
+
+    /** Cunningham (1980): 500 + 22 × massa magra. Basal. */
+    CUNNINGHAM("Cunningham (1980, massa magra)", false, 18, true) {
+        @Override
+        double compute(Input in) {
+            return 500 + 22 * in.lean();
+        }
+    },
+
+    /**
+     * Tinsley et al. (2019), pelo peso: 24,8 × peso + 10.
+     *
+     * Desenvolvida em atletas de força e fisiculturismo, para quem Harris e
+     * Mifflin subestimam o repouso. Basal.
+     */
+    TINSLEY_WEIGHT("Tinsley (2019, peso)", false, 18, false) {
+        @Override
+        double compute(Input in) {
+            return 24.8 * in.weightKg() + 10;
+        }
+    },
+
+    /** Tinsley et al. (2019), pela massa magra: 25,9 × massa magra + 284. Basal. */
+    TINSLEY_LEAN("Tinsley (2019, massa magra)", false, 18, true) {
+        @Override
+        double compute(Input in) {
+            return 25.9 * in.lean() + 284;
+        }
     };
 
     /** What an equation needs to answer. */
@@ -166,21 +209,45 @@ public enum EnergyEquation {
             double heightCm,
             Sex sex,
             int age,
-            ActivityLevel activity
+            ActivityLevel activity,
+            /** Massa livre de gordura, em kg. Nula quando não há composição. */
+            Double leanMassKg
     ) {
+        public Input(double weightKg, double heightCm, Sex sex, int age, ActivityLevel activity) {
+            this(weightKg, heightCm, sex, age, activity, null);
+        }
+
         public boolean male() {
             return sex == Sex.MALE;
+        }
+
+        double lean() {
+            if (leanMassKg == null) {
+                throw new IllegalStateException("Equação por massa magra sem massa magra.");
+            }
+            return leanMassKg;
         }
     }
 
     private final String description;
     private final boolean total;
     private final int ageMinimum;
+    private final boolean leanMass;
 
     EnergyEquation(String description, boolean total, int ageMinimum) {
+        this(description, total, ageMinimum, false);
+    }
+
+    EnergyEquation(String description, boolean total, int ageMinimum, boolean leanMass) {
         this.description = description;
         this.total = total;
         this.ageMinimum = ageMinimum;
+        this.leanMass = leanMass;
+    }
+
+    /** Parte da massa magra, e não do peso: precisa de uma composição corporal. */
+    public boolean requiresLeanMass() {
+        return leanMass;
     }
 
     public String getDescription() {

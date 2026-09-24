@@ -215,7 +215,8 @@ class EnergyPlanTest {
     @DisplayName("as opções da tela saem dos enums do domínio")
     void optionsComeFromTheDomain() throws Exception {
         JsonNode options = getJson(tokenA, "/api/energy-plans/options");
-        assertThat(options.get("equations")).hasSize(5);
+        // As cinco de antes e as quatro do lote 5: Katch-McArdle, Cunningham e as duas de Tinsley.
+        assertThat(options.get("equations")).hasSize(9);
         assertThat(options.get("activityLevels")).hasSize(4);
 
         JsonNode eer = null;
@@ -224,5 +225,33 @@ class EnergyPlanTest {
         }
         assertThat(eer).isNotNull();
         assertThat(eer.get("total").asBoolean()).isTrue();
+    }
+
+    @Test
+    @DisplayName("as equações por massa magra pedem a massa magra, e a tiram da avaliação quando há")
+    void leanMassComesFromTheAssessment() throws Exception {
+        JsonNode refused = postJson(tokenA, "/api/energy-plans", """
+                {"patientId":%d,"date":"2026-09-10","weightKg":80,"heightCm":180,
+                 "activityLevel":"INACTIVE","equations":["KATCH_MCARDLE"]}""".formatted(patient), 422);
+        assertThat(refused.get("message").asText()).contains("massa magra");
+
+        JsonNode assessment = postJson(tokenA, "/api/patients/" + patient + "/assessments", """
+                {"date":"2026-09-01","weightKg":80,"heightCm":180,"biaLeanMassKg":64}""", 201);
+        JsonNode plan = postJson(tokenA, "/api/energy-plans", """
+                {"patientId":%d,"date":"2026-09-10","assessmentId":%d,
+                 "activityLevel":"INACTIVE","equations":["KATCH_MCARDLE","CUNNINGHAM"]}"""
+                .formatted(patient, assessment.get("id").asLong()), 201);
+        assertThat(plan.get("leanMassKg").decimalValue()).isEqualByComparingTo("64");
+        assertThat(plan.get("equations").get(0).get("basalKcal").decimalValue())
+                .isEqualByComparingTo("1752.40");
+
+        JsonNode options = getJson(tokenA, "/api/energy-plans/options");
+        boolean katchNeedsLean = false;
+        for (JsonNode option : options.get("equations")) {
+            if (option.get("equation").asText().equals("KATCH_MCARDLE")) {
+                katchNeedsLean = option.get("requiresLeanMass").asBoolean();
+            }
+        }
+        assertThat(katchNeedsLean).isTrue();
     }
 }

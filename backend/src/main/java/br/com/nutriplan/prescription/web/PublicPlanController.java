@@ -34,8 +34,31 @@ public class PublicPlanController {
     @Operation(summary = "Abre um plano publicado pelo identificador do link",
             description = "Não exige autenticação. Plano em rascunho responde 404, "
                     + "para não revelar trabalho em andamento.")
-    public PrescriptionDtos.PublicPlanResponse open(@PathVariable String identifier) {
-        return publicPlanService.byIdentifier(identifier);
+    public PrescriptionDtos.PublicPlanResponse open(
+            @PathVariable String identifier,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "X-Plan-Access", required = false)
+            String accessToken) {
+        return publicPlanService.byIdentifier(identifier, accessToken);
+    }
+
+    @GetMapping("/{identifier}/gate")
+    @Operation(summary = "Diz se o link abre direto ou pede a data de nascimento")
+    public PrescriptionDtos.GateResponse gate(
+            @PathVariable String identifier,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "X-Plan-Access", required = false)
+            String accessToken) {
+        return publicPlanService.gate(identifier, accessToken);
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/{identifier}/access")
+    @Operation(summary = "Confirma a data de nascimento e devolve o passe do link",
+            description = "Quando o paciente tem data de nascimento cadastrada, o plano só abre "
+                    + "depois dela. Cinco datas erradas seguidas travam o link por 15 minutos.")
+    public PrescriptionDtos.AccessResponse access(
+            @PathVariable String identifier,
+            @jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody
+            PrescriptionDtos.AccessRequest request) {
+        return publicPlanService.confirm(identifier, request.birthDate());
     }
 
     @GetMapping("/{identifier}/handouts/{attachmentId}/image")
@@ -43,8 +66,11 @@ public class PublicPlanController {
             description = "Mesma porta do plano: identificador válido e plano visível. "
                     + "A figura é a cópia entregue, e não a da biblioteca.")
     public ResponseEntity<byte[]> handoutImage(@PathVariable String identifier,
-                                                     @PathVariable Long attachmentId) {
-        var image = publicPlanService.handoutImage(identifier, attachmentId);
+                                                     @PathVariable Long attachmentId,
+                                                     @org.springframework.web.bind.annotation.RequestParam(
+                                                             value = "access", required = false)
+                                                     String accessToken) {
+        var image = publicPlanService.handoutImage(identifier, attachmentId, accessToken);
         return ResponseEntity.ok()
                 .contentType(image.type() == null
                         ? MediaType.APPLICATION_OCTET_STREAM

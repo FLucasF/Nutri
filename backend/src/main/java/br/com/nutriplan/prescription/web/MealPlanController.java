@@ -34,6 +34,7 @@ public class MealPlanController {
 
     private final MealPlanService planService;
     private final PlanPrintingService printingService;
+    private final br.com.nutriplan.prescription.service.AdequacyService adequacyService;
 
     @GetMapping(value = "/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @Operation(summary = "Gera o plano alimentar em PDF, pronto para entregar na consulta",
@@ -59,6 +60,15 @@ public class MealPlanController {
             @PageableDefault(size = 20, sort = "updatedAt", direction = Sort.Direction.DESC)
             Pageable pageable) {
         return planService.list(patientId, template, term, pageable);
+    }
+
+    @GetMapping("/{id}/adequacy")
+    @Operation(summary = "Micronutrientes do dia contra as DRI do paciente",
+            description = "RDA ou AI por sexo e idade; para o sódio, o limite (CDRR). De 80 a "
+                    + "120% da referência está adequado. Gestantes, lactantes e modelos sem "
+                    + "paciente respondem sem comparação, dizendo por quê.")
+    public PrescriptionDtos.AdequacyResponse adequacy(@PathVariable Long id) {
+        return adequacyService.adequacy(id);
     }
 
     @GetMapping("/{id}")

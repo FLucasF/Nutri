@@ -110,4 +110,20 @@ class EnergyEquationTest {
         // Schofield tem faixa para menores de 3, então atende.
         assertThat(EnergyEquation.FAO_WHO_2004.servesAge(2)).isTrue();
     }
+
+    @Test
+    @DisplayName("Katch-McArdle, Cunningham e Tinsley partem da massa magra; Tinsley por peso, do peso")
+    void leanMassEquations() {
+        var input = new EnergyEquation.Input(80, 180, Sex.MALE, 30, ActivityLevel.INACTIVE, 64.0);
+        assertThat(EnergyEquation.KATCH_MCARDLE.basal(input)).isCloseTo(370 + 21.6 * 64, within(0.001));
+        assertThat(EnergyEquation.CUNNINGHAM.basal(input)).isCloseTo(500 + 22 * 64, within(0.001));
+        assertThat(EnergyEquation.TINSLEY_LEAN.basal(input)).isCloseTo(25.9 * 64 + 284, within(0.001));
+        assertThat(EnergyEquation.TINSLEY_WEIGHT.basal(input)).isCloseTo(24.8 * 80 + 10, within(0.001));
+        // São basais: o fator do sedentário multiplica.
+        assertThat(EnergyEquation.KATCH_MCARDLE.totalExpenditure(input))
+                .isCloseTo((370 + 21.6 * 64) * ActivityLevel.INACTIVE.basalFactor(), within(0.001));
+        assertThat(EnergyEquation.KATCH_MCARDLE.requiresLeanMass()).isTrue();
+        assertThat(EnergyEquation.TINSLEY_WEIGHT.requiresLeanMass()).isFalse();
+        assertThat(EnergyEquation.KATCH_MCARDLE.servesAge(17)).isFalse();
+    }
 }

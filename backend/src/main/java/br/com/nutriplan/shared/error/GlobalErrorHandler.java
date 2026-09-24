@@ -34,6 +34,14 @@ public class GlobalErrorHandler {
      * e especialmente quando o chamador esperava um arquivo.
      */
 
+    @ExceptionHandler(AccessConfirmationRequiredException.class)
+    public ResponseEntity<ErrorResponse> confirmationRequired(AccessConfirmationRequiredException e,
+                                                              HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ErrorResponse.from(403, "Confirmação necessária", e.getMessage(), req.getRequestURI()));
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponse> notFound(NotFoundException e, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)

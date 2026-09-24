@@ -82,7 +82,7 @@ public class EnergyPlanService {
                 java.util.Arrays.stream(EnergyEquation.values())
                         .map(equation -> new EnergyDtos.EquationOption(equation,
                                 equation.getDescription(), equation.isTotal(),
-                                equation.getAgeMinimum()))
+                                equation.getAgeMinimum(), equation.requiresLeanMass()))
                         .toList(),
                 java.util.Arrays.stream(ActivityLevel.values())
                         .map(level -> new EnergyDtos.ActivityOption(level, level.getDescription()))
@@ -131,6 +131,7 @@ public class EnergyPlanService {
         plan.setAssessmentId(request.assessmentId());
         plan.setWeightKg(measurements.weightKg());
         plan.setHeightCm(measurements.heightCm());
+        plan.setLeanMassKg(measurements.leanMassKg());
         plan.setAgeYears(measurements.age());
         plan.setSex(patient.getSex());
         plan.setActivityLevel(request.activityLevel());
@@ -143,7 +144,19 @@ public class EnergyPlanService {
                 measurements.heightCm().doubleValue(),
                 patient.getSex(),
                 measurements.age(),
-                request.activityLevel());
+                request.activityLevel(),
+                measurements.leanMassKg() == null ? null : measurements.leanMassKg().doubleValue());
+
+        List<String> needLean = request.equations().stream().distinct()
+                .filter(EnergyEquation::requiresLeanMass)
+                .map(EnergyEquation::getDescription)
+                .toList();
+        if (!needLean.isEmpty() && measurements.leanMassKg() == null) {
+            throw new BusinessRuleException(String.join(", ", needLean)
+                    + (needLean.size() == 1 ? " parte" : " partem")
+                    + " da massa magra. Escolha uma avaliação com composição corporal ou "
+                    + "bioimpedância, ou informe a massa magra.");
+        }
 
         plan.clearEquations();
         BigDecimal sum = BigDecimal.ZERO;
@@ -291,7 +304,7 @@ public class EnergyPlanService {
 
     // ------------------------------------------------------------------ entradas
 
-    private record Measurements(BigDecimal weightKg, BigDecimal heightCm, int age) {}
+    private record Measurements(BigDecimal weightKg, BigDecimal heightCm, BigDecimal leanMassKg, int age) {}
 
     /**
      * Weight and height come from the assessment when one is named, and from
@@ -302,6 +315,7 @@ public class EnergyPlanService {
     private Measurements measurements(EnergyDtos.EnergyPlanRequest request, Patient patient) {
         BigDecimal weight = request.weightKg();
         BigDecimal height = request.heightCm();
+        BigDecimal lean = request.leanMassKg();
 
         if (request.assessmentId() != null) {
             AnthropometricAssessment assessment = assessmentRepository
@@ -312,6 +326,10 @@ public class EnergyPlanService {
                             "Avaliação antropométrica", request.assessmentId()));
             if (weight == null) weight = assessment.getWeightKg();
             if (height == null) height = assessment.getHeightCm();
+            // A composição estimada pelas dobras vale mais que a do aparelho:
+            // é a que a avaliação calculou com protocolo declarado.
+            if (lean == null) lean = assessment.getMassLeanKg() != null
+                    ? assessment.getMassLeanKg() : assessment.getBiaLeanMassKg();
         }
 
         if (weight == null || height == null) {
@@ -333,7 +351,7 @@ public class EnergyPlanService {
             throw new BusinessRuleException(
                     "A data do cálculo é anterior ao nascimento do paciente.");
         }
-        return new Measurements(weight, height, age);
+        return new Measurements(weight, height, lean, age);
     }
 
     private static String name(EnergyDtos.EnergyPlanRequest request, Patient patient) {

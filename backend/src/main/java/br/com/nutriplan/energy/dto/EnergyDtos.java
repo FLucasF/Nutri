@@ -28,6 +28,8 @@ public final class EnergyDtos {
             Long assessmentId,
             @DecimalMin("10.0") @DecimalMax("400.0") BigDecimal weightKg,
             @DecimalMin("40.0") @DecimalMax("260.0") BigDecimal heightCm,
+            /** Massa magra, para as equações que partem dela. Vem da avaliação quando omitida. */
+            @DecimalMin("5.0") @DecimalMax("200.0") BigDecimal leanMassKg,
             @NotNull ActivityLevel activityLevel,
             @DecimalMin("1.0") @DecimalMax("2.5") BigDecimal injuryFactor,
             @DecimalMin("0.0") @DecimalMax("5000.0") BigDecimal metKcal,
@@ -72,6 +74,7 @@ public final class EnergyDtos {
             Long assessmentId,
             BigDecimal weightKg,
             BigDecimal heightCm,
+            BigDecimal leanMassKg,
             Integer ageYears,
             Sex sex,
             ActivityLevel activityLevel,
@@ -99,7 +102,7 @@ public final class EnergyDtos {
             return new EnergyPlanResponse(
                     plan.getId(), plan.getPatientId(), plan.getName(), plan.getDate(),
                     plan.getAssessmentId(), plan.getWeightKg(), plan.getHeightCm(),
-                    plan.getAgeYears(), plan.getSex(),
+                    plan.getLeanMassKg(), plan.getAgeYears(), plan.getSex(),
                     plan.getActivityLevel(), plan.getActivityLevel().getDescription(),
                     plan.getInjuryFactor(), plan.getMetKcal(),
                     plan.getTargetWeightKg(), plan.getTargetDate(), plan.getAdjustmentKcal(),
@@ -137,7 +140,9 @@ public final class EnergyDtos {
             /** Whether the activity level is already inside the result. */
             boolean total,
             /** Youngest age the equation was published for. */
-            int ageMinimum
+            int ageMinimum,
+            /** Parte da massa magra: precisa de composição corporal. */
+            boolean requiresLeanMass
     ) {}
 
     public record ActivityOption(ActivityLevel level, String description) {}

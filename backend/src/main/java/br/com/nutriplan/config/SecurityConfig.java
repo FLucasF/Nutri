@@ -80,13 +80,13 @@ public class SecurityConfig {
                         "/patients/**", "/prescriptions/**", "/plan/**", "/form/**",
                         "/schedule/**", "/foods/**", "/recipes/**", "/handouts/**",
                         "/questionnaires/**", "/finance/**", "/team/**", "/partners/**",
-                        "/packages/**", "/statistics/**", "/access")
+                        "/packages/**", "/statistics/**", "/favorites/**", "/access")
                     .permitAll()
                 .requestMatchers("/docs/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                 // A plan opened by the link handed to the patient. The authorization
                 // is possession of the identifier, a UUID; the service only
                 // serves a published plan.
-                .requestMatchers(HttpMethod.GET, "/api/public/plans/**").permitAll()
+                .requestMatchers("/api/public/plans/**").permitAll()
                 // Pre-appointment questionnaire: the same authorization by possession of the link.
                 .requestMatchers("/api/public/questionnaires/**").permitAll()
                 // An iCalendar feed: a calendar that subscribes to an address

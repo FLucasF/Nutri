@@ -293,8 +293,25 @@ public final class PrescriptionDtos {
              * dobraria a folha sem dizer nada de novo.
              */
             List<PublicRecipeResponse> recipes,
-            PublicSummaryResponse summary
+            PublicSummaryResponse summary,
+            /**
+             * O passe do link, quando o plano pede a data de nascimento: a
+             * página o acrescenta ao endereço das figuras, que o navegador
+             * busca sem cabeçalho. Nulo quando não há o que confirmar.
+             */
+            String accessToken
     ) {}
+
+    /** A data que o paciente digita para abrir o plano. */
+    public record AccessRequest(@jakarta.validation.constraints.NotNull LocalDate birthDate) {}
+
+    public record AccessResponse(String accessToken) {}
+
+    /**
+     * Se o link abre direto ou pede a data. A página pergunta antes de pedir o
+     * plano, para não ter de interpretar uma recusa como caminho normal.
+     */
+    public record GateResponse(boolean requiresBirthDate, boolean allowed) {}
 
     /** Uma receita usada no cardápio, com o preparo que a acompanha. */
     public record PublicRecipeResponse(Long foodId, String name, String modeInstructions) {}
@@ -338,6 +355,37 @@ public final class PrescriptionDtos {
     ) {}
 
     public record PublicSubstitutionResponse(String description, String serving) {}
+
+    // ----------------------------------------------------------- adequação (DRI)
+
+    public enum AdequacyStatus { BELOW, ADEQUATE, ABOVE, WITHIN_LIMIT, ABOVE_LIMIT, NO_DATA }
+
+    /** Um micronutriente do dia contra a referência do paciente. */
+    public record AdequacyRow(
+            String nutrient,
+            String label,
+            String unit,
+            /** O que o dia entrega; nulo quando nenhum alimento informou. */
+            BigDecimal intake,
+            BigDecimal reference,
+            br.com.nutriplan.prescription.domain.DriReference.Kind kind,
+            String kindDescription,
+            /** Percentual da referência, arredondado. */
+            BigDecimal percent,
+            AdequacyStatus status,
+            /** Só parte dos alimentos informou: o total subestima. */
+            boolean incomplete
+    ) {}
+
+    public record AdequacyResponse(
+            boolean available,
+            /** Por que não há comparação: modelo sem paciente, gestante, sem idade… */
+            String unavailableBecause,
+            /** "Mulher, 31 a 50 anos": de quem são as referências. */
+            String reference,
+            Integer ageYears,
+            List<AdequacyRow> rows
+    ) {}
 
     /** Summary of the day in the patient's language: only the essentials. */
     public record PublicSummaryResponse(
