@@ -94,6 +94,9 @@ export interface Patient {
   healthyWeight?: HealthyWeight;
   lastWeightKg?: number;
   lastAssessmentDate?: string;
+  /** Quem indicou o paciente, quando foi indicação. */
+  partnerId?: number;
+  partnerName?: string;
   active: boolean;
   hasAccessToApp: boolean;
   createdAt: string;
@@ -657,6 +660,26 @@ export interface Appointment {
   transitionsAllowed: AppointmentStatus[];
   notes?: string;
   reasonOutcome?: string;
+  /** Parceiro a quem a consulta se atribui, quando difere de quem indicou o paciente. */
+  partnerId?: number;
+  partnerName?: string;
+  /** Pacote de trabalho de que a consulta faz parte. */
+  packageId?: number;
+  packageName?: string;
+  packageAmount?: number;
+  /** O lançamento ligado à consulta, quando há um não cancelado. */
+  payment?: AppointmentPayment;
+  /** Só na resposta de um agendamento com série. */
+  seriesCreated?: number;
+  seriesSkipped?: string[];
+}
+
+export interface AppointmentPayment {
+  transactionId: number;
+  status: TransactionStatus;
+  statusDescription: string;
+  value: number;
+  datePayment?: string;
 }
 
 export interface AppointmentRequest {
@@ -665,6 +688,10 @@ export interface AppointmentRequest {
   durationMinutes: number;
   type: AppointmentType;
   notes?: string;
+  partnerId?: number;
+  packageId?: number;
+  /** Marcar também os próximos encontros do pacote. */
+  createSeries?: boolean;
 }
 
 export interface ScheduleDay {
@@ -703,6 +730,13 @@ export interface Transaction {
   patientName?: string;
   appointmentId?: number;
   overdue: boolean;
+  /** Número do recibo ou da nota emitida fora do sistema. */
+  documentNumber?: string;
+  installmentIndex?: number;
+  installmentCount?: number;
+  installmentGroup?: string;
+  packageId?: number;
+  packageName?: string;
 }
 
 export interface TransactionRequest {
@@ -715,6 +749,19 @@ export interface TransactionRequest {
   description?: string;
   patientId?: number;
   appointmentId?: number;
+  documentNumber?: string;
+  packageId?: number;
+  /** Em quantas parcelas dividir o valor; só ao criar. */
+  installments?: number;
+}
+
+/** Pagamento registrado a partir da consulta; o valor vem do pacote quando omitido. */
+export interface AppointmentPaymentRequest {
+  value?: number;
+  paymentMethod?: string;
+  datePayment?: string;
+  documentNumber?: string;
+  category?: string;
 }
 
 export interface TotalByCategory {
@@ -748,6 +795,110 @@ export interface Receipt {
   datePayment: string;
   related: string;
   emitidoAt: string;
+  documentNumber?: string;
+  /** "2/6" quando o lançamento é uma parcela. */
+  installment?: string;
+}
+
+// ================================================================== partners
+
+export interface Partner {
+  id: number;
+  name: string;
+  kind?: string;
+  contact?: string;
+  notes?: string;
+  active: boolean;
+  /** Quantos pacientes do consultório foram indicados por ele. */
+  patientsReferred: number;
+}
+
+export interface PartnerRequest {
+  name: string;
+  kind?: string;
+  contact?: string;
+  notes?: string;
+}
+
+export interface ReferralRow {
+  partnerId: number;
+  partnerName: string;
+  kind?: string;
+  patientsReferred: number;
+  appointments: number;
+  completed: number;
+  noshows: number;
+  revenuePaid: number;
+}
+
+export interface ReferralReport {
+  from: string;
+  to: string;
+  rows: ReferralRow[];
+  totalPatients: number;
+  totalAppointments: number;
+  totalRevenue: number;
+}
+
+// ================================================================== packages
+
+export interface ServicePackage {
+  id: number;
+  name: string;
+  amount: number;
+  /** Encontros presenciais incluídos; ausente quando o pacote não é por sessões. */
+  sessions?: number;
+  intervalDays?: number;
+  notes?: string;
+  active: boolean;
+}
+
+export interface PackageRequest {
+  name: string;
+  amount: number;
+  sessions?: number;
+  intervalDays?: number;
+  notes?: string;
+}
+
+// ================================================================ statistics
+
+export interface MonthRow {
+  /** "2026-09", para ordenar. */
+  month: string;
+  /** "set/2026", para ler. */
+  label: string;
+  appointments: number;
+  completed: number;
+  noshows: number;
+  canceled: number;
+  firstConsultations: number;
+  followups: number;
+  newPatients: number;
+  assessments: number;
+  plans: number;
+  revenuePaid: number;
+}
+
+export interface InactivePatient {
+  id: number;
+  name: string;
+  lastVisit?: string;
+  daysSince: number;
+}
+
+export interface StatisticsResponse {
+  from: string;
+  to: string;
+  activePatients: number;
+  newPatients: number;
+  appointments: number;
+  completed: number;
+  noshows: number;
+  revenuePaid: number;
+  months: MonthRow[];
+  inactivityDays: number;
+  withoutVisit: InactivePatient[];
 }
 
 // ----- recipes ----

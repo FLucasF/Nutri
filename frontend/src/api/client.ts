@@ -58,6 +58,13 @@ import type {
   EnergyPlan,
   EnergyPlanRequest,
   EnergyPlanSummary,
+  Partner,
+  PartnerRequest,
+  ReferralReport,
+  ServicePackage,
+  PackageRequest,
+  StatisticsResponse,
+  AppointmentPaymentRequest,
 } from "./types";
 
 const BASE = "/api";
@@ -788,6 +795,9 @@ export const api = {
 
     remove: (id: number) => request<void>(`/schedule/${id}`, { method: "DELETE" }),
 
+    /** O atestado de comparecimento em PDF; só de consulta realizada. */
+    certificate: (id: number) => download(`/schedule/${id}/certificate`),
+
     /**
      * Subscription to the schedule from an external calendar.
      *
@@ -841,8 +851,64 @@ export const api = {
 
     receipt: (id: number) => request<Receipt>(`/finance/transactions/${id}/receipt`),
 
+    /**
+     * Registra o pagamento de uma consulta: quita a cobrança pendente dela
+     * ou cria a receita já paga. O valor vem do pacote quando omitido.
+     */
+    payAppointment: (appointmentId: number, data?: AppointmentPaymentRequest) =>
+      request<Transaction>(`/finance/appointments/${appointmentId}/payment`, {
+        method: "POST",
+        body: data ?? {},
+      }),
+
     remove: (id: number) =>
       request<void>(`/finance/transactions/${id}`, { method: "DELETE" }),
+  },
+
+  // ------------------------------------------------------------------- partners
+  partners: {
+    list: (includeInactive = false) =>
+      request<Partner[]>(`/partners${query({ includeInactive: includeInactive || undefined })}`),
+
+    create: (data: PartnerRequest) =>
+      request<Partner>("/partners", { method: "POST", body: data }),
+
+    update: (id: number, data: PartnerRequest) =>
+      request<Partner>(`/partners/${id}`, { method: "PUT", body: data }),
+
+    deactivate: (id: number) =>
+      request<Partner>(`/partners/${id}/deactivate`, { method: "POST" }),
+
+    reactivate: (id: number) =>
+      request<Partner>(`/partners/${id}/reactivate`, { method: "POST" }),
+
+    /** Pacientes indicados, consultas e receita paga no período, por parceiro. */
+    report: (from: string, to: string) =>
+      request<ReferralReport>(`/partners/report${query({ from, to })}`),
+  },
+
+  // ------------------------------------------------------------------- packages
+  packages: {
+    list: (includeInactive = false) =>
+      request<ServicePackage[]>(`/packages${query({ includeInactive: includeInactive || undefined })}`),
+
+    create: (data: PackageRequest) =>
+      request<ServicePackage>("/packages", { method: "POST", body: data }),
+
+    update: (id: number, data: PackageRequest) =>
+      request<ServicePackage>(`/packages/${id}`, { method: "PUT", body: data }),
+
+    deactivate: (id: number) =>
+      request<ServicePackage>(`/packages/${id}/deactivate`, { method: "POST" }),
+
+    reactivate: (id: number) =>
+      request<ServicePackage>(`/packages/${id}/reactivate`, { method: "POST" }),
+  },
+
+  // ----------------------------------------------------------------- statistics
+  statistics: {
+    overview: (months = 6) =>
+      request<StatisticsResponse>(`/statistics${query({ months })}`),
   },
 
   /** A plan opened by the patient: with no credential. */

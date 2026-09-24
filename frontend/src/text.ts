@@ -11,6 +11,11 @@ export function plural(quantity: number, singular: string, plural: string): stri
 }
 
 /** The same, already with the number in front: `count(3, "falta", "faltas")`. */
+/** "R$ 1.234,56" */
+export function currency(value: number): string {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 export function count(quantity: number, singular: string, pluralForm: string): string {
   return `${quantity.toLocaleString("pt-BR")} ${plural(quantity, singular, pluralForm)}`;
 }

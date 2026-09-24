@@ -56,6 +56,32 @@ export function weekStart(iso: string): string {
   return sumDays(iso, -weekDay);
 }
 
+/** Adds months, clamping the day to the length of the month it lands in. */
+export function addMonths(iso: string, months: number): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  const first = new Date(year!, month! - 1 + months, 1);
+  const last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  return toIso(new Date(first.getFullYear(), first.getMonth(), Math.min(day!, last)));
+}
+
+export function monthStart(iso: string): string {
+  return `${iso.slice(0, 7)}-01`;
+}
+
+export function monthEnd(iso: string): string {
+  const [year, month] = iso.split("-").map(Number);
+  return toIso(new Date(year!, month!, 0));
+}
+
+/** "setembro de 2026" */
+export function monthLabel(iso: string): string {
+  const [year, month] = iso.split("-").map(Number);
+  return new Date(year!, month! - 1, 1).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
 /** Name of the day of the week, e.g. "seg". */
 export function dayAbbreviated(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);

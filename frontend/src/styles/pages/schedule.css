@@ -187,6 +187,152 @@
   }
 }
 
+/* ------------------------------------------------------------------- month */
+
+/* A calendar grid: seven columns, the weeks as rows, hairlines from the
+   background showing through the gaps. Each cell is a button that opens the
+   day; the chips inside say who comes and when, in the status colour on the
+   left edge. */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  background: var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.month-weekday {
+  padding: 8px 10px;
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.month-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  min-height: 108px;
+  padding: 8px;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.month-cell:hover {
+  background: var(--surface-2);
+}
+.month-cell:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.month-cell.fora {
+  background: var(--canvas);
+  color: var(--ink-3);
+}
+.month-cell.fora .month-chip {
+  opacity: 0.6;
+}
+.month-cell-day {
+  font-family: var(--f-display);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+.month-cell.today .month-cell-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  width: 24px;
+  height: 24px;
+  margin: -4px 0 -4px -4px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--ink-on-primary);
+}
+.month-cell-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.month-chip {
+  display: block;
+  min-width: 0;
+  padding: 2px 6px 2px 7px;
+  border-left: 3px solid var(--border-strong);
+  border-radius: 0 var(--radius-chip) var(--radius-chip) 0;
+  background: var(--surface-2);
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.month-chip > .readout {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.month-chip.azul {
+  border-left-color: var(--info);
+}
+.month-chip.verde {
+  border-left-color: var(--success);
+}
+.month-chip.vermelha {
+  border-left-color: var(--danger);
+}
+.month-chip.cancelado {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.month-more {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* Below 900px there is no width for seven columns: the days that have
+   something on them, stacked, each with its chips. */
+.month-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.month-list-day {
+  overflow: hidden;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.month-list-day > .week-head {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.month-list-day.today > .week-head .date-day {
+  color: var(--accent);
+}
+.month-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+}
+.month-chip-type {
+  color: var(--ink-3);
+}
+
 /* -------------------------------------------------------------------- week */
 
 .week-head {

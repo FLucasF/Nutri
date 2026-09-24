@@ -1,0 +1,307 @@
+/* ============================================================== consultório
+   O que o lote 2 trouxe ao consultório: o dinheiro e o papel de cada consulta
+   (pagamento, recibo, atestado), as consultas na ficha do paciente, e as
+   páginas de parceiros, pacotes e estatísticas. Tudo aqui estiliza classes
+   próprias; tabela, tag, botão e lista vêm de components.css.
+   ========================================================================== */
+
+/* ------------------------------------------------- appointment: money side */
+
+/* Package, partner and payment, one line under the appointment facts. */
+.appointment-extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.appointment-partner {
+  color: var(--ink-3);
+}
+.appointment-money {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* The payment form opens under the row, on the secondary surface so it reads
+   as a step inside the appointment and not as another appointment. */
+.appointment-payment {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.appointment-payment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 12px;
+}
+.appointment-payment-grid > .field {
+  min-width: 0;
+}
+.week-appt .appointment-extra {
+  font-size: 12px;
+}
+.week-appt .appointment-money > .button {
+  flex: 1 1 auto;
+}
+.week-appt .appointment-payment-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.check-inline {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.check-inline > input {
+  flex: none;
+  margin: 2px 0 0;
+}
+
+/* ----------------------------------------------- patient: visits and money */
+
+.patient-visit-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.patient-visit {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.patient-visit:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.patient-visit-when {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.patient-visit-body {
+  min-width: 0;
+}
+.patient-visit-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.patient-visit.cancelado .patient-visit-top > strong {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+.patient-visits-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.patient-visits-empty > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-3);
+}
+.patient-visits > .button.ghost {
+  margin-top: 8px;
+}
+.patient-money {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.patient-money-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-family: var(--f-display);
+  font-size: 14px;
+  font-weight: 600;
+}
+.patient-money-title > svg {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-3);
+}
+.patient-money-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.patient-money-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.patient-money-row:first-child {
+  border-top: 0;
+}
+.patient-money-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-width: 0;
+}
+.patient-money-what {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+  font-size: 14px;
+}
+.patient-money-what .finance-desc {
+  display: inline;
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .patient-visit {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .patient-visit-when {
+    flex-direction: row;
+    gap: 8px;
+  }
+}
+
+/* ---------------------------------------------------------------- finance */
+
+.finance-installment {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ------------------------------------------------- partners and packages */
+
+.partner-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.partners-table tr.inativo td,
+.packages-table tr.inativo td {
+  color: var(--ink-3);
+}
+.partners-table .tag,
+.packages-table .tag,
+.list-row-title > .tag {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.partners-table .finance-desc,
+.packages-table .finance-desc,
+.referral-table .finance-desc {
+  display: block;
+}
+
+/* The rows here are facts with buttons, not links: no chevron, no hover. */
+.partner-row {
+  align-items: flex-start;
+  cursor: default;
+}
+.partner-row:hover {
+  background: transparent;
+}
+.partner-row::after {
+  content: none;
+}
+.partner-row .partner-actions {
+  flex-direction: column;
+}
+.referral-table tfoot th,
+.referral-table tfoot td {
+  border-top: 2px solid var(--border-strong);
+  font-weight: 600;
+  text-align: left;
+}
+.referral-table tfoot td.num {
+  text-align: right;
+}
+.referral-total .list-row-title {
+  font-weight: 700;
+}
+.card > .empty {
+  padding: 24px 0 8px;
+}
+
+/* ------------------------------------------------------------- statistics */
+
+.statistics-tiles .stat-value {
+  font-size: 22px;
+}
+.stat-bar {
+  display: block;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--surface-3);
+}
+.stat-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--primary);
+}
+.stat-bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+}
+.stat-bar-cell > .stat-bar {
+  flex: 1;
+}
+.statistics-months .stat-bar {
+  max-width: 220px;
+  margin: 4px 0;
+}
+.statistics-table th.num,
+.statistics-table td.num {
+  white-space: nowrap;
+}
+.statistics-page .list-row {
+  cursor: default;
+}
+.statistics-page .list-row::after {
+  content: none;
+}
+.statistics-page .list-row:hover {
+  background: transparent;
+}
+.statistics-page a.list-row-body {
+  color: inherit;
+  text-decoration: none;
+}
+.statistics-page a.list-row-body:hover .list-row-title {
+  text-decoration: underline;
+}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
+  Calendar,
   CalendarCheck,
   CalendarDays,
   CalendarPlus,
@@ -19,10 +20,23 @@ import {
 } from "lucide-react";
 import { api } from "../api/client";
 import { explainError } from "../api/errors";
+import { useAuth } from "../auth/AuthContext";
 import { FieldError, useFieldErrors } from "../components/FieldError";
 import { useFeedback } from "../components/Feedback";
+import { AppointmentMoney } from "../components/AppointmentMoney";
+import { ReceiptPanel } from "../components/ReceiptPanel";
 import { useIsCompact } from "../hooks/useMediaQuery";
-import { dayAbbreviated, formatBr, todayIso, weekStart, sumDays } from "../api/dates";
+import {
+  addMonths,
+  dayAbbreviated,
+  formatBr,
+  monthEnd,
+  monthLabel,
+  monthStart,
+  todayIso,
+  weekStart,
+  sumDays,
+} from "../api/dates";
 import type {
   Appointment,
   ScheduleDay,
@@ -30,8 +44,11 @@ import type {
   AppointmentStatus,
   AppointmentType,
   TypeAppointmentInfo,
+  Partner,
+  Receipt,
+  ServicePackage,
 } from "../api/types";
-import { count, plural } from "../text";
+import { count, currency, plural } from "../text";
 
 /** How the status is said in the confirmation, in the same vocabulary as the buttons. */
 const STATUS_DESCRIPTION: Record<AppointmentStatus, string> = {
@@ -65,28 +82,50 @@ const ICON_BY_STATUS: Record<AppointmentStatus, LucideIcon> = {
   CANCELED: X,
 };
 
+type View = "day" | "week" | "month";
+
+/** What every row needs to show and change the money side of an appointment. */
+type MoneyProps = {
+  canCharge: boolean;
+  onChanged: () => Promise<void>;
+  onReceipt: (transactionId: number) => void;
+  onError: (message: string) => void;
+};
+
 export default function Schedule() {
+  const { user } = useAuth();
   const [day, setDay] = useState(todayIso());
-  const [view, setView] = useState<"day" | "week">("day");
+  const [view, setView] = useState<View>("day");
   const [schedule, setSchedule] = useState<ScheduleDay | null>(null);
-  const [week, setWeek] = useState<Appointment[]>([]);
+  const [range, setRange] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<PatientSummary[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [types, setTypes] = useState<TypeAppointmentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
   const feedback = useFeedback();
+
+  // The money is the owner's: the receptionist sees package and partner, and
+  // prints the certificate, but does not register payments.
+  const canCharge = user?.role !== "ASSISTANT";
 
   const weekFirst = weekStart(day);
   const weekLast = sumDays(weekFirst, 6);
+  const monthFirst = monthStart(day);
+  const monthLast = monthEnd(day);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       if (view === "week") {
-        setWeek(await api.schedule.inRange(weekFirst, weekLast));
+        setRange(await api.schedule.inRange(weekFirst, weekLast));
+      } else if (view === "month") {
+        setRange(await api.schedule.inRange(monthFirst, monthLast));
       } else {
         setSchedule(await api.schedule.forDay(day));
       }
@@ -95,7 +134,7 @@ export default function Schedule() {
     } finally {
       setLoading(false);
     }
-  }, [day, view, weekFirst, weekLast]);
+  }, [day, view, weekFirst, weekLast, monthFirst, monthLast]);
 
   useEffect(() => {
     void load();
@@ -106,6 +145,8 @@ export default function Schedule() {
       .then((p) => setPatients(p.content))
       .catch(() => setPatients([]));
     api.schedule.types().then(setTypes).catch(() => setTypes([]));
+    api.partners.list().then(setPartners).catch(() => setPartners([]));
+    api.packages.list().then(setPackages).catch(() => setPackages([]));
   }, []);
 
   async function changeStatus(id: number, status: AppointmentStatus) {
@@ -119,36 +160,54 @@ export default function Schedule() {
     }
   }
 
-  function move(days: number) {
-    setDay(sumDays(day, days));
+  async function openReceipt(transactionId: number) {
+    setError(null);
+    try {
+      setReceipt(await api.finance.receipt(transactionId));
+    } catch (e) {
+      setError(explainError(e, "emitir o recibo"));
+    }
   }
 
-  const previousLabel = view === "week" ? "← Semana anterior" : "← Dia anterior";
-  const nextLabel = view === "week" ? "Próxima semana →" : "Próximo dia →";
+  const money: MoneyProps = { canCharge, onChanged: load, onReceipt: openReceipt, onError: setError };
+
+  function move(direction: -1 | 1) {
+    if (view === "month") {
+      setDay(addMonths(day, direction));
+    } else {
+      setDay(sumDays(day, view === "week" ? 7 * direction : direction));
+    }
+  }
+
+  const previousLabel =
+    view === "month" ? "← Mês anterior" : view === "week" ? "← Semana anterior" : "← Dia anterior";
+  const nextLabel =
+    view === "month" ? "Próximo mês →" : view === "week" ? "Próxima semana →" : "Próximo dia →";
 
   // The appointment happening now (or the next one today) gets the marked
   // hour chip; on any other day nothing is "now".
   const currentId =
-    view === "week" ? currentAppointmentId(week) : currentAppointmentId(schedule?.appointments ?? []);
+    view === "day" ? currentAppointmentId(schedule?.appointments ?? []) : currentAppointmentId(range);
+
+  const summaryLine =
+    view === "month"
+      ? `${count(range.length, "atendimento", "atendimentos")} · ${monthLabel(day)}`
+      : view === "week"
+        ? `${count(range.length, "atendimento", "atendimentos")} · ${formatBr(weekFirst)} a ${formatBr(weekLast)}`
+        : schedule
+          ? [
+              count(schedule.appointmentsTotal, "atendimento", "atendimentos"),
+              `${schedule.completed} ${plural(schedule.completed, "realizado", "realizados")}`,
+              ...(schedule.noshows > 0 ? [count(schedule.noshows, "falta", "faltas")] : []),
+            ].join(" · ")
+          : "—";
 
   return (
     <div className="page-schedule">
       <div className="header-page">
         <div>
           <h1>Agenda</h1>
-          <p>
-            {view === "week"
-              ? `${count(week.length, "atendimento", "atendimentos")} · ${formatBr(weekFirst)} a ${formatBr(weekLast)}`
-              : schedule
-                ? [
-                    count(schedule.appointmentsTotal, "atendimento", "atendimentos"),
-                    `${schedule.completed} ${plural(schedule.completed, "realizado", "realizados")}`,
-                    ...(schedule.noshows > 0
-                      ? [count(schedule.noshows, "falta", "faltas")]
-                      : []),
-                  ].join(" · ")
-                : "—"}
-          </p>
+          <p>{summaryLine}</p>
         </div>
         <div className="header-page-actions schedule-actions">
           <button
@@ -171,9 +230,17 @@ export default function Schedule() {
 
       {error && <div className="warning error mb-3">{error}</div>}
 
+      {receipt && (
+        <div className="mb-3">
+          <ReceiptPanel receipt={receipt} onClose={() => setReceipt(null)} />
+        </div>
+      )}
+
       {creating && (
         <FormAppointment
           patients={patients}
+          partners={partners}
+          packages={packages}
           types={types}
           daySuggested={day}
           onSave={async () => {
@@ -193,6 +260,10 @@ export default function Schedule() {
             <CalendarRange aria-hidden="true" />
             Semana
           </button>
+          <button type="button" aria-pressed={view === "month"} onClick={() => setView("month")}>
+            <Calendar aria-hidden="true" />
+            Mês
+          </button>
         </div>
 
         <div className="date-stepper">
@@ -200,7 +271,7 @@ export default function Schedule() {
             type="button"
             className="button secundario icon"
             title={previousLabel}
-            onClick={() => move(view === "week" ? -7 : -1)}
+            onClick={() => move(-1)}
           >
             <ChevronLeft aria-hidden="true" />
             <span className="visually-hidden">{previousLabel}</span>
@@ -215,7 +286,7 @@ export default function Schedule() {
             type="button"
             className="button secundario icon"
             title={nextLabel}
-            onClick={() => move(view === "week" ? 7 : 1)}
+            onClick={() => move(1)}
           >
             <ChevronRight aria-hidden="true" />
             <span className="visually-hidden">{nextLabel}</span>
@@ -226,19 +297,31 @@ export default function Schedule() {
         </button>
 
         <span className="discreto toolbar-caption">
-          {view === "week"
-            ? `${formatBr(weekFirst)} — ${formatBr(weekLast)}`
-            : weekDay(day)}
+          {view === "month"
+            ? monthLabel(day)
+            : view === "week"
+              ? `${formatBr(weekFirst)} — ${formatBr(weekLast)}`
+              : weekDay(day)}
         </span>
       </div>
 
       {loading ? (
         <p className="loading">Carregando…</p>
+      ) : view === "month" ? (
+        <ScheduleMonth
+          day={day}
+          appointments={range}
+          onChooseDay={(d) => {
+            setDay(d);
+            setView("day");
+          }}
+        />
       ) : view === "week" ? (
         <ScheduleWeek
           start={weekFirst}
-          appointments={week}
+          appointments={range}
           currentId={currentId}
+          money={money}
           onChooseDay={(d) => {
             setDay(d);
             setView("day");
@@ -264,6 +347,7 @@ export default function Schedule() {
               key={a.id}
               appointment={a}
               current={a.id === currentId}
+              money={money}
               onChangeStatus={changeStatus}
             />
           ))}
@@ -427,10 +511,12 @@ function ScheduleSubscription({ onClose }: { onClose: () => void }) {
 function AppointmentRow({
   appointment: a,
   current,
+  money,
   onChangeStatus,
 }: {
   appointment: Appointment;
   current: boolean;
+  money: MoneyProps;
   onChangeStatus: (id: number, status: AppointmentStatus) => void;
 }) {
   return (
@@ -453,6 +539,7 @@ function AppointmentRow({
           </p>
           {a.notes && <p className="appointment-note">{a.notes}</p>}
           {a.reasonOutcome && <p className="appointment-note">{a.reasonOutcome}</p>}
+          <AppointmentMoney appointment={a} {...money} />
           <Transitions appointment={a} onChoose={onChangeStatus} />
         </div>
       </div>
@@ -468,10 +555,12 @@ function AppointmentRow({
 function WeekAppointment({
   appointment: a,
   current,
+  money,
   onChangeStatus,
 }: {
   appointment: Appointment;
   current: boolean;
+  money: MoneyProps;
   onChangeStatus: (id: number, status: AppointmentStatus) => void;
 }) {
   const classes = ["week-appt"];
@@ -499,6 +588,7 @@ function WeekAppointment({
           {a.reasonOutcome}
         </p>
       )}
+      <AppointmentMoney appointment={a} {...money} />
       <Transitions appointment={a} onChoose={onChangeStatus} compact />
     </article>
   );
@@ -516,12 +606,14 @@ function ScheduleWeek({
   start,
   appointments,
   currentId,
+  money,
   onChooseDay,
   onChangeStatus,
 }: {
   start: string;
   appointments: Appointment[];
   currentId: number | null;
+  money: MoneyProps;
   onChooseDay: (day: string) => void;
   onChangeStatus: (id: number, status: AppointmentStatus) => void;
 }) {
@@ -565,6 +657,7 @@ function ScheduleWeek({
                         key={a.id}
                         appointment={a}
                         current={a.id === currentId}
+                        money={money}
                         onChangeStatus={onChangeStatus}
                       />
                     ))}
@@ -577,6 +670,7 @@ function ScheduleWeek({
                         key={a.id}
                         appointment={a}
                         current={a.id === currentId}
+                        money={money}
                         onChangeStatus={onChangeStatus}
                       />
                     ))}
@@ -587,6 +681,143 @@ function ScheduleWeek({
       })}
     </div>
   );
+}
+
+const WEEKDAYS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
+
+/**
+ * The month: a calendar grid on a wide screen, and below 900px the list of
+ * days that have something on them.
+ *
+ * "A visualização mensal facilita muito na hora de olhar as datas de retorno
+ * do paciente." The grid is for looking, not for acting: each cell says who
+ * comes and when, and opens the day, where the actions live. The days of the
+ * neighbouring months fill the first and last rows, dimmed, so the weeks
+ * keep their shape.
+ */
+function ScheduleMonth({
+  day,
+  appointments,
+  onChooseDay,
+}: {
+  day: string;
+  appointments: Appointment[];
+  onChooseDay: (day: string) => void;
+}) {
+  const stacked = useIsCompact();
+  const today = todayIso();
+  const month = day.slice(0, 7);
+  const last = monthEnd(day);
+
+  const cells: string[] = [];
+  for (let d = weekStart(monthStart(day)); d <= last || cells.length % 7 !== 0; d = sumDays(d, 1)) {
+    cells.push(d);
+  }
+  const byDay = new Map<string, Appointment[]>();
+  for (const a of appointments) {
+    const key = a.start.slice(0, 10);
+    byDay.set(key, [...(byDay.get(key) ?? []), a]);
+  }
+
+  if (appointments.length === 0) {
+    return (
+      <div className="card empty">
+        <span className="empty-icon">
+          <Calendar aria-hidden="true" />
+        </span>
+        <span className="empty-title">Nenhum atendimento em {monthLabel(day)}.</span>
+      </div>
+    );
+  }
+
+  if (stacked) {
+    const daysWith = cells.filter((d) => d.startsWith(month) && (byDay.get(d)?.length ?? 0) > 0);
+    return (
+      <div className="month-list">
+        {daysWith.map((d) => {
+          const forDay = byDay.get(d) ?? [];
+          return (
+            <section className={`month-list-day${d === today ? " today" : ""}`} key={d}>
+              <header className="week-head">
+                <button type="button" onClick={() => onChooseDay(d)}>
+                  <span className="label-day">{dayAbbreviated(d)}</span>
+                  <span className="date-day">{formatBr(d).slice(0, 5)}</span>
+                </button>
+                <span className="minusculo">{count(forDay.length, "atendimento", "atendimentos")}</span>
+              </header>
+              <ul className="month-chips">
+                {forDay.map((a) => (
+                  <li key={a.id} className={monthChipClass(a)}>
+                    <span className="readout">{hour(a.start)}</span> {a.patientName ?? "Sem paciente"}
+                    <span className="month-chip-type"> · {a.typeDescription}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="month-grid" aria-label={`Agenda de ${monthLabel(day)}`}>
+      {WEEKDAYS.map((w) => (
+        <span className="month-weekday" key={w}>
+          {w}
+        </span>
+      ))}
+      {cells.map((d) => {
+        const inMonth = d.startsWith(month);
+        const list = byDay.get(d) ?? [];
+        const visible = list.slice(0, 3);
+        const classes = ["month-cell"];
+        if (!inMonth) classes.push("fora");
+        if (d === today) classes.push("today");
+        const label = `${formatBr(d)}: ${
+          list.length === 0 ? "livre" : count(list.length, "atendimento", "atendimentos")
+        }`;
+        return (
+          <button
+            type="button"
+            key={d}
+            className={classes.join(" ")}
+            onClick={() => onChooseDay(d)}
+            aria-label={label}
+            title={label}
+          >
+            <span className="month-cell-day">{Number(d.slice(8, 10))}</span>
+            {visible.length > 0 && (
+              <span className="month-cell-list">
+                {visible.map((a) => (
+                  <span key={a.id} className={monthChipClass(a)}>
+                    <span className="readout">{hour(a.start)}</span> {firstName(a.patientName)}
+                  </span>
+                ))}
+                {list.length > visible.length && (
+                  <span className="month-more">
+                    +{list.length - visible.length} {plural(list.length - visible.length, "outro", "outros")}
+                  </span>
+                )}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function monthChipClass(a: Appointment): string {
+  const classes = ["month-chip", CLASSE_BY_STATUS[a.status]];
+  if (a.status === "CANCELED") classes.push("cancelado");
+  return classes.join(" ");
+}
+
+function firstName(name?: string): string {
+  if (!name) return "Sem paciente";
+  const parts = name.trim().split(/\s+/);
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1]![0]}.` : parts[0]!;
 }
 
 /**
@@ -645,11 +876,15 @@ function Transitions({
 
 function FormAppointment({
   patients,
+  partners,
+  packages,
   types,
   daySuggested,
   onSave,
 }: {
   patients: PatientSummary[];
+  partners: Partner[];
+  packages: ServicePackage[];
   types: TypeAppointmentInfo[];
   daySuggested: string;
   onSave: () => Promise<void>;
@@ -660,6 +895,9 @@ function FormAppointment({
   const [type, setType] = useState<AppointmentType>("FOLLOWUP");
   const [duration, setDuration] = useState("30");
   const [notes, setNotes] = useState("");
+  const [partnerId, setPartnerId] = useState("");
+  const [packageId, setPackageId] = useState("");
+  const [series, setSeries] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
@@ -670,6 +908,9 @@ function FormAppointment({
     if (info) setDuration(String(info.durationSuggestedMinutes));
   }
 
+  const chosenPackage = packages.find((p) => String(p.id) === packageId);
+  const packageSessions = chosenPackage?.sessions ?? 0;
+
   const fields = useFieldErrors();
   const feedback = useFeedback();
 
@@ -679,15 +920,28 @@ function FormAppointment({
     fields.clear();
     setSending(true);
     try {
-      await api.schedule.schedule({
+      const created = await api.schedule.schedule({
         patientId: Number(patientId),
         start: `${date}T${time}:00`,
         durationMinutes: Number(duration),
         type,
         notes: notes.trim() || undefined,
+        partnerId: partnerId ? Number(partnerId) : undefined,
+        packageId: packageId ? Number(packageId) : undefined,
+        createSeries: Boolean(packageId) && packageSessions > 1 && series,
       });
       const who = patients.find((p) => String(p.id) === patientId)?.name ?? "Atendimento";
-      feedback.confirm(`${who} marcado para ${formatBr(date)}, às ${time}.`);
+      const more =
+        created.seriesCreated && created.seriesCreated > 0
+          ? ` Mais ${count(created.seriesCreated, "encontro marcado", "encontros marcados")} pelo pacote.`
+          : "";
+      feedback.confirm(`${who} marcado para ${formatBr(date)}, às ${time}.${more}`);
+      if (created.seriesSkipped && created.seriesSkipped.length > 0) {
+        feedback.warn(
+          new Error(created.seriesSkipped.join(" ")),
+          "marcar todos os encontros do pacote",
+        );
+      }
       await onSave();
     } catch (e) {
       if (!fields.apply(e)) {
@@ -780,6 +1034,50 @@ function FormAppointment({
             <FieldError field="durationMinutes" errors={fields.errors} />
           </div>
         </div>
+
+        {(packages.length > 0 || partners.length > 0) && (
+          <div className="form-appointment-grid who">
+            {packages.length > 0 && (
+              <div className="field">
+                <label htmlFor="ag-pacote">Pacote</label>
+                <select id="ag-pacote" value={packageId} onChange={(e) => setPackageId(e.target.value)}>
+                  <option value="">Nenhum</option>
+                  {packages.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} · {currency(p.amount)}
+                      {p.sessions ? ` · ${count(p.sessions, "encontro", "encontros")}` : ""}
+                    </option>
+                  ))}
+                </select>
+                {packageSessions > 1 && (
+                  <label className="check-inline">
+                    <input type="checkbox" checked={series} onChange={(e) => setSeries(e.target.checked)} />
+                    <span>
+                      Marcar os outros {packageSessions - 1} encontros, a cada{" "}
+                      {count(chosenPackage?.intervalDays ?? 7, "dia", "dias")}, no mesmo horário
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
+            {partners.length > 0 && (
+              <div className="field">
+                <label htmlFor="ag-parceiro">Parceiro desta consulta</label>
+                <select id="ag-parceiro" value={partnerId} onChange={(e) => setPartnerId(e.target.value)}>
+                  <option value="">O que indicou o paciente</option>
+                  {partners.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="field-hint">
+                  Só quando a indicação desta consulta é de outro parceiro.
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="field">
           <label htmlFor="ag-obs">Observação</label>
